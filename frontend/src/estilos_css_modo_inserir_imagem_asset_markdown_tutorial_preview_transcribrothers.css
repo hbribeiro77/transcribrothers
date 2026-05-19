@@ -1,0 +1,50 @@
+.tb-grid-col-tutorial--modo-inserir-imagem-markdown {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.tb-painel-modo-inserir-imagem-markdown-tutorial {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  font-size: 0.84rem;
+  color: #1e3a8a;
+}
+
+.tb-painel-modo-inserir-imagem-markdown-tutorial strong {
+  color: #1d4ed8;
+}
+
+.tb-mdwrap--modo-inserir-imagem-markdown {
+  position: relative;
+  cursor: crosshair;
+}
+
+.tb-marcador-linha-insercao-markdown-preview {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 0;
+  border-top: 2px dashed #2563eb;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: 4;
+  transition: top 0.05s ease-out;
+}
+
+.tb-marcador-linha-insercao-markdown-preview--pulso {
+  animation: tb-marcador-linha-insercao-pulso 0.55s ease-out;
+}
+
+@keyframes tb-marcador-linha-insercao-pulso {
+  0% {
+    border-top-color: #1d4ed8;
+    opacity: 1;
+  }
+  100% {
+    border-top-color: #2563eb;
+    opacity: 0.85;
+  }
+}

@@ -1,0 +1,11 @@
+---
+description: Respostas e textos de UI em português do Brasil (evitar português de Portugal).
+alwaysApply: true
+---
+
+# Português brasileiro (pt-BR)
+
+- Responda sempre em **português do Brasil** (vocabulário, registro e convenções habituais no Brasil).
+- Evite formas e vocabulário típicos de **Portugal**, por exemplo: *ficheiro* → **arquivo**; *actual* → **atual**; *consola* → **console**; *telemóvel* → **celular**; *utilizador* → **usuário** em texto voltado ao público. Para termos técnicos com duas grafias aceitas no Brasil, **alinhe ao que já existir** no repositório (ex.: configurações vs definições).
+- Ao escrever ou rever **cópia de interface** (botões, títulos, mensagens), prefira **pt-BR** e alinhe ao tom já usado nos arquivos do frontend.
+- Comentários em código e documentação técnica no repositório: use **pt-BR** quando estiverem em português, salvo citações ou normas externas em outra variante.

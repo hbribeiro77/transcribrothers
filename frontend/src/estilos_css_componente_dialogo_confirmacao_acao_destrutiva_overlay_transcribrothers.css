@@ -1,0 +1,95 @@
+.tb-dialogo-confirmacao-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.tb-dialogo-confirmacao-painel {
+  width: min(100%, 420px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.28);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.tb-dialogo-confirmacao-cabecalho {
+  padding: 16px 18px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tb-dialogo-confirmacao-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tb-dialogo-confirmacao-corpo {
+  padding: 14px 18px 18px;
+}
+
+.tb-dialogo-confirmacao-mensagem {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.tb-dialogo-confirmacao-rodape {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 18px 16px;
+}
+
+.tb-dialogo-confirmacao-btn {
+  min-width: 96px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.tb-dialogo-confirmacao-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tb-dialogo-confirmacao-btn--cancelar {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.tb-dialogo-confirmacao-btn--cancelar:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.tb-dialogo-confirmacao-btn--confirmar {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.tb-dialogo-confirmacao-btn--confirmar:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.tb-dialogo-confirmacao-btn--neutro {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}
+
+.tb-dialogo-confirmacao-btn--neutro:hover:not(:disabled) {
+  background: #1e293b;
+}
