@@ -24,7 +24,13 @@ def test_montar_prefixo_inclui_bloco_sem_video_quando_solicitado() -> None:
 
 
 def test_regenerate_reproducao_bug_job_inexistente_retorna_404() -> None:
-    with TestClient(app) as client:
+    with (
+        TestClient(app) as client,
+        patch(
+            "transcribrothers_backend.main.tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy",
+            return_value=True,
+        ),
+    ):
         r = client.post("/api/jobs/job-inexistente-regen-bug/regenerate-reproducao-bug", json={})
         assert r.status_code == 404
 
@@ -34,6 +40,10 @@ def test_regenerate_reproducao_bug_destino_errado_retorna_400() -> None:
         TestClient(app) as client,
         patch(
             "transcribrothers_backend.main.tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy",
+            return_value=True,
+        ),
+        patch(
+            "transcribrothers_backend.main.tem_credencial_para_transcricao_no_pipeline",
             return_value=True,
         ),
     ):

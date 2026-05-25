@@ -115,8 +115,6 @@
   gap: 2px;
 }
 
-.tb-toolbar-split-menu-item--pdf {
-
 .tb-toolbar-split-menu-item--pdf:hover:not(:disabled) {
   background: #fef2f2;
 }

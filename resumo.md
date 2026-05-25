@@ -33,6 +33,7 @@ Uso típico: documentar fluxos em gravações de tela (treinamentos, tutoriais d
 - **Backend:** FastAPI, SQLAlchemy async + SQLite (jobs, runtime de transcrição, histórico de versões do tutorial), httpx, SDK openai (Whisper no proxy), ffmpeg/ffprobe (subprocess).
 - **Frontend:** Vite, React, TypeScript, react-markdown, Fabric.js (anotação de imagens), jspdf / html2canvas (export PDF).
 - **Processamento:** tasks **asyncio** no mesmo processo do uvicorn (sem Redis/Celery).
+- **CI:** GitHub Actions roda os testes do backend com Python 3.12 e instala `ffmpeg` no runner para cobrir fluxos que manipulam mídia/imagens.
 
 Execução, variáveis de ambiente e resumo de API: [repositorio.md](repositorio.md).
 

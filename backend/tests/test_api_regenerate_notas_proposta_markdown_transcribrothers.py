@@ -12,7 +12,13 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
 
 
 def test_regenerate_notas_proposta_job_inexistente_retorna_404() -> None:
-    with TestClient(app) as client:
+    with (
+        TestClient(app) as client,
+        patch(
+            "transcribrothers_backend.main.tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy",
+            return_value=True,
+        ),
+    ):
         r = client.post("/api/jobs/job-inexistente-regen-notas/regenerate-notas-proposta", json={})
         assert r.status_code == 404
 
@@ -22,6 +28,10 @@ def test_regenerate_notas_proposta_destino_errado_retorna_400() -> None:
         TestClient(app) as client,
         patch(
             "transcribrothers_backend.main.tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy",
+            return_value=True,
+        ),
+        patch(
+            "transcribrothers_backend.main.tem_credencial_para_transcricao_no_pipeline",
             return_value=True,
         ),
     ):
