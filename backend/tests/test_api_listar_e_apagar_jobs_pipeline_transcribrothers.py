@@ -76,6 +76,40 @@ async def _remover_job_se_existir_transcribrothers(session_factory, job_id: str)
             await session.commit()
 
 
+async def _inserir_job_em_transcribing_para_teste_exclusao_forcada_transcribrothers(
+    session_factory,
+    job_id: str,
+) -> None:
+    async with session_factory() as session:
+        session.add(
+            JobPipelineTranscribrothers(
+                id=job_id,
+                status=StatusJobTranscribrothers.transcribing.value,
+                source_kind=OrigemEntradaJobTranscribrothers.upload_local,
+                drive_url="Arquivo local: teste.mp4",
+                file_id="-",
+                error_message=None,
+                result_markdown=None,
+                steps_json={"pipeline_fase": "transcrevendo_audio"},
+            )
+        )
+        await session.commit()
+
+
+def test_delete_job_em_transcribing_apaga_registo_e_get_fica_404() -> None:
+    jid = novo_id_job()
+    with TestClient(app) as client:
+        sf = app.state.session_factory
+        try:
+            asyncio.run(_inserir_job_em_transcribing_para_teste_exclusao_forcada_transcribrothers(sf, jid))
+            r = client.delete(f"/api/jobs/{jid}")
+            assert r.status_code == 200
+            assert r.json() == {"ok": True}
+            assert client.get(f"/api/jobs/{jid}").status_code == 404
+        finally:
+            asyncio.run(_remover_job_se_existir_transcribrothers(sf, jid))
+
+
 def test_delete_job_completo_apaga_registo_e_get_fica_404() -> None:
     jid = novo_id_job()
     with TestClient(app) as client:

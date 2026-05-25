@@ -13,7 +13,9 @@
 .tb-modal-md-edit-painel {
   background: #fff;
   border-radius: 12px;
+  /* Sempre ocupa o máximo disponível (antes a altura seguia o conteúdo em documentos curtos). */
   width: min(96vw, 1280px);
+  height: 92vh;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -409,12 +411,16 @@
   }
 }
 
-/* Textarea por cima: caret visível; fundo transparente; padding inferior = scroll “falso” extra. */
+/* Destaque temporário do caret após clique no preview (some com o timer; não altera o scroll). */
 .tb-modal-md-edit-textarea--caret-destaque-espelho-preview {
   position: relative;
   z-index: 2;
   background: transparent !important;
   caret-color: #c2410c !important;
+}
+
+/* Rolagem extra no fim do editor: persiste na sessão da modal após o primeiro alinhamento preview→editor. */
+.tb-modal-md-edit-textarea--rolagem-extra-inferior-editor {
   padding-bottom: 40vh !important;
 }
 
@@ -563,7 +569,7 @@
 
 @media (max-width: 980px) {
   .tb-modal-md-edit-painel {
-    width: min(96vw, 640px);
+    width: 96vw;
   }
 
   .tb-modal-md-edit-corpo {

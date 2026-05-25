@@ -19,7 +19,7 @@ Uso típico: documentar fluxos em gravações de tela (treinamentos, tutoriais d
    - **Legado:** captura frames nos instantes derivados dos **segmentos** da transcrição (amostragem por `MAX_FRAMES_PER_MINUTE` e teto opcional `TUTORIAL_MAX_FRAMES_TOTAL`).
 5. O **tutorial** é gerado/regenerado no **mesmo proxy** (`LITELLM_API_KEY`, `LITELLM_ENDPOINT`, modelo da UI / `LITELLM_MODEL`; whitelist opcional `LITELLM_MODELOS_PROVISIONADOS`).
 6. **Pós-geração (opcional no pipeline):** verificação de **sustentação** (tutorial vs transcrição) e de **imagens duplicadas** (visão em lotes); resultados em `steps_json`.
-7. A UI exibe **player** do vídeo e **preview** do Markdown; exportação em **ZIP** (`tutorial.md` + `assets/`), Markdown com imagens embutidas (data-URI) e **PDF** no navegador.
+7. A UI exibe **player** do vídeo e **preview** do Markdown; exportação em **ZIP** (`tutorial.md` + `assets/`), Markdown com imagens embutidas (data-URI), **PDF** no navegador e GitLab (criar issue, comentar em issue existente ou publicar na wiki).
 
 ## Entrada de vídeo
 
@@ -43,6 +43,7 @@ Execução, variáveis de ambiente e resumo de API: [repositorio.md](repositorio
 - **Revisão profunda** multifase (`revisao_profunda_multifase`): analista (plano por tópicos) → um passe por tópico → consolidação final.
 - **Anotação de imagens** (PNG original + `.anotado.png`) e sincronização das referências no Markdown.
 - **Captura manual de frame**, colar imagem da área de transferência, galeria de assets.
+- **Exportação GitLab**: criar issue no projeto configurado, comentar em qualquer issue do `GITLAB_BASE_URL` informado pelo servidor ou publicar página wiki; imagens `assets/*.png` são enviadas ao GitLab e os links do Markdown são reescritos para `/uploads/...`.
 - **Cancelar / retry** do job (retry pode reutilizar vídeo/áudio já no servidor).
 - **Configurações** na UI: modelos LiteLLM, transcrição multimodal, prompts fixos (somente leitura via API), redundância entre seções na edição por seção.
 

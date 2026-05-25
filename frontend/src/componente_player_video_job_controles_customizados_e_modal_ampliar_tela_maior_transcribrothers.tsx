@@ -2,16 +2,32 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatarSegundosComoMmSsTranscribrothers } from "./modulo_util_rotulos_fase_pipeline_status_portugues_ui_transcribrothers.ts";
+import { tentarDescobrirDuracaoVideoPorSeekAoFimNavegadorTranscribrothers } from "./modulo_util_tentar_descobrir_duracao_video_por_seek_ao_fim_navegador_transcribrothers.ts";
+
+/** Lê duração do `<video>` (metadata ou intervalo seekable). */
+function lerDuracaoSegundosElementoVideoPlayerTranscribrothers(video: HTMLVideoElement): number {
+  if (Number.isFinite(video.duration) && video.duration > 0) return video.duration;
+  const seekable = video.seekable;
+  if (seekable.length > 0) {
+    const fim = seekable.end(seekable.length - 1);
+    if (Number.isFinite(fim) && fim > 0) return fim;
+  }
+  return 0;
+}
 
 type PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers = {
   jobId: string;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  /** Quando o job já tem `steps_json.duracao_video_segundos` (ffprobe no servidor). */
+  duracaoVideoSegundosDoJob?: number | null;
   classNameVideo?: string;
   exibirBotaoCapturarFrame?: boolean;
   capturandoFrame?: boolean;
   /** Recebe o instante atual do vídeo ativo (inline ou modal em tela maior). */
   aoCapturarFrameNoInstanteAtual?: (timestampSegundos: number) => void;
   aoVideoIndisponivelParaCapturaFrame?: () => void;
+  /** Quando a duração é descoberta (API ou metadata do `<video>`), para atualizar o job na página. */
+  onDuracaoVideoConhecidaSegundos?: (duracaoSegundos: number) => void;
 };
 
 const VELOCIDADES_REPRODUCAO_VIDEO_TRANSCRIBROTHERS = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -156,7 +172,11 @@ function BarraControlesPlayerVideoTranscribrothers({
       <span className="tb-video-player-tempo" aria-live="off">
         {formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
         <span className="tb-video-player-tempo-separador">/</span>
-        {duracaoValida ? formatarSegundosComoMmSsTranscribrothers(duracaoSegundos) : "0:00"}
+        {duracaoValida
+          ? formatarSegundosComoMmSsTranscribrothers(duracaoSegundos)
+          : video
+            ? "…"
+            : "0:00"}
       </span>
 
       <input
@@ -166,7 +186,7 @@ function BarraControlesPlayerVideoTranscribrothers({
         max={maxBarra || 100}
         step={0.1}
         value={valorBarra}
-        disabled={!video || !duracaoValida}
+        disabled={!video}
         aria-label="Posição no vídeo"
         aria-valuemin={0}
         aria-valuemax={maxBarra}
@@ -174,8 +194,6 @@ function BarraControlesPlayerVideoTranscribrothers({
         aria-valuetext={formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
         onMouseDown={aoIniciarArrastarBarra}
         onTouchStart={aoIniciarArrastarBarra}
-        onMouseUp={aoFinalizarArrastarBarra}
-        onTouchEnd={aoFinalizarArrastarBarra}
         onChange={(evento) => aoAlterarTempoPelaBarra(Number(evento.target.value))}
       />
 
@@ -247,25 +265,47 @@ function BarraControlesPlayerVideoTranscribrothers({
   );
 }
 
-function useEstadoUiPlayerVideoTranscribrothers(video: HTMLVideoElement | null) {
-  const [duracaoSegundos, setDuracaoSegundos] = useState(0);
+function useEstadoUiPlayerVideoTranscribrothers(
+  video: HTMLVideoElement | null,
+  duracaoConhecidaSegundos: number,
+) {
+  const [duracaoSegundosNoElemento, setDuracaoSegundosNoElemento] = useState(0);
+  const duracaoConhecidaRef = useRef(duracaoConhecidaSegundos);
+  duracaoConhecidaRef.current = duracaoConhecidaSegundos;
+  const duracaoSegundos =
+    duracaoConhecidaSegundos > 0 ? duracaoConhecidaSegundos : duracaoSegundosNoElemento;
   const [tempoAtualSegundos, setTempoAtualSegundos] = useState(0);
   const [pausado, setPausado] = useState(true);
   const [mudo, setMudo] = useState(false);
   const [volume, setVolume] = useState(1);
   const [velocidadeReproducao, setVelocidadeReproducao] = useState(1);
   const [arrastandoBarraProgresso, setArrastandoBarraProgresso] = useState(false);
+  const arrastandoBarraProgressoRef = useRef(false);
+  const seekAoFimParaDuracaoTentadoRef = useRef(false);
+
+  useEffect(() => {
+    setDuracaoSegundosNoElemento(0);
+    setTempoAtualSegundos(0);
+    seekAoFimParaDuracaoTentadoRef.current = false;
+  }, [video]);
 
   useEffect(() => {
     if (!video) return;
 
-    const atualizarDuracao = () => {
-      setDuracaoSegundos(Number.isFinite(video.duration) ? video.duration : 0);
+    const registrarDuracaoDoElementoSeNecessario = (dur: number) => {
+      if (duracaoConhecidaRef.current > 0) return;
+      if (dur > 0) setDuracaoSegundosNoElemento(dur);
+    };
+
+    const atualizarDuracaoDoElemento = () => {
+      const dur = lerDuracaoSegundosElementoVideoPlayerTranscribrothers(video);
+      registrarDuracaoDoElementoSeNecessario(dur);
     };
     const atualizarTempo = () => {
-      if (!arrastandoBarraProgresso) {
+      if (!arrastandoBarraProgressoRef.current) {
         setTempoAtualSegundos(video.currentTime);
       }
+      atualizarDuracaoDoElemento();
     };
     const aoPlay = () => setPausado(false);
     const aoPause = () => setPausado(true);
@@ -274,29 +314,75 @@ function useEstadoUiPlayerVideoTranscribrothers(video: HTMLVideoElement | null) 
       setVolume(video.volume);
     };
 
-    atualizarDuracao();
+    atualizarDuracaoDoElemento();
     atualizarTempo();
     setPausado(video.paused);
     setMudo(video.muted);
     setVolume(video.volume);
     setVelocidadeReproducao(video.playbackRate);
 
-    video.addEventListener("loadedmetadata", atualizarDuracao);
-    video.addEventListener("durationchange", atualizarDuracao);
+    const eventosDuracao: Array<keyof HTMLVideoElementEventMap> = [
+      "loadedmetadata",
+      "durationchange",
+      "loadeddata",
+      "canplay",
+      "progress",
+    ];
+    let cancelarSeekAoFim: (() => void) | undefined;
+    const tentarSeekAoFimSeAindaSemDuracao = () => {
+      if (duracaoConhecidaRef.current > 0 || seekAoFimParaDuracaoTentadoRef.current) return;
+      const dur = lerDuracaoSegundosElementoVideoPlayerTranscribrothers(video);
+      if (dur > 0) {
+        registrarDuracaoDoElementoSeNecessario(dur);
+        return;
+      }
+      seekAoFimParaDuracaoTentadoRef.current = true;
+      cancelarSeekAoFim?.();
+      cancelarSeekAoFim = tentarDescobrirDuracaoVideoPorSeekAoFimNavegadorTranscribrothers(
+        video,
+        registrarDuracaoDoElementoSeNecessario,
+      );
+    };
+
+    for (const nome of eventosDuracao) {
+      video.addEventListener(nome, atualizarDuracaoDoElemento);
+      video.addEventListener(nome, tentarSeekAoFimSeAindaSemDuracao);
+    }
     video.addEventListener("timeupdate", atualizarTempo);
     video.addEventListener("seeked", atualizarTempo);
     video.addEventListener("play", aoPlay);
     video.addEventListener("pause", aoPause);
     video.addEventListener("volumechange", aoVolume);
+    tentarSeekAoFimSeAindaSemDuracao();
 
     return () => {
-      video.removeEventListener("loadedmetadata", atualizarDuracao);
-      video.removeEventListener("durationchange", atualizarDuracao);
+      cancelarSeekAoFim?.();
+      for (const nome of eventosDuracao) {
+        video.removeEventListener(nome, atualizarDuracaoDoElemento);
+        video.removeEventListener(nome, tentarSeekAoFimSeAindaSemDuracao);
+      }
       video.removeEventListener("timeupdate", atualizarTempo);
       video.removeEventListener("seeked", atualizarTempo);
       video.removeEventListener("play", aoPlay);
       video.removeEventListener("pause", aoPause);
       video.removeEventListener("volumechange", aoVolume);
+    };
+  }, [video]);
+
+  useEffect(() => {
+    if (!arrastandoBarraProgresso) return;
+    const aoSoltarPonteiro = () => {
+      window.setTimeout(() => {
+        arrastandoBarraProgressoRef.current = false;
+        setArrastandoBarraProgresso(false);
+        if (video) setTempoAtualSegundos(video.currentTime);
+      }, 0);
+    };
+    window.addEventListener("mouseup", aoSoltarPonteiro);
+    window.addEventListener("touchend", aoSoltarPonteiro);
+    return () => {
+      window.removeEventListener("mouseup", aoSoltarPonteiro);
+      window.removeEventListener("touchend", aoSoltarPonteiro);
     };
   }, [arrastandoBarraProgresso, video]);
 
@@ -308,6 +394,7 @@ function useEstadoUiPlayerVideoTranscribrothers(video: HTMLVideoElement | null) 
     volume,
     velocidadeReproducao,
     arrastandoBarraProgresso,
+    arrastandoBarraProgressoRef,
     setTempoAtualSegundos,
     setArrastandoBarraProgresso,
     setVelocidadeReproducao,
@@ -333,11 +420,20 @@ function criarHandlersControlesVideoTranscribrothers(
       video.volume = Math.max(0, Math.min(1, novoVolume));
       if (novoVolume > 0) video.muted = false;
     },
-    aoIniciarArrastarBarra: () => estado.setArrastandoBarraProgresso(true),
-    aoFinalizarArrastarBarra: () => estado.setArrastandoBarraProgresso(false),
+    aoIniciarArrastarBarra: () => {
+      estado.arrastandoBarraProgressoRef.current = true;
+      estado.setArrastandoBarraProgresso(true);
+    },
+    aoFinalizarArrastarBarra: () => {
+      estado.arrastandoBarraProgressoRef.current = false;
+      estado.setArrastandoBarraProgresso(false);
+    },
     aoAlterarTempoPelaBarra: (tempoSegundos: number) => {
       if (!video) return;
-      const t = Math.max(0, tempoSegundos);
+      const duracao =
+        Number.isFinite(video.duration) && video.duration > 0 ? video.duration : Number.POSITIVE_INFINITY;
+      const t = Math.max(0, Math.min(tempoSegundos, duracao));
+      estado.arrastandoBarraProgressoRef.current = true;
       video.currentTime = t;
       estado.setTempoAtualSegundos(t);
     },
@@ -355,21 +451,68 @@ function criarHandlersControlesVideoTranscribrothers(
 export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers({
   jobId,
   videoRef,
+  duracaoVideoSegundosDoJob = null,
   classNameVideo = "tb-video",
   exibirBotaoCapturarFrame = false,
   capturandoFrame = false,
   aoCapturarFrameNoInstanteAtual,
   aoVideoIndisponivelParaCapturaFrame,
+  onDuracaoVideoConhecidaSegundos,
 }: PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers) {
   const [modalTelaMaiorAberto, setModalTelaMaiorAberto] = useState(false);
   const [videoElementoMontado, setVideoElementoMontado] = useState<HTMLVideoElement | null>(null);
   const [videoModalMontado, setVideoModalMontado] = useState<HTMLVideoElement | null>(null);
   const videoModalRef = useRef<HTMLVideoElement | null>(null);
   const urlVideo = `/api/jobs/${encodeURIComponent(jobId)}/video`;
+  const [duracaoSegundosApi, setDuracaoSegundosApi] = useState(0);
 
-  const estadoInline = useEstadoUiPlayerVideoTranscribrothers(videoElementoMontado);
+  const duracaoDoJob =
+    typeof duracaoVideoSegundosDoJob === "number" &&
+    Number.isFinite(duracaoVideoSegundosDoJob) &&
+    duracaoVideoSegundosDoJob > 0
+      ? duracaoVideoSegundosDoJob
+      : 0;
+
+  const duracaoConhecidaSegundos = duracaoDoJob > 0 ? duracaoDoJob : duracaoSegundosApi;
+
+  const registrarDuracaoConhecida = useCallback(
+    (duracaoSegundos: number) => {
+      if (!(duracaoSegundos > 0)) return;
+      setDuracaoSegundosApi(duracaoSegundos);
+      onDuracaoVideoConhecidaSegundos?.(duracaoSegundos);
+    },
+    [onDuracaoVideoConhecidaSegundos],
+  );
+
+  useEffect(() => {
+    setDuracaoSegundosApi(0);
+    if (duracaoDoJob > 0) return;
+    let cancelado = false;
+    void fetch(`/api/jobs/${encodeURIComponent(jobId)}/video/metadata`)
+      .then(async (resposta) => {
+        if (!resposta.ok) return null;
+        return (await resposta.json()) as { duracao_segundos?: number };
+      })
+      .then((payload) => {
+        if (cancelado || !payload) return;
+        const dur = payload.duracao_segundos;
+        if (typeof dur === "number" && Number.isFinite(dur) && dur > 0) {
+          registrarDuracaoConhecida(dur);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelado = true;
+    };
+  }, [duracaoDoJob, jobId, registrarDuracaoConhecida]);
+
+  const estadoInline = useEstadoUiPlayerVideoTranscribrothers(
+    videoElementoMontado,
+    duracaoConhecidaSegundos,
+  );
   const estadoModal = useEstadoUiPlayerVideoTranscribrothers(
     modalTelaMaiorAberto ? videoModalMontado : null,
+    duracaoConhecidaSegundos,
   );
 
   const handlersInline = criarHandlersControlesVideoTranscribrothers(videoElementoMontado, estadoInline);
@@ -509,7 +652,19 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
             className={classNameVideo}
             src={urlVideo}
             playsInline
-            preload="metadata"
+            preload="auto"
+            onLoadedMetadata={(evento) => {
+              const alvo = evento.currentTarget;
+              if (duracaoDoJob > 0) return;
+              const dur = lerDuracaoSegundosElementoVideoPlayerTranscribrothers(alvo);
+              if (dur > 0) {
+                registrarDuracaoConhecida(dur);
+                return;
+              }
+              tentarDescobrirDuracaoVideoPorSeekAoFimNavegadorTranscribrothers(alvo, (duracaoSegundos) => {
+                registrarDuracaoConhecida(duracaoSegundos);
+              });
+            }}
             onClick={alternarPlayPausePeloCliqueNoVideo}
           />
           <button
@@ -562,6 +717,7 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
                       className="tb-video tb-video--modal-tela-maior"
                       src={urlVideo}
                       playsInline
+                      preload="metadata"
                       autoPlay
                       onClick={() => handlersModal.aoAlternarPlayPause()}
                     />

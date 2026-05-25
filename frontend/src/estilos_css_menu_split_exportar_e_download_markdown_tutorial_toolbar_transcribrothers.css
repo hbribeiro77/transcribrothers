@@ -1,0 +1,132 @@
+.tb-toolbar-split {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.tb-toolbar-split-botoes {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.tb-toolbar-split--aberto .tb-toolbar-split-botoes {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.tb-toolbar-split-principal,
+.tb-toolbar-split-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.tb-toolbar-split-principal {
+  width: 32px;
+  height: 32px;
+}
+
+.tb-toolbar-split-caret {
+  width: 26px;
+  height: 32px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.tb-toolbar-split--exportar .tb-toolbar-split-principal:hover:not(:disabled),
+.tb-toolbar-split--exportar .tb-toolbar-split-caret:hover:not(:disabled) {
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.tb-toolbar-split--download .tb-toolbar-split-principal:hover:not(:disabled),
+.tb-toolbar-split--download .tb-toolbar-split-caret:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.tb-toolbar-split-principal:disabled,
+.tb-toolbar-split-caret:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tb-toolbar-split-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 120;
+  min-width: 240px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.12),
+    0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.tb-toolbar-split-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.tb-toolbar-split-menu-item:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.tb-toolbar-split-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tb-toolbar-split-menu-item--gitlab:hover:not(:disabled) {
+  background: #fff7ed;
+}
+
+.tb-toolbar-split-menu-item--com-detalhe {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.tb-toolbar-split-menu-item--pdf {
+
+.tb-toolbar-split-menu-item--pdf:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.tb-toolbar-split-menu-item-rotulo-principal {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.tb-toolbar-split-menu-item-detalhe {
+  font-size: 0.78rem;
+  line-height: 1.2;
+}

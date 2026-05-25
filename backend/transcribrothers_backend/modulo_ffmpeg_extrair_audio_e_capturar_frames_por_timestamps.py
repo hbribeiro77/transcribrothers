@@ -1,7 +1,11 @@
 import asyncio
-import shutil
 import subprocess
 from pathlib import Path
+
+from transcribrothers_backend.modulo_resolver_executavel_ffmpeg_ffprobe_transcribrothers import (
+    ffmpeg_disponivel_transcribrothers,
+    resolver_caminho_ffmpeg_transcribrothers,
+)
 
 
 class ErroFfmpegTranscribrothers(RuntimeError):
@@ -24,13 +28,16 @@ def limitar_timestamp_segundos_para_captura_de_frame_sem_ultrapassar_o_fim_do_vi
 
 
 def _ffmpeg_disponivel() -> bool:
-    return shutil.which("ffmpeg") is not None
+    return ffmpeg_disponivel_transcribrothers()
 
 
 def _executar_ffmpeg_subprocess_run_sync(args: list[str]) -> subprocess.CompletedProcess[bytes]:
     """Roda ffmpeg no thread pool: no Windows, `asyncio.create_subprocess_exec` pode levantar `NotImplementedError` com `WindowsSelectorEventLoop`."""
+    executavel = resolver_caminho_ffmpeg_transcribrothers()
+    if not executavel:
+        raise ErroFfmpegTranscribrothers("ffmpeg não encontrado no PATH. Instale ffmpeg e reinicie o terminal.")
     return subprocess.run(
-        ["ffmpeg", *args],
+        [executavel, *args],
         capture_output=True,
         check=False,
     )

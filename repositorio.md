@@ -51,6 +51,7 @@ Abra `http://localhost:5183`. O frontend faz proxy de `/api` para o backend.
 - `GET /api/jobs/{job_id}/tutorial-markdown/historico-versoes` — lista compacta das versões guardadas (`id`, `criado_em`, `origem`, `tamanho_caracteres`, `preview_linha`).
 - `GET /api/jobs/{job_id}/tutorial-markdown/historico-versoes/{historico_id}` — devolve `markdown`, `origem` e `criado_em` dessa versão.
 - `GET /api/config/transcribrothers/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial` — devolve os textos fixos (`system` / instruções) usados na revisão profunda e na verificação de sustentação do tutorial (somente leitura; alinhado a `pipeline_identificador` do health).
+- `POST /api/gitlab/issues/create-in-project` — JSON `{ "title", "job_id", "incluir_imagens_png_markdown" }` (ou `description` sem imagens) cria issue no projeto `portal-da-defensoria/portal-defensoria-gateway` com label `squad::bravo`. Com `job_id` e imagens ativas, o servidor envia cada PNG de `assets/` via API de upload do GitLab e reescreve `![](assets/…)` para `/uploads/…` na descrição. Requer `GITLAB_BASE_URL` e `GITLAB_TOKEN` (ex.: `env.local` na raiz).
 
 ### Job com erro — onde olhar
 

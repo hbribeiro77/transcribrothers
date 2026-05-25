@@ -11,6 +11,8 @@ def test_healthcheck_retorna_ok() -> None:
         assert data.get("status") == "ok"
         assert "pipeline_identificador" in data
         assert len(str(data.get("pipeline_identificador") or "")) > 10
+        assert "ffprobe_disponivel" in data
+        assert "ffmpeg_disponivel" in data
 
 
 def test_config_publica_transcribrothers_retorna_modelos() -> None:
@@ -42,3 +44,9 @@ def test_config_publica_transcribrothers_retorna_modelos() -> None:
         assert isinstance(data["verificacao_sustentacao_tutorial_habilitada_padrao_env"], bool)
         assert "verificacao_sustentacao_tutorial_preferencia_sqlite_definida" in data
         assert isinstance(data["verificacao_sustentacao_tutorial_preferencia_sqlite_definida"], bool)
+        assert "gitlab_criar_issue_habilitado" in data
+        assert isinstance(data["gitlab_criar_issue_habilitado"], bool)
+        assert "ffprobe_disponivel" in data
+        assert isinstance(data["ffprobe_disponivel"], bool)
+        assert "ffmpeg_disponivel" in data
+        assert isinstance(data["ffmpeg_disponivel"], bool)

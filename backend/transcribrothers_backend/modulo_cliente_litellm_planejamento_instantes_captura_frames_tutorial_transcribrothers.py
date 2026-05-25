@@ -20,6 +20,20 @@ from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat 
     ResultadoTranscricaoComSegmentos,
 )
 
+SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS = """\
+Você escolhe quais instantes de uma gravação de reunião merecem screenshot para notas de proposta de funcionalidade.
+
+Entrada: rascunho das notas (com links [MM:SS](?t=SEGUNDOS)), lista de candidatos (segundos exatos) e resumo da transcrição.
+
+Regras:
+1) Responda APENAS com um objeto JSON (sem Markdown à volta).
+2) Priorize slides, mockups, demos na tela compartilhada e mudanças visuais mencionadas — não «botão do tutorial» passo a passo.
+3) `instantes_segundos_para_capturar`: subconjunto dos candidatos (valores numéricos exatos da lista).
+4) Evite capturas redundantes no mesmo slide ou tela estática.
+5) Prefira menos capturas quando possível, sem perder evidências visuais importantes para a proposta.
+6) Campos na raiz: `instantes_segundos_para_capturar` (lista de números), `mensagem_resumo` (pt-BR, curta).
+"""
+
 SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS = """\
 Você escolhe quais instantes de um vídeo merecem screenshot para um tutorial Markdown.
 
@@ -155,6 +169,7 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
     httpx_verify: bool | str = True,
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
+    modo_notas_proposta_funcionalidade: bool = False,
 ) -> tuple[list[float], dict[str, Any]]:
     """
     Devolve instantes alinhados aos candidatos e metadados para `steps_json`.
@@ -189,7 +204,11 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
             mensagens=[
                 {
                     "role": "system",
-                    "content": SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
+                    "content": (
+                        SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS
+                        if modo_notas_proposta_funcionalidade
+                        else SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS
+                    ),
                 },
                 {"role": "user", "content": mensagem_usuario},
             ],
@@ -200,7 +219,11 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
             httpx_timeout_connect_segundos=float(configuracao.litellm_http_timeout_connect_segundos),
             httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
             steps_para_log_decisoes_ia=steps_para_log_decisoes_ia,
-            log_etapa="planejamento_instantes_captura_frames_tutorial",
+            log_etapa=(
+                "planejamento_instantes_captura_notas_proposta"
+                if modo_notas_proposta_funcionalidade
+                else "planejamento_instantes_captura_frames_tutorial"
+            ),
             log_resumo_pedido=f"{len(candidatos)} candidatos; teto {max_capturas_apos_limites}",
             log_metadados={"candidatos": len(candidatos)},
         )

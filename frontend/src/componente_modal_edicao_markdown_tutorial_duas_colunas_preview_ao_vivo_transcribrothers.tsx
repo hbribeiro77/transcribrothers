@@ -221,6 +221,9 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
   const contadorArrastarImagemSobreEditorMarkdownRef = useRef(0);
   const [arrastarImagemSobreEditorMarkdown, setArrastarImagemSobreEditorMarkdown] =
     useState(false);
+  /** Mantém o padding inferior de scroll extra após o primeiro alinhamento preview→editor (evita “pulo” ao sumir o marcador). */
+  const [rolagemExtraInferiorEditorMarkdownPersistenteAtiva, setRolagemExtraInferiorEditorMarkdownPersistenteAtiva] =
+    useState(false);
   const espelhamentoEditorParaPreviewHabilitadoRef = useRef(
     lerPreferenciaEspelhamentoEditorParaPreviewMarkdownModalTranscribrothers(),
   );
@@ -366,6 +369,10 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
     [calcularContextoPosicaoEditorMarkdownTranscribrothers],
   );
 
+  const ativarRolagemExtraInferiorPersistenteEditorMarkdownTranscribrothers = useCallback(() => {
+    setRolagemExtraInferiorEditorMarkdownPersistenteAtiva(true);
+  }, []);
+
   const ocultarMarcadorCaretEspelhoPreviewMarkdownTranscribrothers = useCallback(() => {
     marcadorCaretEspelhoPreviewAtivoRef.current = false;
     const envoltorio = refEnvoltorioScrollEditorMarkdown.current;
@@ -379,6 +386,7 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
         textarea,
       );
     }
+    /* Só remove o destaque visual do caret; a rolagem extra inferior permanece na sessão da modal. */
     textarea?.classList.remove("tb-modal-md-edit-textarea--caret-destaque-espelho-preview");
     if (timerOcultarMarcadorCaretEspelhoPreviewRef.current != null) {
       window.clearTimeout(timerOcultarMarcadorCaretEspelhoPreviewRef.current);
@@ -664,6 +672,7 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
 
       evento.preventDefault();
       usuarioRolouPreviewManualmenteRef.current = true;
+      ativarRolagemExtraInferiorPersistenteEditorMarkdownTranscribrothers();
 
       posicionarCursorTextareaNaLinhaMarkdownTranscribrothers(
         textarea,
@@ -701,6 +710,7 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
     [
       aplicarIndicadorVisualBlocoAtivoPreviewMarkdownTranscribrothers,
       aplicarMarcadorCaretEspelhoPreviewMarkdownTranscribrothers,
+      ativarRolagemExtraInferiorPersistenteEditorMarkdownTranscribrothers,
       calcularContextoPosicaoEditorMarkdownTranscribrothers,
       secoesPreviewMarkdown,
       valorMarkdown,
@@ -1353,7 +1363,15 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
             >
               <textarea
                 ref={refTextareaEdicaoMarkdown}
-                className="tb-input tb-modal-md-edit-textarea"
+                className={[
+                  "tb-input",
+                  "tb-modal-md-edit-textarea",
+                  rolagemExtraInferiorEditorMarkdownPersistenteAtiva
+                    ? "tb-modal-md-edit-textarea--rolagem-extra-inferior-editor"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 aria-label="Editar Markdown do tutorial"
                 spellCheck={false}
                 value={valorMarkdown}

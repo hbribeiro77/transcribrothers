@@ -118,6 +118,22 @@ Regras obrigatórias:
 JSON de entrada:
 """
 
+INSTRUCAO_LITELLM_REGENERACAO_PROJETO_EM_BRANCO_SEM_VIDEO_TRANSCRIBROTHERS = """Você é um editor técnico. Este job é um **projeto em branco**: não há vídeo, transcrição de áudio nem frames capturados do pipeline.
+
+A seção «Tutorial Markdown atual» (quando fornecida abaixo) é a **única fonte de verdade** sobre o conteúdo. O JSON de metadados pode ter transcrição e `frames` vazios — isso é só formato técnico; **não use o JSON para inventar conteúdo** nem trate a ausência de dados como pedido para criar um tutorial de exemplo.
+
+Regras obrigatórias:
+1) Produza a versão **completa** do Markdown revisado, obedecendo às instruções do revisor humano (se houver).
+2) **Proibido** inventar tutoriais fictícios, animais, produtos ou passos que não estejam no Markdown atual ou nas instruções explícitas do revisor.
+3) **Proibido** criar `![](assets/nome.png)` para arquivos que o revisor não citou e que não aparecem no Markdown atual. Só mantenha ou cite imagens `assets/…` já existentes no texto.
+4) **Proibido** links temporais de vídeo: não use `[MM:SS](?t=...)` nem convites a assistir vídeo.
+5) Pode reorganizar, clarificar e expandir com base no documento atual, nas instruções humanas e nos blocos «Contexto adicional» / imagens anexadas a este pedido (se houver).
+6) Imagens anexadas neste pedido aparecem como `frames` no JSON e como PNG na mensagem — use-as como referência visual; cite só `assets/…` que existam.
+7) Não envolva o tutorial inteiro em um único bloco de código; só Markdown normal.
+
+JSON de entrada (metadados vazios — ignore para o conteúdo factual):
+"""
+
 
 def normalizar_instrucao_prefixo_litellm_tutorial_custom_transcribrothers(
     texto: str | None,
@@ -246,8 +262,11 @@ async def gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
     rels_png_anexo_ja_resolvidos: list[tuple[float, str]] | None = None,
     bloco_markdown_tutorial_atual_para_contexto_em_revisao: str | None = None,
     instrucao_prefixo_litellm_custom: str | None = None,
+    modo_regeneracao_projeto_em_branco_sem_video: bool = False,
+    textos_contexto_anexos_fab: list[str] | None = None,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
     log_etapa_geracao_tutorial: str = "geracao_tutorial_markdown",
+    payload_json_substituto: dict[str, Any] | None = None,
 ) -> str:
     """Retorna Markdown com timestamps [mm:ss](?t=segundos) e imagens relativas ./assets/...
 
@@ -277,29 +296,53 @@ async def gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
         if usar_visao
         else linhas_frames_completas
     )
-    payload_json = {
+    payload_json = payload_json_substituto or {
         "texto_completo": transcricao.texto_completo,
         "idioma": transcricao.idioma_detectado,
         "segmentos": _serializar_segmentos(transcricao.segmentos),
         "frames": linhas_frames_no_json,
     }
+    prefixo_efetivo = instrucao_prefixo_litellm_custom
+    if modo_regeneracao_projeto_em_branco_sem_video:
+        prefixo_efetivo = INSTRUCAO_LITELLM_REGENERACAO_PROJETO_EM_BRANCO_SEM_VIDEO_TRANSCRIBROTHERS
     instrucao = resolver_instrucao_prefixo_litellm_para_corpo_user_tutorial_markdown_transcribrothers(
         usar_visao=usar_visao,
-        instrucao_prefixo_litellm_custom=instrucao_prefixo_litellm_custom,
+        instrucao_prefixo_litellm_custom=prefixo_efetivo,
     )
-    prompt = instrucao + json.dumps(payload_json, ensure_ascii=False, indent=2)
     ctx = (bloco_markdown_tutorial_atual_para_contexto_em_revisao or "").strip()
-    if ctx:
-        prompt += (
-            "\n\n---\n## Tutorial Markdown atual (contexto — produza a nova versão completa em Markdown)\n\n"
+    if modo_regeneracao_projeto_em_branco_sem_video and ctx:
+        prompt = (
+            instrucao
+            + "\n\n---\n## Tutorial Markdown atual (fonte principal — produza a nova versão completa)\n\n"
             + ctx
-            + "\n---"
+            + "\n---\n\nMetadados técnicos (projeto sem vídeo; não use como fonte de conteúdo):\n"
+            + json.dumps(payload_json, ensure_ascii=False, indent=2)
         )
+    else:
+        prompt = instrucao + json.dumps(payload_json, ensure_ascii=False, indent=2)
+        if ctx:
+            prompt += (
+                "\n\n---\n## Tutorial Markdown atual (contexto — produza a nova versão completa em Markdown)\n\n"
+                + ctx
+                + "\n---"
+            )
     rev = (instrucoes_revisao_humana or "").strip()
     if rev:
         prompt += (
             "\n\nInstruções adicionais do revisor humano (obedeça quando forem compatíveis com as regras acima):\n"
             + rev
+        )
+
+    textos_ctx = [t.strip() for t in (textos_contexto_anexos_fab or []) if (t or "").strip()]
+    if textos_ctx:
+        blocos = []
+        for i, bloco in enumerate(textos_ctx, start=1):
+            blocos.append(f"### Anexo de texto {i}\n\n{bloco}")
+        prompt += (
+            "\n\n---\n## Contexto adicional anexado neste pedido (referência — não copie literalmente "
+            "salvo pedido do revisor)\n\n"
+            + "\n\n".join(blocos)
+            + "\n---"
         )
 
     chave = (api_key or "").strip()

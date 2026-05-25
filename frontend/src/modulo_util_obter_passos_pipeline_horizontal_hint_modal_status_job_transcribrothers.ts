@@ -105,6 +105,7 @@ const FASES_CAPTURAS_FRAMES_TRANSCRIBROTHERS = new Set([
   "capturando_frame_png_individual",
   "capturando_frames_png_sob_demanda",
   "capturando_frame_png_sob_demanda",
+  "capturando_frames_notas_proposta",
 ]);
 
 const STATUS_PREPARACAO_ATIVA_TRANSCRIBROTHERS = new Set([
@@ -163,6 +164,7 @@ function verificacaoImagensDuplicadasOmitidaEmStepsTranscribrothers(
 function capturaFramesSobDemandaEmStepsTranscribrothers(
   steps: Record<string, unknown> | null | undefined,
 ): boolean {
+  if (steps?.destino_apos_transcricao === "notas_proposta_funcionalidade") return true;
   return boolDeStepsJsonTranscribrothers(steps?.tutorial_captura_frames_sob_demanda);
 }
 
@@ -172,7 +174,9 @@ function planoCapturasAplicavelNesteJobTranscribrothers(
 ): boolean {
   if (!capturaFramesSobDemandaEmStepsTranscribrothers(steps)) return false;
   if (fase === "planejando_instantes_captura_frames_tutorial") return true;
+  if (fase === "planejando_instantes_captura_notas_proposta") return true;
   if (steps?.planejamento_instantes_captura_frames != null) return true;
+  if (steps?.planejamento_instantes_captura_notas_proposta != null) return true;
   return false;
 }
 
@@ -196,7 +200,9 @@ function estadoPassoPipelineTranscribrothers(
 function inferirIndicePassoFalhaPipelineInicialTranscribrothers(fase: string): number {
   if (FASES_PREPARACAO_CORE_TRANSCRIBROTHERS.has(fase)) return 0;
   if (fase === "gerando_rascunho_tutorial_sem_imagens") return 1;
+  if (fase === "gerando_rascunho_notas_proposta") return 1;
   if (fase === "planejando_instantes_captura_frames_tutorial") return 2;
+  if (fase === "planejando_instantes_captura_notas_proposta") return 2;
   if (FASES_CAPTURAS_FRAMES_TRANSCRIBROTHERS.has(fase)) return 3;
   if (fase === "gerando_tutorial_http_chat_completions") return 4;
   if (fase.startsWith("verificacao_imagens_duplicadas")) return 5;
@@ -204,8 +210,16 @@ function inferirIndicePassoFalhaPipelineInicialTranscribrothers(fase: string): n
   return 0;
 }
 
+function faseIndicaRegeneracaoMarkdownApenasTranscribrothers(fase: string): boolean {
+  return (
+    fase.startsWith("regenerando_somente_tutorial_litellm") ||
+    fase.startsWith("regenerando_markdown_reproducao_bug") ||
+    fase.startsWith("regenerando_markdown_notas_proposta")
+  );
+}
+
 function inferirIndicePassoFalhaPipelineRegeneracaoSimplesTranscribrothers(fase: string): number {
-  if (fase === "regenerando_somente_tutorial_litellm" || fase === "regenerando_somente_tutorial_litellm_agendado") {
+  if (faseIndicaRegeneracaoMarkdownApenasTranscribrothers(fase)) {
     return 0;
   }
   if (fase.startsWith("verificacao_imagens_duplicadas")) return 1;
@@ -301,16 +315,23 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     (STATUS_PREPARACAO_ATIVA_TRANSCRIBROTHERS.has(status) ||
       (FASES_PREPARACAO_CORE_TRANSCRIBROTHERS.has(fase) && fase !== "transcricao_concluida"));
 
-  const rascunhoAtivo = !terminal && fase === "gerando_rascunho_tutorial_sem_imagens";
+  const rascunhoAtivo =
+    !terminal &&
+    (fase === "gerando_rascunho_tutorial_sem_imagens" || fase === "gerando_rascunho_notas_proposta");
   const rascunhoConcluido =
     rascunhoAplicavel &&
     !rascunhoAtivo &&
     (boolDeStepsJsonTranscribrothers(steps?.tutorial_rascunho_sem_imagens_ok) ||
+      boolDeStepsJsonTranscribrothers(steps?.notas_proposta_rascunho_sem_imagens_ok) ||
       fase === "planejando_instantes_captura_frames_tutorial" ||
+      fase === "planejando_instantes_captura_notas_proposta" ||
       FASES_CAPTURAS_FRAMES_TRANSCRIBROTHERS.has(fase) ||
       preparacaoConcluida);
 
-  const planoAtivo = !terminal && fase === "planejando_instantes_captura_frames_tutorial";
+  const planoAtivo =
+    !terminal &&
+    (fase === "planejando_instantes_captura_frames_tutorial" ||
+      fase === "planejando_instantes_captura_notas_proposta");
   const planoConcluido =
     planoCapturasAplicavel &&
     !planoAtivo &&
@@ -320,10 +341,13 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
   const capturasConcluido =
     !capturasAtivo &&
     (fase === "gerando_tutorial_http_chat_completions" ||
+      fase === "gerando_markdown_notas_proposta_litellm" ||
       fase.startsWith("verificacao_") ||
       (terminal && status === "completed"));
 
-  const geradorAtivo = !terminal && fase === "gerando_tutorial_http_chat_completions";
+  const geradorAtivo =
+    !terminal &&
+    (fase === "gerando_tutorial_http_chat_completions" || fase === "gerando_markdown_notas_proposta_litellm");
   const geradorConcluido =
     !geradorAtivo &&
     (fase.startsWith("verificacao_") || (terminal && status === "completed"));
@@ -336,9 +360,13 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     (terminal && status === "completed" && !verifImagensAtivo);
 
   const auditorOmitido = verificacaoSustentacaoOmitidaEmStepsTranscribrothers(steps);
-  const auditorAtivo = !terminal && fase === "verificacao_sustentacao_tutorial_litellm";
+  const auditorAtivo =
+    !terminal &&
+    (fase === "verificacao_sustentacao_tutorial_litellm" ||
+      fase === "verificacao_sustentacao_notas_proposta_litellm");
   const auditorConcluido =
     fase === "verificacao_sustentacao_tutorial_concluida" ||
+    fase === "verificacao_sustentacao_notas_proposta_concluida" ||
     (terminal && status === "completed" && !auditorOmitido && !auditorAtivo);
 
   const precedenteRascunhoOk = preparacaoConcluida || rascunhoConcluido;
@@ -453,9 +481,7 @@ function montarPassosPipelineRegeneracaoSimplesTranscribrothers(
 ): PassoPipelineHorizontalModalStatusTranscribrothers[] {
   const indiceErro = falhou ? inferirIndicePassoFalhaPipelineRegeneracaoSimplesTranscribrothers(fase) : -1;
 
-  const geradorAtivo =
-    !terminal &&
-    (fase === "regenerando_somente_tutorial_litellm" || fase === "regenerando_somente_tutorial_litellm_agendado");
+  const geradorAtivo = !terminal && faseIndicaRegeneracaoMarkdownApenasTranscribrothers(fase);
   const geradorConcluido =
     !geradorAtivo &&
     (fase.startsWith("verificacao_") ||
@@ -880,6 +906,15 @@ export function resolverModoFluxoPipelineModalStatusJobTranscribrothers(
     return "revisao_profunda";
   }
   if (regeneracaoSoMd && !multifase) {
+    return "regeneracao_markdown";
+  }
+  if (boolDeStepsJsonTranscribrothers(steps?.regeneracao_reproducao_bug)) {
+    return "regeneracao_markdown";
+  }
+  if (boolDeStepsJsonTranscribrothers(steps?.regeneracao_notas_proposta)) {
+    return "regeneracao_markdown";
+  }
+  if (faseIndicaRegeneracaoMarkdownApenasTranscribrothers(fase)) {
     return "regeneracao_markdown";
   }
   return "pipeline_inicial";

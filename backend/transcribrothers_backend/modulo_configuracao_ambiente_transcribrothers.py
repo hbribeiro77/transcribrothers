@@ -18,10 +18,13 @@ def listar_caminhos_arquivos_dot_env_ordem_carregamento_para_settings_transcribr
     caminhos: list[str] = []
     p_raiz = raiz / ".env"
     p_backend = backend / ".env"
+    p_env_local = raiz / "env.local"
     if p_raiz.is_file():
         caminhos.append(str(p_raiz.resolve()))
     if p_backend.is_file():
         caminhos.append(str(p_backend.resolve()))
+    if p_env_local.is_file():
+        caminhos.append(str(p_env_local.resolve()))
     if caminhos:
         return tuple(caminhos)
     return (".env",)
@@ -95,8 +98,33 @@ class ConfiguracaoAmbienteTranscribrothers(BaseSettings):
     verificacao_redundancia_secao_markdown_desativada: bool = False
     verificacao_redundancia_secao_max_chars_corpo_outra_secao: int = 3500
     verificacao_redundancia_secao_max_outras_secoes: int = 12
-    cors_origins: str = "http://localhost:5173"
+    # GitLab — criar issue no portal-defensoria-gateway (token só no servidor; ver skill criar-issue-gitlab).
+    gitlab_base_url: str = ""
+    gitlab_token: str = ""
+    gitlab_tls_insecure_dev: bool = False
+    gitlab_create_issue_project_path: str = "portal-da-defensoria/portal-defensoria-gateway"
+    gitlab_create_issue_default_labels: str = "squad::bravo"
+    gitlab_wiki_project_path: str = "portal-da-defensoria/documentacao"
+    gitlab_wiki_slug_prefixo_pasta: str = "workshop"
+    cors_origins: str = "http://localhost:5173,http://localhost:5183,http://127.0.0.1:5183,http://127.0.0.1:8000,http://localhost:8000"
+    staging_video_ttl_horas: float = 4.0
     transcribrothers_data_dir: Path = Path("./data")
+    # Caminhos explícitos quando o uvicorn não herda o PATH do terminal (ex.: ffprobe do WinGet).
+    ffmpeg_path: str = ""
+    ffprobe_path: str = ""
+    ffmpeg_bin_dir: str = ""
+
+    @field_validator("gitlab_tls_insecure_dev", mode="before")
+    @classmethod
+    def _parsear_gitlab_tls_insecure_dev_de_string_ambiente(cls, v: object) -> bool:
+        if isinstance(v, bool):
+            return v
+        if v is None:
+            return False
+        s = str(v).strip().lower()
+        if s in ("1", "true", "yes", "on"):
+            return True
+        return False
 
     @field_validator("litellm_http_verify_ssl", mode="before")
     @classmethod

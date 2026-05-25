@@ -39,22 +39,15 @@ from transcribrothers_backend.modulo_controle_cancelamento_pipeline_jobs_transcr
 from transcribrothers_backend.modulo_constante_identificador_versao_pipeline_diagnostico_transcribrothers import (
     IDENTIFICADOR_VERSAO_PIPELINE_DIAGNOSTICO_TRANSCRIBROTHERS,
 )
-from transcribrothers_backend.modulo_persistencia_arquivo_json_checkpoint_transcricao_multimodal_litellm_por_janelas_transcribrothers import (
-    CHECKPOINT_VERSAO_ATUAL_TRANSCRICAO_MULTIMODAL_JANELAS_TRANSCRIBROTHERS,
-    apagar_arquivo_checkpoint_transcricao_multimodal_janelas_se_existir_transcribrothers,
-    carregar_checkpoint_transcricao_multimodal_janelas_se_valido_transcribrothers,
-    gravar_ou_mesclar_checkpoint_transcricao_multimodal_janelas_transcribrothers,
+from transcribrothers_backend.modulo_pipeline_transcrever_audio_wav_janelas_multimodal_ou_whisper_transcribrothers import (
+    transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers,
 )
 from transcribrothers_backend.modulo_persistencia_runtime_config_transcricao_multimodal_sqlite_transcribrothers import (
     aplicar_overrides_transcricao_multimodal_na_configuracao_transcribrothers,
     obter_overrides_transcricao_multimodal_runtime_do_sqlite_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
-    TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO,
-    normalizar_backend_transcricao_audio_configurado,
     resolver_api_key_e_api_base_para_chamada_litellm,
-    resolver_api_key_e_base_url_para_transcricao_whisper_api_openai_compativel,
-    resolver_modelo_para_transcricao_litellm_multimodal_audio,
     resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm,
 )
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
@@ -72,9 +65,6 @@ from transcribrothers_backend.modulo_metadados_google_drive_publico_arquivo_por_
 from transcribrothers_backend.modulo_ffmpeg_extrair_audio_e_capturar_frames_por_timestamps import (
     ErroFfmpegTranscribrothers,
     amostrar_indices_por_limite_por_minuto,
-    converter_wav_para_aac_m4a_para_caminho_transcribrothers,
-    converter_wav_para_mp3_para_caminho_transcribrothers,
-    converter_wav_para_opus_ogg_para_caminho_transcribrothers,
     extrair_audio_wav_de_video_para_caminho,
     reduzir_lista_indice_para_no_maximo_n_itens_transcribrothers,
 )
@@ -84,17 +74,8 @@ from transcribrothers_backend.modulo_obter_duracao_midia_segundos_via_ffprobe im
 from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat import (
     ResultadoTranscricaoComSegmentos,
     SegmentoTranscricaoComTempo,
-    TranscriberOpenAIWhisperComSegmentos,
-)
-from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_json_segmentos import (
-    TranscriberLiteLLmMultimodalAudioJsonSegmentos,
-)
-from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_janelas_mesclagem_segmentos_transcribrothers import (
-    listar_janelas_temporais_segundos_para_transcricao_multimodal_litellm_transcribrothers,
-    transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_reutilizar_artefatos_midia_pipeline_job_retry_transcribrothers import (
-    deve_reutilizar_audio_inline_codificado_transcricao_multimodal_pipeline_retry_transcribrothers,
     deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers,
     deve_reutilizar_video_entrada_pipeline_sem_redownload_transcribrothers,
     steps_json_job_para_reexecucao_pipeline_transcribrothers,
@@ -239,6 +220,20 @@ async def _executar_verificacao_sustentacao_tutorial_apos_geracao_markdown_se_at
         )
         return
 
+    from transcribrothers_backend.modulo_util_snapshot_regeneracao_tutorial_projeto_em_branco_transcribrothers import (
+        job_steps_indicam_projeto_em_branco_transcribrothers,
+    )
+
+    if job_steps_indicam_projeto_em_branco_transcribrothers(steps):
+        steps["verificacao_sustentacao_tutorial"] = (
+            blob_verificacao_sustentacao_omitida_por_configuracao_transcribrothers(
+                motivo="projeto_em_branco_sem_transcricao"
+            )
+        )
+        steps["pipeline_fase"] = "verificacao_sustentacao_tutorial_concluida"
+        await _atualizar_job(session_factory, job_id, steps=dict(steps))
+        return
+
     _levantar_se_cancelamento_pipeline_solicitado(job_id)
     steps["pipeline_fase"] = "verificacao_sustentacao_tutorial_litellm"
     await _atualizar_job(session_factory, job_id, steps=dict(steps))
@@ -369,6 +364,31 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         steps["pipeline_identificador"] = IDENTIFICADOR_VERSAO_PIPELINE_DIAGNOSTICO_TRANSCRIBROTHERS
         steps["pipeline_fase"] = "metadados_job_carregados"
 
+        destino_pipeline = str(job_steps.get("destino_apos_transcricao") or "gerar_tutorial").strip()
+        if destino_pipeline == "reproducao_bug":
+            from transcribrothers_backend.modulo_pipeline_job_reproducao_bug_recbrothers_transcribrothers import (
+                executar_pipeline_job_reproducao_bug_recbrothers_em_background,
+            )
+
+            await executar_pipeline_job_reproducao_bug_recbrothers_em_background(
+                job_id=job_id,
+                session_factory=session_factory,
+                configuracao=configuracao,
+            )
+            return
+
+        if destino_pipeline == "notas_proposta_funcionalidade":
+            from transcribrothers_backend.modulo_pipeline_job_notas_proposta_funcionalidade_transcribrothers import (
+                executar_pipeline_job_notas_proposta_funcionalidade_em_background,
+            )
+
+            await executar_pipeline_job_notas_proposta_funcionalidade_em_background(
+                job_id=job_id,
+                session_factory=session_factory,
+                configuracao=configuracao,
+            )
+            return
+
         await marcar(StatusJobTranscribrothers.downloading)
         work.mkdir(parents=True, exist_ok=True)
 
@@ -435,216 +455,27 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
         await marcar(StatusJobTranscribrothers.transcribing)
-        steps["pipeline_fase"] = "transcrevendo_audio"
-        backend_tr = normalizar_backend_transcricao_audio_configurado(configuracao)
-        if backend_tr == TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO:
-            modelo_tr = resolver_modelo_para_transcricao_litellm_multimodal_audio(configuracao)
-            if not modelo_tr:
-                raise RuntimeError(
-                    "TRANSCRICAO_LITELLM_MODELO vazio e nenhum modelo gemini/ encontrado em "
-                    "LITELLM_MODELOS_PROVISIONADOS ou LITELLM_MODEL."
-                )
-            ak_tr, ab_tr = resolver_api_key_e_api_base_para_chamada_litellm(configuracao)
-            if not ak_tr:
-                raise RuntimeError("LITELLM_API_KEY é obrigatória para transcrição multimodal.")
-            fmt_inline = str(
-                configuracao_exec_transcricao_mm.transcricao_multimodal_formato_audio_inline or "wav"
-            ).strip().lower()
-            if fmt_inline not in ("wav", "mp3", "opus", "aac"):
-                fmt_inline = "wav"
-            transcriber = TranscriberLiteLLmMultimodalAudioJsonSegmentos(
-                model=modelo_tr,
-                api_key=ak_tr,
-                api_base=ab_tr,
-                httpx_verify=http_verify_litellm,
-                httpx_timeout_connect_segundos=float(
-                    configuracao.litellm_http_timeout_connect_segundos
-                ),
-                httpx_timeout_read_segundos=float(
-                    configuracao.litellm_http_timeout_read_segundos
-                ),
-                usar_response_format_json_object=configuracao.transcricao_litellm_chat_json_object_response_format,
-                formato_input_audio_inline=fmt_inline,
-            )
-            steps["transcricao_backend"] = TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO
-            steps["transcricao_modelo"] = modelo_tr
-        else:
-            whisper_key, whisper_base = (
-                resolver_api_key_e_base_url_para_transcricao_whisper_api_openai_compativel(
-                    configuracao
-                )
-            )
-            transcriber = TranscriberOpenAIWhisperComSegmentos(
-                api_key=whisper_key,
-                base_url=whisper_base,
-                httpx_verify=http_verify_litellm,
-            )
-            steps["transcricao_backend"] = "openai_whisper"
-        _levantar_se_cancelamento_pipeline_solicitado(job_id)
-        if backend_tr == TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO:
-            janela_seg = float(configuracao_exec_transcricao_mm.transcricao_multimodal_janela_segundos)
-            dir_janelas = work / "midia_janelas_transcricao_litellm_multimodal_temp"
-            fmt_mm = str(
-                configuracao_exec_transcricao_mm.transcricao_multimodal_formato_audio_inline or "wav"
-            ).strip().lower()
-            if fmt_mm not in ("wav", "mp3", "opus", "aac"):
-                fmt_mm = "wav"
-            mono_mm = bool(configuracao_exec_transcricao_mm.transcricao_multimodal_audio_mono)
-            br_mm = int(configuracao_exec_transcricao_mm.transcricao_multimodal_audio_bitrate_kbps)
-            audio_para_multimodal = audio
-            if fmt_mm == "mp3":
-                audio_para_multimodal = work / "audio_extraido_para_transcricao_multimodal_inline.mp3"
-            elif fmt_mm == "opus":
-                audio_para_multimodal = work / "audio_extraido_para_transcricao_multimodal_inline.opus"
-            elif fmt_mm == "aac":
-                audio_para_multimodal = work / "audio_extraido_para_transcricao_multimodal_inline.m4a"
-            if fmt_mm in ("mp3", "opus", "aac"):
-                if deve_reutilizar_audio_inline_codificado_transcricao_multimodal_pipeline_retry_transcribrothers(
-                    audio_para_multimodal,
-                    formato_audio_inline=fmt_mm,
-                    audio_bitrate_kbps=int(br_mm),
-                    audio_mono=bool(mono_mm),
-                    steps=steps,
-                ):
-                    steps["transcricao_multimodal_audio_codificado_ok"] = True
-                    steps["transcricao_multimodal_audio_codificado_reutilizado_retry"] = True
-                elif fmt_mm == "mp3":
-                    await converter_wav_para_mp3_para_caminho_transcribrothers(
-                        caminho_wav_entrada=audio,
-                        caminho_mp3_saida=audio_para_multimodal,
-                        bitrate_kbps=br_mm,
-                        forcar_mono=mono_mm,
-                    )
-                    steps["transcricao_multimodal_audio_codificado_ok"] = True
-                    steps.pop("transcricao_multimodal_audio_codificado_reutilizado_retry", None)
-                elif fmt_mm == "opus":
-                    await converter_wav_para_opus_ogg_para_caminho_transcribrothers(
-                        caminho_wav_entrada=audio,
-                        caminho_opus_saida=audio_para_multimodal,
-                        bitrate_kbps=br_mm,
-                        forcar_mono=mono_mm,
-                    )
-                    steps["transcricao_multimodal_audio_codificado_ok"] = True
-                    steps.pop("transcricao_multimodal_audio_codificado_reutilizado_retry", None)
-                else:
-                    await converter_wav_para_aac_m4a_para_caminho_transcribrothers(
-                        caminho_wav_entrada=audio,
-                        caminho_m4a_saida=audio_para_multimodal,
-                        bitrate_kbps=br_mm,
-                        forcar_mono=mono_mm,
-                    )
-                    steps["transcricao_multimodal_audio_codificado_ok"] = True
-                    steps.pop("transcricao_multimodal_audio_codificado_reutilizado_retry", None)
-            steps["transcricao_multimodal_formato_audio_inline"] = fmt_mm
-            steps["transcricao_multimodal_audio_bitrate_kbps"] = br_mm
-            steps["transcricao_multimodal_audio_mono"] = mono_mm
 
-            dur_audio_mm = await obter_duracao_video_segundos_via_ffprobe(audio_para_multimodal)
-            janelas_mm = listar_janelas_temporais_segundos_para_transcricao_multimodal_litellm_transcribrothers(
-                float(dur_audio_mm),
-                float(janela_seg),
-            )
-            total_janelas_mm = len(janelas_mm)
-            br_ck = br_mm
-            meta_checkpoint_mm: dict[str, Any] = {
-                "versao": CHECKPOINT_VERSAO_ATUAL_TRANSCRICAO_MULTIMODAL_JANELAS_TRANSCRIBROTHERS,
-                "janela_segundos": float(janela_seg),
-                "total_janelas": int(total_janelas_mm),
-                "formato_audio_inline": str(fmt_mm),
-                "audio_bitrate_kbps": int(br_ck),
-                "audio_mono": bool(mono_mm),
-                "modelo_transcricao": str(modelo_tr).strip(),
-                "duracao_audio_ffprobe": round(float(dur_audio_mm), 2),
-                "tamanho_bytes_audio_fonte": int(audio_para_multimodal.stat().st_size)
-                if audio_para_multimodal.is_file()
-                else 0,
-            }
-            carregado_ck = carregar_checkpoint_transcricao_multimodal_janelas_se_valido_transcribrothers(
-                work,
-                caminho_audio_fonte=audio_para_multimodal,
-                janela_segundos=float(janela_seg),
-                formato_audio_inline=str(fmt_mm),
-                audio_bitrate_kbps=int(br_ck),
-                audio_mono=bool(mono_mm),
-                modelo_transcricao=str(modelo_tr).strip(),
-                duracao_audio_ffprobe_atual=float(dur_audio_mm),
-                total_janelas_esperado=int(total_janelas_mm),
-            )
-            mapa_janelas_ja_feitas: dict[int, ResultadoTranscricaoComSegmentos] = {}
-            registros_tempo_inferencia_previos: list[dict[str, Any]] = []
-            if carregado_ck is not None:
-                mapa_janelas_ja_feitas, registros_tempo_inferencia_previos = carregado_ck
-                steps["transcricao_multimodal_checkpoint_trechos_salvos"] = len(mapa_janelas_ja_feitas)
-                steps["transcricao_multimodal_retomada_trechos"] = len(mapa_janelas_ja_feitas)
-                steps["transcricao_multimodal_mensagem_retomada"] = (
-                    f"Retomando com {len(mapa_janelas_ja_feitas)} trecho(s) já transcrito(s); "
-                    "os demais seguem em seguida."
-                )
-                await _atualizar_job(session_factory, job_id, steps=steps)
+        async def ao_persistir_steps_transcricao_transcribrothers(st: dict[str, Any]) -> None:
+            await _atualizar_job(session_factory, job_id, steps=st)
 
-            async def atualizar_progresso_transcricao_janelas(sub: dict[str, Any]) -> None:
-                _levantar_se_cancelamento_pipeline_solicitado(job_id)
-                nonlocal steps
-                steps = {**steps, **sub}
-                await _atualizar_job(session_factory, job_id, steps=steps)
-
-            async def apos_janela_nova_salvar_checkpoint_transcribrothers(
-                indice_base_zero: int,
-                inicio_seg: float,
-                duracao_seg: float,
-                resultado_parcial: ResultadoTranscricaoComSegmentos,
-                duracao_inferencia_seg: float,
-            ) -> None:
-                _levantar_se_cancelamento_pipeline_solicitado(job_id)
-                nonlocal steps
-                registro_t = {
-                    "indice": int(indice_base_zero) + 1,
-                    "inicio_segundos": round(float(inicio_seg), 2),
-                    "fim_segundos": round(float(inicio_seg + duracao_seg), 2),
-                    "duracao_inferencia_segundos": round(float(duracao_inferencia_seg), 2),
-                }
-                n_salvos = gravar_ou_mesclar_checkpoint_transcricao_multimodal_janelas_transcribrothers(
-                    work,
-                    meta_fixa=meta_checkpoint_mm,
-                    indice_janela_base_zero=int(indice_base_zero),
-                    resultado_janela=resultado_parcial,
-                    registro_tempo_inferencia=registro_t,
-                )
-                steps["transcricao_multimodal_checkpoint_trechos_salvos"] = int(n_salvos)
-                await _atualizar_job(session_factory, job_id, steps=steps)
-
-            transcricao = await transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_transcribrothers(
-                transcriber=transcriber,
-                caminho_audio_completo=audio_para_multimodal,
-                formato_audio_inline=fmt_mm,
-                bitrate_audio_kbps=int(br_mm),
-                forcar_mono=mono_mm,
-                janela_segundos=janela_seg,
-                diretorio_temporario_janelas=dir_janelas,
-                atualizar_progresso=atualizar_progresso_transcricao_janelas,
-                max_janelas_em_paralelo=int(
-                    configuracao_exec_transcricao_mm.transcricao_multimodal_janelas_paralelas_maxima
-                ),
-                janelas_ja_concluidas=mapa_janelas_ja_feitas or None,
-                registros_tempo_inferencia_iniciais=registros_tempo_inferencia_previos or None,
-                apos_persistir_janela_nova_concluida=apos_janela_nova_salvar_checkpoint_transcribrothers,
-            )
-            apagar_arquivo_checkpoint_transcricao_multimodal_janelas_se_existir_transcribrothers(work)
-            for k in (
-                "transcricao_multimodal_checkpoint_trechos_salvos",
-                "transcricao_multimodal_retomada_trechos",
-                "transcricao_multimodal_mensagem_retomada",
-                "transcricao_multimodal_retomando_trechos",
-            ):
-                steps.pop(k, None)
-        else:
-            transcricao = await transcriber.transcrever_arquivo_audio_com_segmentos(audio)
-        steps["transcricao_segmentos"] = len(transcricao.segmentos)
-        steps["pipeline_fase"] = "transcricao_concluida"
+        transcricao = await transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers(
+            work=work,
+            audio=audio,
+            configuracao=configuracao,
+            configuracao_exec_transcricao_mm=configuracao_exec_transcricao_mm,
+            http_verify_litellm=http_verify_litellm,
+            steps=steps,
+            ao_persistir_steps=ao_persistir_steps_transcricao_transcribrothers,
+            levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
+            pipeline_fase_inicial="transcrevendo_audio",
+        )
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
         dur = await obter_duracao_video_segundos_via_ffprobe(video)
+        if dur > 0:
+            steps["duracao_video_segundos"] = round(float(dur), 3)
         prefixo = "screenshot_tutorial_transcribrothers"
         largura_png = (
             int(configuracao.tutorial_frame_max_width_px)
@@ -974,16 +805,22 @@ async def executar_regeneracao_apenas_tutorial_markdown_em_background(
             )
 
         transcricao_corta, rels = _snapshot_dict_para_transcricao_e_rels(snap)
-        if not rels:
+        from transcribrothers_backend.modulo_util_snapshot_regeneracao_tutorial_projeto_em_branco_transcribrothers import (
+            job_steps_indicam_projeto_em_branco_transcribrothers,
+        )
+
+        eh_projeto_em_branco = job_steps_indicam_projeto_em_branco_transcribrothers(steps)
+        if not rels and not eh_projeto_em_branco:
             raise RuntimeError("Snapshot sem referências a frames (assets).")
 
         assets_dir = work / "assets_exportados_para_markdown"
-        for _t, rel in rels:
-            nome = rel.split("/")[-1]
-            if not nome or not (assets_dir / nome).is_file():
-                raise RuntimeError(
-                    f"Imagem do tutorial não encontrada no servidor (esperado em assets): {nome}"
-                )
+        if not eh_projeto_em_branco:
+            for _t, rel in rels:
+                nome = rel.split("/")[-1]
+                if not nome or not (assets_dir / nome).is_file():
+                    raise RuntimeError(
+                        f"Imagem do tutorial não encontrada no servidor (esperado em assets): {nome}"
+                    )
 
         api_key_litellm, api_base_litellm = resolver_api_key_e_api_base_para_chamada_litellm(
             configuracao
@@ -1007,11 +844,26 @@ async def executar_regeneracao_apenas_tutorial_markdown_em_background(
         steps.pop("regeneracao_tutorial_aplicada_em", None)
 
         md_atual = (job.result_markdown or "").strip()
-        rels_anexo_regeneracao = montar_rels_png_anexo_regeneracao_tutorial_markdown_mais_instrucoes_revisor_transcribrothers(
+        caminhos_ctx_fab = steps.get("regeneracao_fab_contexto_caminhos_assets_png")
+        extras_ctx: list[str] = []
+        if isinstance(caminhos_ctx_fab, list):
+            extras_ctx = [str(x) for x in caminhos_ctx_fab if isinstance(x, str)]
+        from transcribrothers_backend.modulo_util_montar_rels_anexo_regeneracao_tutorial_com_disco_projeto_em_branco_transcribrothers import (
+            montar_rels_png_anexo_regeneracao_com_pool_disco_projeto_em_branco_transcribrothers,
+        )
+
+        rels_anexo_regeneracao = montar_rels_png_anexo_regeneracao_com_pool_disco_projeto_em_branco_transcribrothers(
             markdown=md_atual,
             instrucoes_revisao_humana=instrucoes_revisao_humana,
-            rels_completos_com_tempos=rels,
+            rels_snapshot=rels,
+            assets_dir=assets_dir,
+            caminhos_assets_png_contexto_fab_extra=extras_ctx,
+            eh_projeto_em_branco=eh_projeto_em_branco,
         )
+        textos_ctx_fab = steps.get("regeneracao_fab_contexto_textos")
+        textos_anexos: list[str] = []
+        if isinstance(textos_ctx_fab, list):
+            textos_anexos = [str(x) for x in textos_ctx_fab if isinstance(x, str) and str(x).strip()]
         usar_visao_regeneracao = bool(rels_anexo_regeneracao)
         steps["geracao_tutorial_litellm_total_imagens"] = (
             len(rels_anexo_regeneracao) if usar_visao_regeneracao else 0
@@ -1068,9 +920,21 @@ async def executar_regeneracao_apenas_tutorial_markdown_em_background(
                 instrucao_prefixo_litellm_custom=_instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribrothers(
                     steps
                 ),
+                modo_regeneracao_projeto_em_branco_sem_video=eh_projeto_em_branco,
+                textos_contexto_anexos_fab=textos_anexos,
                 steps_para_log_decisoes_ia=steps,
                 log_etapa_geracao_tutorial="regeneracao_tutorial_markdown",
             )
+        from transcribrothers_backend.modulo_util_remover_referencias_imagens_assets_inexistentes_markdown_tutorial_transcribrothers import (
+            remover_linhas_imagem_markdown_com_assets_png_inexistentes_transcribrothers,
+        )
+
+        md, _linhas_img_fantasma = remover_linhas_imagem_markdown_com_assets_png_inexistentes_transcribrothers(
+            md or "",
+            assets_dir,
+        )
+        if _linhas_img_fantasma > 0:
+            steps["regeneracao_linhas_imagem_assets_inexistentes_removidas"] = int(_linhas_img_fantasma)
         md = await _executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_markdown_se_ativa_transcribrothers(
             job_id=job_id,
             session_factory=session_factory,

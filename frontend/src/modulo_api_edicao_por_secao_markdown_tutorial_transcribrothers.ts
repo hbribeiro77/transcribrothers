@@ -142,6 +142,8 @@ export async function pedirRegeneracaoSecaoMarkdownTutorialJobApiTranscribrother
     modoEscopoEdicao?: ModoEscopoEdicaoSecaoMarkdownTutorialTranscribrothers;
     trechoAncora?: string;
     interpretarEscopoAutomaticamente?: boolean;
+    caminhosAssetsPngContextoFab?: string[];
+    textosContextoFab?: string[];
   },
 ): Promise<Record<string, unknown>> {
   const trecho = opcoes.trechoAncora?.trim() || null;
@@ -160,6 +162,8 @@ export async function pedirRegeneracaoSecaoMarkdownTutorialJobApiTranscribrother
         modo_escopo_edicao: modo,
         trecho_ancora: trecho,
         interpretar_escopo_automaticamente: interpretar,
+        caminhos_assets_png_contexto_fab: opcoes.caminhosAssetsPngContextoFab ?? null,
+        textos_contexto_fab: opcoes.textosContextoFab ?? null,
       }),
     },
   );

@@ -9,9 +9,20 @@ import {
   mesclarModelosServidorComExtrasNavegadorTranscribrothers,
 } from "./modulo_armazenamento_local_modelos_litellm_extras_navegador_transcribrothers.ts";
 import { gerarMarkdownTutorialComImagensPngEmbutidasComoDataUriParaArquivoDownloadTranscribrothers } from "./modulo_util_gerar_markdown_tutorial_com_imagens_png_embutidas_data_uri_base64_download_transcribrothers.ts";
+import { abrirUrlExternaNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_url_externa_nova_aba_navegador_transcribrothers.ts";
 import { abrirTutorialMarkdownRenderizadoEmNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_tutorial_markdown_renderizado_em_nova_aba_navegador_transcribrothers.ts";
 import { baixarArquivoPdfTutorialMarkdownComImagensEmbutidasTranscribrothers } from "./modulo_util_gerar_arquivo_pdf_tutorial_markdown_com_imagens_embutidas_download_transcribrothers.ts";
-import { obterNomeBaseArquivoDownloadTutorialComTituloH1MarkdownOuJobIdTranscribrothers } from "./modulo_util_extrair_titulo_h1_markdown_e_sanitizar_nome_arquivo_download_tutorial_transcribrothers.ts";
+import {
+  extrairTituloH1MarkdownTutorialTranscribrothers,
+  obterNomeBaseArquivoDownloadTutorialComTituloH1MarkdownOuJobIdTranscribrothers,
+} from "./modulo_util_extrair_titulo_h1_markdown_e_sanitizar_nome_arquivo_download_tutorial_transcribrothers.ts";
+import { criarIssueGitlabPortalDefensoriaGatewayApiTranscribrothers } from "./modulo_api_criar_issue_gitlab_portal_defensoria_gateway_transcribrothers.ts";
+import { comentarIssueGitlabDocumentoMarkdownApiTranscribrothers } from "./modulo_api_comentar_issue_gitlab_documento_markdown_transcribrothers.ts";
+import { criarPaginaWikiGitlabDocumentacaoApiTranscribrothers } from "./modulo_api_criar_pagina_wiki_gitlab_documentacao_transcribrothers.ts";
+import { ComponenteModalConfirmarCriarIssueGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_criar_issue_gitlab_documento_markdown_transcribrothers.tsx";
+import { ComponenteModalConfirmarComentarIssueGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_comentar_issue_gitlab_documento_markdown_transcribrothers.tsx";
+import { ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_criar_pagina_wiki_gitlab_documento_markdown_transcribrothers.tsx";
+import { ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTranscribrothers } from "./componente_menu_split_exportar_e_download_markdown_tutorial_toolbar_transcribrothers.tsx";
 import {
   extrairRegistrosTempoInferenciaTranscricaoJanelasDoStepsJsonTranscribrothers,
   formatarSegundosComoMmSsTranscribrothers,
@@ -38,6 +49,7 @@ import {
   gravarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownNoNavegadorTranscribrothers,
 } from "./modulo_armazenamento_local_rascunho_instrucao_prefixo_litellm_tutorial_markdown_navegador_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
+import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_documento_projeto_em_branco_transcribrothers.ts";
 import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_tutorial_sem_referencias_video_documento_autonomo_transcribrothers.ts";
 import {
   aplicarPreviewRegeneracaoSecaoMarkdownTutorialJobApiTranscribrothers,
@@ -91,10 +103,49 @@ import {
   obterNumeroLinhaInsercaoPorTopoMarcadorNoPreviewTutorialTranscribrothers,
   obterPontoInsercaoImagemMarkdownSobPonteiroNoPreviewTutorialTranscribrothers,
 } from "./modulo_util_modo_inserir_snippet_imagem_markdown_tutorial_transcribrothers.ts";
-import { ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribrothers } from "./componente_modal_stepper_iniciar_transcricao_escolher_video_e_destino_transcribrothers.tsx";
+import {
+  ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribrothers,
+  type DestinoAposTranscricaoTranscribrothers,
+  type ImportacaoRecbrothersModalStepperTranscribrothers,
+} from "./componente_modal_stepper_iniciar_transcricao_escolher_video_e_destino_transcribrothers.tsx";
+import {
+  lerParametrosImportacaoRecbrothersDaUrl,
+  limparParametrosImportacaoRecbrothersDaUrlBarraNavegador,
+} from "./modulo_util_deep_link_importacao_recbrothers_transcribrothers.ts";
+import {
+  normalizarDestinoAposTranscricaoDeStepsJsonJobTranscribrothers,
+  obterTituloFrameDocumentoPorDestinoAposTranscricaoTranscribrothers,
+} from "./modulo_constante_destino_apos_transcricao_e_rotulo_frame_documento_transcribrothers.ts";
+import { montarSubtituloVersaoEDataFrameDocumentoTutorialTranscribrothers } from "./modulo_util_subtitulo_versao_e_data_frame_documento_tutorial_transcribrothers.ts";
+import { obterNumeroVersaoHistoricoTutorialMarkdownPorIndiceNaListaDescTranscribrothers } from "./modulo_util_rotulo_numero_versao_historico_tutorial_markdown_por_projeto_transcribrothers.ts";
+import { criarProjetoEmBrancoJobApiTranscribrothers } from "./modulo_api_criar_projeto_em_branco_job_transcribrothers.ts";
+import {
+  type AnexoContextoFabUiTranscribrothers,
+  extrairTextoDocumentoAnexoContextoFabProjetoEmBrancoApiTranscribrothers,
+  montarPayloadContextoFabParaRegeneracaoApiTranscribrothers,
+  uploadImagemAnexoContextoFabProjetoEmBrancoApiTranscribrothers,
+} from "./modulo_api_anexos_contexto_fab_projeto_em_branco_transcribrothers.ts";
+import {
+  classificarArquivoAnexoContextoFabTranscribrothers,
+  lerArquivoMarkdownOuTextoComoUtf8Transcribrothers,
+  rotuloExibicaoAnexoTextoContextoFabUiTranscribrothers,
+  truncarTextoAnexoContextoFabSeNecessarioTranscribrothers,
+} from "./modulo_util_anexo_texto_contexto_fab_projeto_em_branco_transcribrothers.ts";
+import { jobEhProjetoEmBrancoTranscribrothers } from "./modulo_util_job_eh_projeto_em_branco_transcribrothers.ts";
+import { jobEhReproducaoBugTranscribrothers } from "./modulo_util_job_eh_reproducao_bug_transcribrothers.ts";
+import { jobEhNotasPropostaFuncionalidadeTranscribrothers } from "./modulo_util_job_eh_notas_proposta_funcionalidade_transcribrothers.ts";
+import { deveAbrirModalProgressoAoCarregarProjetoTranscribrothers } from "./modulo_util_job_esta_em_regeneracao_markdown_apenas_transcribrothers.ts";
+import { regenerarMarkdownReproducaoBugJobApiTranscribrothers } from "./modulo_api_regenerar_markdown_reproducao_bug_job_transcribrothers.ts";
+import { regenerarMarkdownNotasPropostaJobApiTranscribrothers } from "./modulo_api_regenerar_markdown_notas_proposta_job_transcribrothers.ts";
+import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_REPRODUCAO_BUG_SEM_VIDEO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_reproducao_bug_sem_video_transcribrothers.ts";
+import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_NOTAS_PROPOSTA_SEM_VIDEO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_notas_proposta_sem_video_transcribrothers.ts";
 import { ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTranscribrothers } from "./componente_modal_edicao_markdown_tutorial_duas_colunas_preview_ao_vivo_transcribrothers.tsx";
+import { ComponenteModalColarTextoAnexoContextoFabProjetoEmBrancoTranscribrothers } from "./componente_modal_colar_texto_anexo_contexto_fab_projeto_em_branco_transcribrothers.tsx";
+import { ComponenteModalEscolherVersaoHistoricoTutorialMarkdownEstiloListaProjetosTranscribrothers } from "./componente_modal_escolher_versao_historico_tutorial_markdown_estilo_lista_projetos_transcribrothers.tsx";
 import { ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers } from "./componente_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.tsx";
+import { lerDuracaoVideoSegundosStepsJsonJobTranscribrothers } from "./modulo_util_ler_duracao_video_segundos_steps_json_job_transcribrothers.ts";
 import "./componente_pagina_principal_formulario_drive_preview_tutorial.css";
+import "./estilos_css_modal_escolher_versao_historico_tutorial_markdown_transcribrothers.css";
 
 type JobStatus = {
   id: string;
@@ -156,6 +207,11 @@ type ConfigPublicaTranscribrothers = {
   verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao_efetiva: boolean;
   verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao_padrao_app: boolean;
   verificacao_redundancia_secao_correcao_automatica_preferencia_sqlite_definida: boolean;
+  gitlab_criar_issue_habilitado: boolean;
+  gitlab_create_issue_project_path: string;
+  gitlab_criar_wiki_habilitado: boolean;
+  gitlab_wiki_project_path: string;
+  gitlab_wiki_slug_prefixo_pasta: string;
 };
 
 /** Resposta de GET …/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial (somente leitura). */
@@ -259,16 +315,49 @@ function normalizarRespostaConfigPublicaTranscribrothersDaApi(
     verificacao_redundancia_secao_correcao_automatica_preferencia_sqlite_definida: Boolean(
       raw.verificacao_redundancia_secao_correcao_automatica_preferencia_sqlite_definida,
     ),
+    gitlab_criar_issue_habilitado: Boolean(raw.gitlab_criar_issue_habilitado),
+    gitlab_create_issue_project_path: String(
+      raw.gitlab_create_issue_project_path ?? "portal-da-defensoria/portal-defensoria-gateway",
+    ),
+    gitlab_criar_wiki_habilitado: Boolean(raw.gitlab_criar_wiki_habilitado),
+    gitlab_wiki_project_path: String(
+      raw.gitlab_wiki_project_path ?? "portal-da-defensoria/documentacao",
+    ),
+    gitlab_wiki_slug_prefixo_pasta: String(raw.gitlab_wiki_slug_prefixo_pasta ?? "workshop"),
   };
 }
 
+function obterTituloSugeridoIssueGitlabDeMarkdownTutorialTranscribrothers(
+  markdown: string | null | undefined,
+  jobId: string,
+): string {
+  const h1 = extrairTituloH1MarkdownTutorialTranscribrothers(markdown, 254);
+  if (h1) return h1;
+  const curto = jobId.length > 8 ? `${jobId.slice(0, 8)}…` : jobId;
+  return `Documento Transcribrothers (${curto})`;
+}
+
 async function criarJobUploadArquivoLocal(
-  video: File,
+  video: File | null,
   litellmModel: string,
   tutorialLitellmInstrucaoPrefixoOpcional: string | null,
+  destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
+  stagingIdRecbrothers?: string | null,
+  cliquesJsonOpcional?: File | null,
 ): Promise<JobStatus> {
   const fd = new FormData();
-  fd.append("video", video, video.name);
+  const stagingId = (stagingIdRecbrothers || "").trim();
+  if (stagingId) {
+    fd.append("staging_id", stagingId);
+  } else if (video) {
+    fd.append("video", video, video.name);
+  } else {
+    throw new Error("Informe o vídeo ou o identificador de importação RecBrothers.");
+  }
+  if (cliquesJsonOpcional) {
+    fd.append("cliques_json", cliquesJsonOpcional, cliquesJsonOpcional.name);
+  }
+  fd.append("destino_apos_transcricao", destinoAposTranscricao);
   if (litellmModel.trim()) {
     fd.append("litellm_model", litellmModel.trim());
   }
@@ -322,6 +411,8 @@ async function regenerarSomenteTutorialMarkdownTranscribrothers(
     instrucoesRevisaoHumana?: string;
     litellmModel?: string;
     revisaoProfundaMultifase?: boolean;
+    caminhosAssetsPngContextoFab?: string[];
+    textosContextoFab?: string[];
   },
 ): Promise<JobStatus> {
   const r = await fetch(`/api/jobs/${jobId}/regenerate-tutorial`, {
@@ -331,6 +422,8 @@ async function regenerarSomenteTutorialMarkdownTranscribrothers(
       instrucoes_revisao_humana: opcoes.instrucoesRevisaoHumana?.trim() || null,
       litellm_model: opcoes.litellmModel?.trim() || null,
       revisao_profunda_multifase: Boolean(opcoes.revisaoProfundaMultifase),
+      caminhos_assets_png_contexto_fab: opcoes.caminhosAssetsPngContextoFab ?? null,
+      textos_contexto_fab: opcoes.textosContextoFab ?? null,
     }),
   });
   if (!r.ok) {
@@ -369,6 +462,7 @@ function obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothe
     regeneracao_secao_markdown: "Edição por seção (IA)",
     edicao_manual: "Edição manual",
     restauracao_versao_historico: "Restauração (histórico)",
+    projeto_em_branco: "Projeto em branco",
     desconhecido: "Desconhecido",
   };
   return mapa[origem] ?? origem;
@@ -535,6 +629,22 @@ function IconeStatusHeaderToolbarTranscribrothers() {
   );
 }
 
+function IconeProjetoEmBrancoHeaderToolbarTranscribrothers() {
+  return (
+    <IconeSvgHeaderToolbarTranscribrothers>
+      <path
+        d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M14 2v4h4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M8 12h8M8 16h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </IconeSvgHeaderToolbarTranscribrothers>
+  );
+}
+
 function IconeJobsHeaderToolbarTranscribrothers() {
   return (
     <IconeSvgHeaderToolbarTranscribrothers>
@@ -625,62 +735,6 @@ function IconeColarImagemClipboardTutorialMarkdownTranscribrothers() {
   );
 }
 
-function IconeAbrirMarkdownNovaAbaTutorialTranscribrothers() {
-  return (
-    <IconeSvgHeaderToolbarTranscribrothers>
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-      />
-    </IconeSvgHeaderToolbarTranscribrothers>
-  );
-}
-
-function IconeBaixarMarkdownTutorialTranscribrothers() {
-  return (
-    <IconeSvgHeaderToolbarTranscribrothers>
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-      />
-    </IconeSvgHeaderToolbarTranscribrothers>
-  );
-}
-
-function IconeBaixarPdfTutorialTranscribrothers() {
-  return (
-    <svg className="tb-icone-header-toolbar" viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-      />
-      <text
-        x="12"
-        y="16.4"
-        textAnchor="middle"
-        fontSize="5.25"
-        fontWeight="700"
-        fill="currentColor"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        PDF
-      </text>
-    </svg>
-  );
-}
-
 function descreverMotivoAuditorOmitidoEmPtBrTranscribrothers(motivo: string | undefined): string {
   switch (motivo) {
     case "desativada_por_configuracao_ambiente":
@@ -696,6 +750,8 @@ function descreverMotivoAuditorOmitidoEmPtBrTranscribrothers(motivo: string | un
 export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() {
   const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
   const [modalIniciarTranscricaoAberto, setModalIniciarTranscricaoAberto] = useState(false);
+  const [importacaoRecbrothersModalStepper, setImportacaoRecbrothersModalStepper] =
+    useState<ImportacaoRecbrothersModalStepperTranscribrothers | null>(null);
   const [configApi, setConfigApi] = useState<ConfigPublicaTranscribrothers | null>(null);
   const [modeloLitellm, setModeloLitellm] = useState("");
   const [modelosExtrasNavegador, setModelosExtrasNavegador] = useState<string[]>([]);
@@ -723,6 +779,25 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
   const [baixandoMarkdownComImagens, setBaixandoMarkdownComImagens] = useState(false);
   const [abrindoTutorialMarkdownNovaAba, setAbrindoTutorialMarkdownNovaAba] = useState(false);
   const [baixandoPdfTutorial, setBaixandoPdfTutorial] = useState(false);
+  const [modalCriarIssueGitlabAberto, setModalCriarIssueGitlabAberto] = useState(false);
+  const [criandoIssueGitlab, setCriandoIssueGitlab] = useState(false);
+  const [modalComentarIssueGitlabAberto, setModalComentarIssueGitlabAberto] = useState(false);
+  const [comentandoIssueGitlab, setComentandoIssueGitlab] = useState(false);
+  const [modalCriarPaginaWikiGitlabAberto, setModalCriarPaginaWikiGitlabAberto] = useState(false);
+  const [criandoPaginaWikiGitlab, setCriandoPaginaWikiGitlab] = useState(false);
+  const [anexosContextoFabProjetoEmBranco, setAnexosContextoFabProjetoEmBranco] = useState<
+    AnexoContextoFabUiTranscribrothers[]
+  >([]);
+  const [processandoArquivosAnexoContextoFab, setProcessandoArquivosAnexoContextoFab] = useState(false);
+  const [arrastandoArquivosSobreChatFab, setArrastandoArquivosSobreChatFab] = useState(false);
+  const [menuMaisConteudoFabAberto, setMenuMaisConteudoFabAberto] = useState(false);
+  const [modalTextoAnexoContextoFabAberta, setModalTextoAnexoContextoFabAberta] = useState(false);
+  const refInputImagemAnexoContextoFabTranscribrothers = useRef<HTMLInputElement | null>(null);
+  const refInputDocumentoAnexoContextoFabTranscribrothers = useRef<HTMLInputElement | null>(null);
+  const refMenuMaisConteudoFabTranscribrothers = useRef<HTMLDivElement | null>(null);
+  const refTextareaInstrucoesChatFabTranscribrothers = useRef<HTMLTextAreaElement | null>(null);
+  const contadorArrasteChatFabRef = useRef(0);
+
   const [instrucoesRegeneracaoTutorialMarkdown, setInstrucoesRegeneracaoTutorialMarkdown] =
     useState("");
   const [regenerandoTutorialMarkdown, setRegenerandoTutorialMarkdown] = useState(false);
@@ -738,6 +813,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     useState<string | null>(null);
   const [modalTranscricaoOriginalAberta, setModalTranscricaoOriginalAberta] = useState(false);
   const [modalListaJobsServidorAberta, setModalListaJobsServidorAberta] = useState(false);
+  const [modalEscolherVersaoHistoricoTutorialAberta, setModalEscolherVersaoHistoricoTutorialAberta] =
+    useState(false);
   const [modalGaleriaAssetsImagensAberta, setModalGaleriaAssetsImagensAberta] = useState(false);
   const [modalPromptTutorialLitellmAberta, setModalPromptTutorialLitellmAberta] = useState(false);
   const [padroesInstrucaoTutorialLitellm, setPadroesInstrucaoTutorialLitellm] =
@@ -866,6 +943,32 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
 
   useEffect(() => {
     setModelosExtrasNavegador(carregarListaModelosLitellmExtrasSalvosNoNavegadorTranscribrothers());
+  }, []);
+
+  useEffect(() => {
+    const params = lerParametrosImportacaoRecbrothersDaUrl();
+    if (!params.recbrothers || !params.stagingId) return;
+    const etapaInicial = params.etapa === "destino" ? 1 : 0;
+    void fetch(`/api/staging/${encodeURIComponent(params.stagingId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((meta: { total_cliques?: number } | null) => {
+        setImportacaoRecbrothersModalStepper({
+          stagingId: params.stagingId!,
+          etapaInicial,
+          destinoInicial: params.destino ?? undefined,
+          totalCliquesStaging: meta?.total_cliques,
+        });
+        setModalIniciarTranscricaoAberto(true);
+      })
+      .catch(() => {
+        setImportacaoRecbrothersModalStepper({
+          stagingId: params.stagingId!,
+          etapaInicial,
+          destinoInicial: params.destino ?? undefined,
+        });
+        setModalIniciarTranscricaoAberto(true);
+      });
+    limparParametrosImportacaoRecbrothersDaUrlBarraNavegador();
   }, []);
 
   useEffect(() => {
@@ -1200,6 +1303,147 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     }
   }, [job?.id, job?.result_markdown, pushToast, resolverNomeAssetPngParaDownloadComDuasVersoesTranscribrothers]);
 
+  const gitlabCriarIssueHabilitadoNoServidorTranscribrothers = Boolean(
+    configApi?.gitlab_criar_issue_habilitado,
+  );
+
+  const gitlabCriarWikiHabilitadoNoServidorTranscribrothers = Boolean(
+    configApi?.gitlab_criar_wiki_habilitado,
+  );
+
+  const tituloSugeridoIssueGitlabMarkdownAtualTranscribrothers = useMemo(
+    () =>
+      job?.id
+        ? obterTituloSugeridoIssueGitlabDeMarkdownTutorialTranscribrothers(
+            job.result_markdown,
+            job.id,
+          )
+        : "",
+    [job?.id, job?.result_markdown],
+  );
+
+  const quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers = useMemo(
+    () =>
+      listarCaminhosAssetsPngOrdemPrimeiraOcorrenciaMarkdownTutorialTranscribrothers(
+        job?.result_markdown ?? "",
+      ).length,
+    [job?.result_markdown],
+  );
+
+  const confirmarCriarIssueGitlabComTituloTranscribrothers = useCallback(
+    async (titulo: string, incluirImagensPngMarkdown: boolean) => {
+      const id = job?.id;
+      const md = job?.result_markdown;
+      if (!id || !md?.trim()) return;
+      setCriandoIssueGitlab(true);
+      setErro(null);
+      try {
+        const resp = await criarIssueGitlabPortalDefensoriaGatewayApiTranscribrothers({
+          titulo,
+          jobId: id,
+          incluirImagensPngMarkdown,
+        });
+        setModalCriarIssueGitlabAberto(false);
+        const enviadas = resp.imagens_png_enviadas_gitlab ?? 0;
+        const ignoradas = resp.imagens_png_ignoradas_gitlab ?? 0;
+        let msg = `Issue #${resp.iid} criada no GitLab.`;
+        if (incluirImagensPngMarkdown && enviadas > 0) {
+          msg += ` ${enviadas} imagem(ns) enviada(s).`;
+          if (ignoradas > 0) {
+            msg += ` ${ignoradas} referência(s) sem arquivo no servidor foram mantidas como assets/.`;
+          }
+        }
+        pushToast(msg, "success");
+        abrirUrlExternaNovaAbaNavegadorTranscribrothers(resp.web_url);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setCriandoIssueGitlab(false);
+      }
+    },
+    [job?.id, job?.result_markdown, pushToast],
+  );
+
+  const confirmarComentarIssueGitlabTranscribrothers = useCallback(
+    async (issueUrl: string, incluirImagensPngMarkdown: boolean) => {
+      const id = job?.id;
+      const md = job?.result_markdown;
+      if (!id || !md?.trim()) return;
+      setComentandoIssueGitlab(true);
+      setErro(null);
+      try {
+        const resp = await comentarIssueGitlabDocumentoMarkdownApiTranscribrothers({
+          issueUrl,
+          jobId: id,
+          incluirImagensPngMarkdown,
+        });
+        setModalComentarIssueGitlabAberto(false);
+        const enviadas = resp.imagens_png_enviadas_gitlab ?? 0;
+        const ignoradas = resp.imagens_png_ignoradas_gitlab ?? 0;
+        let msg = `Comentário publicado na issue #${resp.issue_iid}.`;
+        if (incluirImagensPngMarkdown && enviadas > 0) {
+          msg += ` ${enviadas} imagem(ns) enviada(s).`;
+          if (ignoradas > 0) {
+            msg += ` ${ignoradas} referência(s) sem arquivo no servidor foram mantidas como assets/.`;
+          }
+        }
+        pushToast(msg, "success");
+        abrirUrlExternaNovaAbaNavegadorTranscribrothers(resp.note_url || resp.issue_url);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setComentandoIssueGitlab(false);
+      }
+    },
+    [job?.id, job?.result_markdown, pushToast],
+  );
+
+  const confirmarCriarPaginaWikiGitlabComTituloTranscribrothers = useCallback(
+    async (titulo: string, incluirImagensPngMarkdown: boolean, prefixoPastaWiki: string) => {
+      const id = job?.id;
+      const md = job?.result_markdown;
+      if (!id || !md?.trim()) return;
+      setCriandoPaginaWikiGitlab(true);
+      setErro(null);
+      try {
+        const resp = await criarPaginaWikiGitlabDocumentacaoApiTranscribrothers({
+          titulo,
+          jobId: id,
+          prefixoPastaWiki,
+          incluirImagensPngMarkdown,
+        });
+        const enviadas = resp.imagens_png_enviadas_gitlab ?? 0;
+        const ignoradas = resp.imagens_png_ignoradas_gitlab ?? 0;
+        let msg = resp.atualizada
+          ? `Subpágina wiki atualizada (${resp.slug}).`
+          : `Subpágina wiki criada (${resp.slug}).`;
+        if (incluirImagensPngMarkdown && enviadas > 0) {
+          msg += ` ${enviadas} imagem(ns) enviada(s).`;
+          if (ignoradas > 0) {
+            msg += ` ${ignoradas} referência(s) sem arquivo no servidor foram mantidas como assets/.`;
+          }
+        }
+        if (resp.link_adicionado_no_indice_pasta) {
+          msg += ` Link incluído na página índice ${prefixoPastaWiki || "workshop"}.`;
+        }
+        pushToast(msg, "success");
+        abrirUrlExternaNovaAbaNavegadorTranscribrothers(resp.web_url);
+        setModalCriarPaginaWikiGitlabAberto(false);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setCriandoPaginaWikiGitlab(false);
+      }
+    },
+    [job?.id, job?.result_markdown, pushToast],
+  );
+
   const baixarTutorialPdfComImagensEmbutidas = useCallback(async () => {
     const md = job?.result_markdown;
     const id = job?.id;
@@ -1397,8 +1641,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     try {
       const j2 = await patchResultMarkdownJobTranscribrothers(job.id, markdownTutorialRascunhoEdicao);
       setJob(j2);
-      setModoEdicaoMarkdownTutorialAtivo(false);
-      pushToast("Tutorial guardado no servidor.", "success");
+      pushToast("Alterações guardadas no servidor. Pode continuar a editar.", "success");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErro(msg);
@@ -1408,19 +1651,45 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     }
   }, [job, markdownTutorialRascunhoEdicao, pushToast]);
 
-  async function iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(arquivo: File) {
+  async function iniciarProjetoEmBrancoSemVideoTranscribrothers() {
     setErro(null);
     setCarregando(true);
+    try {
+      const j = await criarProjetoEmBrancoJobApiTranscribrothers();
+      setJob(j as JobStatus);
+      setHistoricoVersaoTutorialSelecionadaId(null);
+      setModalIniciarTranscricaoAberto(false);
+      setModalProgressoJobAberto(false);
+      pushToast("Projeto em branco criado. Edite o documento e use imagens em assets/.", "success");
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(
+    arquivo: File,
+    destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
+    cliquesJsonOpcional?: File | null,
+  ) {
+    setErro(null);
+    setCarregando(true);
+    const stagingId = importacaoRecbrothersModalStepper?.stagingId ?? null;
     try {
       const modeloParaEnviar = modeloLitellm.trim();
       const prefixo = textoInstrucaoPrefixoLitellmTutorialUsuario.trim();
       const j = await criarJobUploadArquivoLocal(
-        arquivo,
+        stagingId ? null : arquivo,
         modeloParaEnviar,
         prefixo ? prefixo : null,
+        destinoAposTranscricao,
+        stagingId,
+        cliquesJsonOpcional ?? null,
       );
       setJob(j);
       setModalIniciarTranscricaoAberto(false);
+      setImportacaoRecbrothersModalStepper(null);
       setModalProgressoJobAberto(true);
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
@@ -1556,9 +1825,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     job && (job.status === "failed" || job.status === "cancelled");
 
   const jobPossuiSnapshotParaRegenerarTutorial =
-    job &&
-    typeof job.steps_json?.regeneracao_tutorial_snapshot === "object" &&
-    job.steps_json.regeneracao_tutorial_snapshot !== null;
+    Boolean(job) &&
+    ((typeof job.steps_json?.regeneracao_tutorial_snapshot === "object" &&
+      job.steps_json.regeneracao_tutorial_snapshot !== null) ||
+      (jobEhProjetoEmBrancoTranscribrothers(job) &&
+        (job.status === "completed" || job.status === "failed") &&
+        typeof job.result_markdown === "string" &&
+        job.result_markdown.trim().length > 0));
 
   const previewRegeneracaoTutorialMarkdownDocumentoInteiro = useMemo(
     () =>
@@ -1571,6 +1844,32 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     if (typeof md !== "string" || !md.trim()) return [];
     return listarCaminhosAssetsPngOrdemPrimeiraOcorrenciaMarkdownTutorialTranscribrothers(md);
   }, [job?.result_markdown]);
+
+  const listaImagensContextoPedidoFabProjetoEmBranco = useMemo(() => {
+    const vistos = new Set<string>();
+    const saida: { rotulo: string; caminho: string }[] = [];
+    for (const p of listaReferenciasFigurasImagensMarkdownTutorialFab) {
+      if (!vistos.has(p)) {
+        vistos.add(p);
+        saida.push({ rotulo: `Doc · ${p}`, caminho: p });
+      }
+    }
+    for (const a of anexosContextoFabProjetoEmBranco) {
+      if (a.tipo === "imagem" && !vistos.has(a.caminhoRelativo)) {
+        vistos.add(a.caminhoRelativo);
+        saida.push({ rotulo: `Anexo · ${a.nomeArquivo}`, caminho: a.caminhoRelativo });
+      }
+    }
+    return saida.map((item, i) => ({ ...item, figura: i + 1 }));
+  }, [listaReferenciasFigurasImagensMarkdownTutorialFab, anexosContextoFabProjetoEmBranco]);
+
+  const payloadContextoFabProjetoEmBrancoAtual = useMemo(
+    () =>
+      jobEhProjetoEmBrancoTranscribrothers(job)
+        ? montarPayloadContextoFabParaRegeneracaoApiTranscribrothers(anexosContextoFabProjetoEmBranco)
+        : { caminhos_assets_png_contexto_fab: [], textos_contexto_fab: [] },
+    [job, anexosContextoFabProjetoEmBranco],
+  );
 
   const textoPlanoTranscricaoOriginalSnapshotJob = useMemo(
     () => montarTextoPlanoTranscricaoOriginalAPartirDeSnapshotJobTutorialTranscribrothers(job?.steps_json),
@@ -1879,7 +2178,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     job.status === "completed" &&
     Boolean(job.steps_json?.regeneracao_apenas_markdown) &&
     !previewRegeneracaoTutorialMarkdownDocumentoInteiro &&
-    fasePipelineJobAtual === "regeneracao_tutorial_concluida";
+    typeof job.steps_json?.regeneracao_tutorial_aplicada_em !== "string" &&
+    fasePipelineJobAtual !== "regeneracao_tutorial_markdown_preview_pronta";
 
   const analiseEscopoEdicaoSecaoEmAndamento =
     Boolean(job) &&
@@ -1906,6 +2206,79 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
 
   const historicoVersaoTutorialMarkdownEstaAtivoNaUi =
     historicoVersaoTutorialSelecionadaId !== null && !modoEdicaoMarkdownTutorialAtivo;
+
+  const jobEhProjetoEmBrancoAtual = useMemo(() => jobEhProjetoEmBrancoTranscribrothers(job), [job]);
+
+  const jobEhReproducaoBugAtual = useMemo(() => jobEhReproducaoBugTranscribrothers(job), [job]);
+
+  const jobEhNotasPropostaAtual = useMemo(() => jobEhNotasPropostaFuncionalidadeTranscribrothers(job), [job]);
+
+  const destinoAposTranscricaoJobAtual = useMemo(
+    () => normalizarDestinoAposTranscricaoDeStepsJsonJobTranscribrothers(job?.steps_json?.destino_apos_transcricao),
+    [job?.steps_json?.destino_apos_transcricao],
+  );
+
+  const tituloFrameDocumentoResultadoTranscribrothers = useMemo(
+    () => obterTituloFrameDocumentoPorDestinoAposTranscricaoTranscribrothers(destinoAposTranscricaoJobAtual),
+    [destinoAposTranscricaoJobAtual],
+  );
+
+  const subtituloVersaoEDataFrameDocumentoTranscribrothers = useMemo(
+    () =>
+      montarSubtituloVersaoEDataFrameDocumentoTutorialTranscribrothers({
+        historicoVersaoSelecionadaId: historicoVersaoTutorialSelecionadaId,
+        listaHistoricoVersoes: listaHistoricoVersoesTutorialMarkdownApi,
+        criadoEmVersaoHistoricoSelecionada: metaVersaoHistoricoTutorialMarkdownSelecionada?.criado_em ?? null,
+        formatarDataHora: formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers,
+        jobUpdatedAt: job?.updated_at ?? null,
+        exibirVersaoAtualServidor: historicoVersaoTutorialSelecionadaId === null && Boolean(job?.result_markdown),
+      }),
+    [
+      historicoVersaoTutorialSelecionadaId,
+      listaHistoricoVersoesTutorialMarkdownApi,
+      metaVersaoHistoricoTutorialMarkdownSelecionada?.criado_em,
+      job?.updated_at,
+      job?.result_markdown,
+    ],
+  );
+
+  const rotuloNumeroVersaoHistoricoTutorialSelecionadaNoProjeto = useMemo(() => {
+    if (
+      historicoVersaoTutorialSelecionadaId === null ||
+      !listaHistoricoVersoesTutorialMarkdownApi?.length
+    ) {
+      return null;
+    }
+    const total = listaHistoricoVersoesTutorialMarkdownApi.length;
+    const indice = listaHistoricoVersoesTutorialMarkdownApi.findIndex(
+      (r) => r.id === historicoVersaoTutorialSelecionadaId,
+    );
+    if (indice < 0) return null;
+    const numero = obterNumeroVersaoHistoricoTutorialMarkdownPorIndiceNaListaDescTranscribrothers(
+      indice,
+      total,
+    );
+    return total > 1 ? `v${numero} de ${total}` : `v${numero}`;
+  }, [historicoVersaoTutorialSelecionadaId, listaHistoricoVersoesTutorialMarkdownApi]);
+
+  const rotuloVersaoAtualServidorModalHistoricoTutorial = useMemo(() => {
+    const total = listaHistoricoVersoesTutorialMarkdownApi?.length ?? 0;
+    if (total > 1) {
+      return `Versão atual no servidor (v${total} de ${total})`;
+    }
+    if (total === 1) {
+      return "Versão atual no servidor (v1)";
+    }
+    return "Versão atual no servidor";
+  }, [listaHistoricoVersoesTutorialMarkdownApi?.length]);
+
+  const dataHoraVersaoAtualServidorModalHistoricoTutorial = useMemo(
+    () =>
+      job?.updated_at
+        ? formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers(job.updated_at)
+        : null,
+    [job?.updated_at],
+  );
 
   const podeColarImagemClipboardNoPreviewTutorialTranscribrothers =
     jobPermiteEdicaoManualMarkdownTutorial &&
@@ -1963,11 +2336,34 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     setEscopoEdicaoSecaoManualAtivoForm(false);
     setModalPreviewRegeneracaoSecaoAberto(false);
     setModalPreviewRegeneracaoTutorialAberto(false);
+    setModalEscolherVersaoHistoricoTutorialAberta(false);
     refRecuperacaoPreviewTutorialHistoricoTentadaJobId.current = null;
     setModoPainelFabAtualizarTutorial("regeneracao_inteira");
     setFabPresetRegeneracaoInteiraTranscribrothers(null);
     setPainelRegeneracaoFabAberto(false);
+    setAnexosContextoFabProjetoEmBranco([]);
+    setModalTextoAnexoContextoFabAberta(false);
+    setMenuMaisConteudoFabAberto(false);
   }, [job?.id]);
+
+  useEffect(() => {
+    if (!menuMaisConteudoFabAberto) return;
+    const fecharSeCliqueFora = (evento: MouseEvent) => {
+      const alvo = evento.target;
+      if (!(alvo instanceof Node) || refMenuMaisConteudoFabTranscribrothers.current?.contains(alvo)) {
+        return;
+      }
+      setMenuMaisConteudoFabAberto(false);
+    };
+    document.addEventListener("mousedown", fecharSeCliqueFora);
+    return () => document.removeEventListener("mousedown", fecharSeCliqueFora);
+  }, [menuMaisConteudoFabAberto]);
+
+  useEffect(() => {
+    if (!painelRegeneracaoFabAberto) {
+      setMenuMaisConteudoFabAberto(false);
+    }
+  }, [painelRegeneracaoFabAberto]);
 
   useEffect(() => {
     if (!jobId || !modoEdicaoPorSecaoTutorialAtivo || !jobPermiteModoEdicaoPorSecaoTutorial) {
@@ -2163,9 +2559,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
           instrucoesRevisaoHumana: textoInstrucoes,
           litellmModel: modeloLitellm.trim() || undefined,
           revisaoProfundaMultifase: extra?.revisaoProfundaMultifase,
+          caminhosAssetsPngContextoFab: payloadContextoFabProjetoEmBrancoAtual.caminhos_assets_png_contexto_fab,
+          textosContextoFab: payloadContextoFabProjetoEmBrancoAtual.textos_contexto_fab,
         });
         setJob(j);
         setPainelRegeneracaoFabAberto(false);
+        setAnexosContextoFabProjetoEmBranco([]);
         setModalProgressoJobAberto(true);
         pushToast(
           extra?.revisaoProfundaMultifase
@@ -2181,7 +2580,218 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         setRegenerandoTutorialMarkdown(false);
       }
     },
+    [job, modeloLitellm, payloadContextoFabProjetoEmBrancoAtual, pushToast],
+  );
+
+  const solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers = useCallback(
+    async (textoInstrucoes: string, documentoAutonomoSemVideo: boolean) => {
+      if (!job) return;
+      setErro(null);
+      setRegenerandoTutorialMarkdown(true);
+      try {
+        const j = await regenerarMarkdownReproducaoBugJobApiTranscribrothers(job.id, {
+          instrucoesRevisaoHumana: textoInstrucoes,
+          litellmModel: modeloLitellm.trim() || undefined,
+          documentoAutonomoSemVideo,
+        });
+        setJob(j);
+        setPainelRegeneracaoFabAberto(false);
+        setModalProgressoJobAberto(true);
+        pushToast(
+          "Regeneração do roteiro pedida. Ao terminar, confira a pré-visualização antes de aplicar.",
+          "success",
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setRegenerandoTutorialMarkdown(false);
+      }
+    },
     [job, modeloLitellm, pushToast],
+  );
+
+  const solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers = useCallback(
+    async (textoInstrucoes: string, documentoAutonomoSemVideo: boolean) => {
+      if (!job) return;
+      setErro(null);
+      setRegenerandoTutorialMarkdown(true);
+      try {
+        const j = await regenerarMarkdownNotasPropostaJobApiTranscribrothers(job.id, {
+          instrucoesRevisaoHumana: textoInstrucoes,
+          litellmModel: modeloLitellm.trim() || undefined,
+          documentoAutonomoSemVideo,
+        });
+        setJob(j);
+        setPainelRegeneracaoFabAberto(false);
+        setModalProgressoJobAberto(true);
+        pushToast(
+          "Regeneração das notas pedida. Ao terminar, confira a pré-visualização antes de aplicar.",
+          "success",
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setRegenerandoTutorialMarkdown(false);
+      }
+    },
+    [job, modeloLitellm, pushToast],
+  );
+
+  const processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers = useCallback(
+    async (arquivoImagem: File) => {
+      if (!job?.id) return;
+      const r = await uploadImagemAnexoContextoFabProjetoEmBrancoApiTranscribrothers(job.id, arquivoImagem);
+      setJob(r.job);
+      setAnexosContextoFabProjetoEmBranco((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          tipo: "imagem",
+          nomeArquivo: r.nome_arquivo,
+          caminhoRelativo: r.caminho_relativo,
+        },
+      ]);
+      pushToast(`Imagem anexada ao pedido (${r.caminho_relativo}).`, "success");
+    },
+    [job?.id, pushToast],
+  );
+
+  const incluirTextoAnexoContextoFabNoPedidoTranscribrothers = useCallback(
+    (conteudoBruto: string, nomeArquivoOrigem?: string) => {
+      const { texto, truncado } = truncarTextoAnexoContextoFabSeNecessarioTranscribrothers(conteudoBruto);
+      if (!texto) {
+        pushToast("Digite ou cole algum texto antes de incluir.", "error");
+        return;
+      }
+      setAnexosContextoFabProjetoEmBranco((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          tipo: "texto",
+          conteudo: texto,
+          nomeArquivoOrigem: nomeArquivoOrigem?.trim() || undefined,
+        },
+      ]);
+      pushToast(
+        truncado
+          ? "Texto incluído (foi truncado ao limite do pedido)."
+          : nomeArquivoOrigem
+            ? `Arquivo incluído: ${nomeArquivoOrigem}`
+            : "Texto incluído no pedido.",
+        "success",
+      );
+    },
+    [pushToast],
+  );
+
+  const processarArquivoDocumentoAnexoContextoFabProjetoEmBrancoTranscribrothers = useCallback(
+    async (arquivo: File) => {
+      if (!job?.id) return;
+      const tipo = classificarArquivoAnexoContextoFabTranscribrothers(arquivo);
+      if (tipo === "imagem") {
+        await processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers(arquivo);
+        return;
+      }
+      if (tipo !== "documento") {
+        pushToast(`Formato não suportado: ${arquivo.name}`, "error");
+        return;
+      }
+      const nome = arquivo.name.toLowerCase();
+      if (nome.endsWith(".md") || nome.endsWith(".txt")) {
+        const texto = await lerArquivoMarkdownOuTextoComoUtf8Transcribrothers(arquivo);
+        incluirTextoAnexoContextoFabNoPedidoTranscribrothers(texto, arquivo.name);
+        return;
+      }
+      const r = await extrairTextoDocumentoAnexoContextoFabProjetoEmBrancoApiTranscribrothers(job.id, arquivo);
+      incluirTextoAnexoContextoFabNoPedidoTranscribrothers(r.texto, r.nome_arquivo);
+    },
+    [
+      job?.id,
+      incluirTextoAnexoContextoFabNoPedidoTranscribrothers,
+      processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers,
+      pushToast,
+    ],
+  );
+
+  const processarListaArquivosAnexoContextoFabTranscribrothers = useCallback(
+    async (lista: File[]) => {
+      if (!job?.id || lista.length === 0) return;
+      setProcessandoArquivosAnexoContextoFab(true);
+      try {
+        for (const arquivo of lista) {
+          try {
+            await processarArquivoDocumentoAnexoContextoFabProjetoEmBrancoTranscribrothers(arquivo);
+          } catch (e) {
+            pushToast(
+              e instanceof Error ? `${arquivo.name}: ${e.message}` : `${arquivo.name}: ${String(e)}`,
+              "error",
+            );
+          }
+        }
+      } finally {
+        setProcessandoArquivosAnexoContextoFab(false);
+      }
+    },
+    [job?.id, processarArquivoDocumentoAnexoContextoFabProjetoEmBrancoTranscribrothers, pushToast],
+  );
+
+  const ajustarAlturaTextareaInstrucoesChatFabTranscribrothers = useCallback(() => {
+    const el = refTextareaInstrucoesChatFabTranscribrothers.current;
+    if (!el) return;
+    const alturaMinimaPx = 72;
+    const alturaMaximaPx = 280;
+    el.style.height = "0px";
+    const conteudoPx = el.scrollHeight;
+    const altura = Math.min(Math.max(conteudoPx, alturaMinimaPx), alturaMaximaPx);
+    el.style.height = `${altura}px`;
+    el.style.overflowY = conteudoPx > alturaMaximaPx ? "auto" : "hidden";
+  }, []);
+
+  useEffect(() => {
+    if (!painelRegeneracaoFabAberto || !jobEhProjetoEmBrancoTranscribrothers(job)) return;
+    ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+  }, [
+    instrucoesRegeneracaoTutorialMarkdown,
+    painelRegeneracaoFabAberto,
+    job,
+    ajustarAlturaTextareaInstrucoesChatFabTranscribrothers,
+  ]);
+
+  const aoEntrarArrasteChatFabTranscribrothers = useCallback((evento: React.DragEvent) => {
+    if (!jobEhProjetoEmBrancoTranscribrothers(job)) return;
+    evento.preventDefault();
+    evento.stopPropagation();
+    contadorArrasteChatFabRef.current += 1;
+    setArrastandoArquivosSobreChatFab(true);
+  }, [job]);
+
+  const aoSairArrasteChatFabTranscribrothers = useCallback((evento: React.DragEvent) => {
+    if (!jobEhProjetoEmBrancoTranscribrothers(job)) return;
+    evento.preventDefault();
+    evento.stopPropagation();
+    contadorArrasteChatFabRef.current = Math.max(0, contadorArrasteChatFabRef.current - 1);
+    if (contadorArrasteChatFabRef.current === 0) {
+      setArrastandoArquivosSobreChatFab(false);
+    }
+  }, [job]);
+
+  const aoSoltarArquivosChatFabTranscribrothers = useCallback(
+    (evento: React.DragEvent) => {
+      if (!jobEhProjetoEmBrancoTranscribrothers(job)) return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      contadorArrasteChatFabRef.current = 0;
+      setArrastandoArquivosSobreChatFab(false);
+      const arquivos = Array.from(evento.dataTransfer.files ?? []);
+      if (arquivos.length > 0) {
+        void processarListaArquivosAnexoContextoFabTranscribrothers(arquivos);
+      }
+    },
+    [job, processarListaArquivosAnexoContextoFabTranscribrothers],
   );
 
   const solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers = useCallback(
@@ -2212,10 +2822,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         modoEscopoEdicao: modoEscopoEdicaoSecaoMarkdownForm,
         trechoAncora: manual ? trecho || undefined : undefined,
         interpretarEscopoAutomaticamente: !manual,
+        caminhosAssetsPngContextoFab: payloadContextoFabProjetoEmBrancoAtual.caminhos_assets_png_contexto_fab,
+        textosContextoFab: payloadContextoFabProjetoEmBrancoAtual.textos_contexto_fab,
       })) as JobStatus;
       setJob(j);
       if (opcoes?.fecharPainelFab) {
         setPainelRegeneracaoFabAberto(false);
+        setAnexosContextoFabProjetoEmBranco([]);
       }
       const interpretaEscopo = !manual;
       if (interpretaEscopo) {
@@ -2240,8 +2853,27 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       modoEscopoEdicaoSecaoMarkdownForm,
       trechoAncoraEdicaoSecaoMarkdownForm,
       modeloLitellm,
+      payloadContextoFabProjetoEmBrancoAtual,
       pushToast,
     ],
+  );
+
+  const tratarColarImagemNoPainelFabProjetoEmBrancoTranscribrothers = useCallback(
+    (evento: React.ClipboardEvent) => {
+      if (!jobEhProjetoEmBrancoTranscribrothers(job)) return;
+      const itens = evento.clipboardData?.items;
+      if (!itens?.length) return;
+      for (let i = 0; i < itens.length; i += 1) {
+        const item = itens[i];
+        if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
+        const arquivo = item.getAsFile();
+        if (!arquivo) continue;
+        evento.preventDefault();
+        void processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers(arquivo);
+        return;
+      }
+    },
+    [job, processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers],
   );
 
   const enviarPedidoPainelFabAtualizarTutorialTranscribrothers = useCallback(() => {
@@ -2252,6 +2884,27 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       });
       return;
     }
+    if (jobEhReproducaoBugTranscribrothers(job)) {
+      void solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers(
+        instrucoesRegeneracaoTutorialMarkdown,
+        fabPresetRegeneracaoInteiraTranscribrothers === "sem_video",
+      );
+      return;
+    }
+    if (jobEhNotasPropostaFuncionalidadeTranscribrothers(job)) {
+      void solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers(
+        instrucoesRegeneracaoTutorialMarkdown,
+        fabPresetRegeneracaoInteiraTranscribrothers === "sem_video",
+      );
+      return;
+    }
+    if (
+      jobEhProjetoEmBrancoTranscribrothers(job) &&
+      fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
+    ) {
+      pushToast("Revisão profunda não está disponível em projeto em branco.", "info");
+      return;
+    }
     void solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers(
       instrucoesRegeneracaoTutorialMarkdown,
       fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
@@ -2259,11 +2912,15 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         : undefined,
     );
   }, [
+    job,
     modoPainelFabAtualizarTutorial,
     instrucoesRegeneracaoTutorialMarkdown,
     fabPresetRegeneracaoInteiraTranscribrothers,
     solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers,
+    solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers,
+    solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers,
     solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers,
+    pushToast,
   ]);
 
   const copiarTranscricaoOriginalParaClipboardTranscribrothers = useCallback(async () => {
@@ -3546,18 +4203,40 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
               <p className="tb-sub tb-header-subtitulo">Vídeo local → transcrição, capturas e tutorial em Markdown.</p>
             </div>
             <div className="tb-header-divisoria" aria-hidden="true" />
-            <div className="tb-header-toolbar" role="toolbar" aria-label="Iniciar transcrição e ferramentas">
+            <div className="tb-header-toolbar" role="toolbar" aria-label="Novo projeto, abrir projeto e ferramentas">
               <button
                 type="button"
                 className="tb-btn-header tb-btn-header-primario"
                 disabled={carregando}
-                onClick={() => setModalIniciarTranscricaoAberto(true)}
+                onClick={() => {
+                  setImportacaoRecbrothersModalStepper(null);
+                  setModalIniciarTranscricaoAberto(true);
+                }}
               >
                 <IconeIniciarTranscricaoHeaderToolbarTranscribrothers />
-                <span>{carregando ? "A iniciar…" : "Iniciar transcrição"}</span>
+                <span>{carregando ? "A criar…" : "Novo projeto"}</span>
+              </button>
+              <button
+                type="button"
+                className="tb-btn-header tb-btn-header-secundario"
+                title="Criar documento Markdown sem vídeo nem transcrição"
+                disabled={carregando}
+                onClick={() => void iniciarProjetoEmBrancoSemVideoTranscribrothers()}
+              >
+                <IconeProjetoEmBrancoHeaderToolbarTranscribrothers />
+                <span>{carregando ? "A criar…" : "Projeto em branco"}</span>
+              </button>
+              <button
+                type="button"
+                className="tb-btn-header tb-btn-header-secundario"
+                title="Abrir um projeto já existente neste servidor"
+                onClick={() => setModalListaJobsServidorAberta(true)}
+              >
+                <IconeJobsHeaderToolbarTranscribrothers />
+                <span>Abrir projeto</span>
               </button>
               <div className="tb-header-toolbar-separador" aria-hidden="true" />
-              <div className="tb-header-btn-grupo" role="group" aria-label="Ferramentas do job">
+              <div className="tb-header-btn-grupo" role="group" aria-label="Ferramentas do projeto ativo">
                 {jobId ? (
                   <a
                     className="tb-btn-header tb-btn-header-secundario"
@@ -3590,15 +4269,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     <span>Status</span>
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  className="tb-btn-header tb-btn-header-secundario"
-                  title="Carregar tutoriais antigos ou apagar pastas no servidor"
-                  onClick={() => setModalListaJobsServidorAberta(true)}
-                >
-                  <IconeJobsHeaderToolbarTranscribrothers />
-                  <span>Jobs</span>
-                </button>
                 <button
                   type="button"
                   className="tb-btn-header tb-btn-header-secundario"
@@ -3637,9 +4307,17 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       <ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribrothers
         aberto={modalIniciarTranscricaoAberto}
         carregando={carregando}
-        onFechar={() => setModalIniciarTranscricaoAberto(false)}
-        onIniciar={(arquivo) => {
-          void iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(arquivo);
+        importacaoRecbrothers={importacaoRecbrothersModalStepper}
+        onFechar={() => {
+          setModalIniciarTranscricaoAberto(false);
+          setImportacaoRecbrothersModalStepper(null);
+        }}
+        onIniciar={(arquivo, destino, cliquesJsonOpcional) => {
+          void iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(
+            arquivo,
+            destino,
+            cliquesJsonOpcional,
+          );
         }}
       />
 
@@ -4024,13 +4702,85 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
           )
         : null}
 
+      <ComponenteModalColarTextoAnexoContextoFabProjetoEmBrancoTranscribrothers
+        aberta={modalTextoAnexoContextoFabAberta}
+        onFechar={() => setModalTextoAnexoContextoFabAberta(false)}
+        onIncluir={(texto) => incluirTextoAnexoContextoFabNoPedidoTranscribrothers(texto)}
+        desabilitado={regenerandoTutorialMarkdown || regeneracaoTutorialEmAndamento}
+      />
+
+      <ComponenteModalConfirmarCriarIssueGitlabDocumentoMarkdownTranscribrothers
+        aberto={modalCriarIssueGitlabAberto}
+        tituloInicial={tituloSugeridoIssueGitlabMarkdownAtualTranscribrothers}
+        projetoGitlab={configApi?.gitlab_create_issue_project_path ?? ""}
+        tamanhoDescricaoCaracteres={(job?.result_markdown ?? "").length}
+        quantidadeReferenciasImagensAssetsPng={quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers}
+        processando={criandoIssueGitlab}
+        onFechar={() => {
+          if (!criandoIssueGitlab) setModalCriarIssueGitlabAberto(false);
+        }}
+        onConfirmar={(titulo, incluirImagens) =>
+          void confirmarCriarIssueGitlabComTituloTranscribrothers(titulo, incluirImagens)
+        }
+      />
+
+      <ComponenteModalConfirmarComentarIssueGitlabDocumentoMarkdownTranscribrothers
+        aberto={modalComentarIssueGitlabAberto}
+        tamanhoComentarioCaracteres={(job?.result_markdown ?? "").length}
+        quantidadeReferenciasImagensAssetsPng={quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers}
+        processando={comentandoIssueGitlab}
+        onFechar={() => {
+          if (!comentandoIssueGitlab) setModalComentarIssueGitlabAberto(false);
+        }}
+        onConfirmar={(issueUrl, incluirImagens) =>
+          void confirmarComentarIssueGitlabTranscribrothers(issueUrl, incluirImagens)
+        }
+      />
+
+      <ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers
+        aberto={modalCriarPaginaWikiGitlabAberto}
+        tituloInicial={tituloSugeridoIssueGitlabMarkdownAtualTranscribrothers}
+        jobId={job?.id ?? ""}
+        projetoGitlab={configApi?.gitlab_wiki_project_path ?? ""}
+        prefixoPastaWikiPadrao={configApi?.gitlab_wiki_slug_prefixo_pasta ?? "workshop"}
+        wikiHabilitadaNoServidor={gitlabCriarWikiHabilitadoNoServidorTranscribrothers}
+        tamanhoConteudoCaracteres={(job?.result_markdown ?? "").length}
+        quantidadeReferenciasImagensAssetsPng={quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers}
+        processando={criandoPaginaWikiGitlab}
+        onFechar={() => {
+          if (!criandoPaginaWikiGitlab) setModalCriarPaginaWikiGitlabAberto(false);
+        }}
+        onConfirmar={(titulo, incluirImagens, prefixoPasta) =>
+          void confirmarCriarPaginaWikiGitlabComTituloTranscribrothers(
+            titulo,
+            incluirImagens,
+            prefixoPasta,
+          )
+        }
+      />
+
+      <ComponenteModalEscolherVersaoHistoricoTutorialMarkdownEstiloListaProjetosTranscribrothers
+        aberta={modalEscolherVersaoHistoricoTutorialAberta}
+        onFechar={() => setModalEscolherVersaoHistoricoTutorialAberta(false)}
+        versaoHistoricoSelecionadaId={historicoVersaoTutorialSelecionadaId}
+        onEscolherVersao={setHistoricoVersaoTutorialSelecionadaId}
+        listaVersoes={listaHistoricoVersoesTutorialMarkdownApi}
+        carregandoLista={carregandoListaHistoricoVersoesTutorialMarkdown}
+        rotuloVersaoAtualServidor={rotuloVersaoAtualServidorModalHistoricoTutorial}
+        dataHoraVersaoAtualServidor={dataHoraVersaoAtualServidorModalHistoricoTutorial}
+        formatarDataHora={formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers}
+        obterRotuloOrigemPortugues={
+          obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothers
+        }
+      />
+
       {modalListaJobsServidorAberta
         ? createPortal(
             <div className="tb-modal-job-root" role="presentation">
               <button
                 type="button"
                 className="tb-modal-job-backdrop"
-                aria-label="Fechar lista de jobs"
+                aria-label="Fechar lista de projetos"
                 onClick={() => setModalListaJobsServidorAberta(false)}
               />
               <div className="tb-modal-job-shell tb-modal-job-shell-jobs-servidor">
@@ -4041,12 +4791,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                   aria-labelledby="tb-modal-jobs-servidor-titulo"
                 >
                   <h2 id="tb-modal-jobs-servidor-titulo" className="tb-modal-job-titulo">
-                    Jobs neste servidor
+                    Projetos neste servidor
                   </h2>
                   <p className="tb-muted tb-jobs-servidor-intro">
-                    Lista os últimos jobs na base SQLite e as pastas em <code>data/jobs/</code>. Só é possível apagar
-                    jobs já terminados (concluído, falha ou cancelado); se ainda estiver a correr, use primeiro{" "}
-                    <strong>Cancelar job</strong> no modal de progresso.
+                    Lista os projetos recentes (cada um com vídeo, tutorial e histórico de versões).{" "}
+                    <strong>Carregar projeto</strong> abre na página principal; <strong>Apagar</strong> remove o
+                    registro e a pasta em <code>data/jobs/</code>. Se ainda estiver em andamento, o servidor tenta
+                    cancelar o pipeline antes de excluir.
                   </p>
                   <div className="tb-jobs-servidor-toolbar">
                     <button
@@ -4062,7 +4813,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     <p className="tb-muted tb-jobs-servidor-loading">A carregar…</p>
                   ) : null}
                   {listaJobsServidorCache && listaJobsServidorCache.length === 0 ? (
-                    <p className="tb-muted tb-jobs-servidor-vazio">Nenhum job na base.</p>
+                    <p className="tb-muted tb-jobs-servidor-vazio">Nenhum projeto na base.</p>
                   ) : null}
                   {listaJobsServidorCache && listaJobsServidorCache.length > 0 ? (
                     <div className="tb-jobs-servidor-tabela-wrap">
@@ -4118,10 +4869,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                                       try {
                                         const j = await buscarJob(row.id);
                                         setJob(j);
-                                        const terminais = ["completed", "failed", "cancelled"];
-                                        setModalProgressoJobAberto(!terminais.includes(j.status));
+                                        setModalProgressoJobAberto(
+                                          deveAbrirModalProgressoAoCarregarProjetoTranscribrothers(j),
+                                        );
+                                        if (
+                                          !deveAbrirModalProgressoAoCarregarProjetoTranscribrothers(j) &&
+                                          j.status === "generating_tutorial"
+                                        ) {
+                                          pushToast(
+                                            "Regeneração em andamento. O documento atual permanece visível; use «Progresso» no topo para acompanhar.",
+                                            "info",
+                                          );
+                                        }
                                         setModalListaJobsServidorAberta(false);
-                                        pushToast("Job carregado na página.", "success");
+                                        pushToast("Projeto carregado na página.", "success");
                                       } catch (e) {
                                         const msg = e instanceof Error ? e.message : String(e);
                                         pushToast(msg, "error");
@@ -4131,7 +4892,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                                     })();
                                   }}
                                 >
-                                  {carregandoSelecaoJobListaId === row.id ? "…" : "Carregar"}
+                                  {carregandoSelecaoJobListaId === row.id ? "…" : "Carregar projeto"}
                                 </button>
                                 <button
                                   type="button"
@@ -4139,12 +4900,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                                   disabled={apagandoJobServidorId === row.id}
                                   onClick={() => {
                                     void (async () => {
-                                      if (
-                                        typeof window !== "undefined" &&
-                                        !window.confirm(
-                                          `Apagar o job ${row.id} no servidor e a pasta em disco? Esta ação não pode ser desfeita.`,
-                                        )
-                                      ) {
+                                      const terminais = ["completed", "failed", "cancelled"];
+                                      const emAndamento = !terminais.includes(row.status);
+                                      const msgConfirmacao = emAndamento
+                                        ? `O job ${row.id} está em "${row.status}". Apagar vai cancelar o pipeline (se ainda estiver rodando) e remover registro e pasta no servidor. Continuar?`
+                                        : `Apagar o job ${row.id} no servidor e a pasta em disco? Esta ação não pode ser desfeita.`;
+                                      if (typeof window !== "undefined" && !window.confirm(msgConfirmacao)) {
                                         return;
                                       }
                                       setApagandoJobServidorId(row.id);
@@ -4329,7 +5090,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         : null}
 
       {jobId ? (
-        <section className="tb-grid tb-grid-preview">
+        <section
+          className={`tb-grid tb-grid-preview${jobEhProjetoEmBrancoAtual ? " tb-grid-preview--sem-video" : ""}`}
+        >
+          {!jobEhProjetoEmBrancoAtual ? (
           <div className="tb-card tb-grid-col-video">
             <div className="tb-md-header tb-md-header--coluna-video">
               <div className="tb-md-header-titulo-linha">
@@ -4338,7 +5102,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
             </div>
             <div className="tb-video-sticky-inner">
               <ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers
+                key={jobId}
                 jobId={jobId}
+                duracaoVideoSegundosDoJob={
+                  lerDuracaoVideoSegundosStepsJsonJobTranscribrothers(
+                    job?.steps_json as Record<string, unknown> | undefined,
+                  ) || null
+                }
                 videoRef={videoRef}
                 exibirBotaoCapturarFrame={!historicoVersaoTutorialMarkdownEstaAtivoNaUi}
                 capturandoFrame={capturandoFrameManualVideo}
@@ -4348,65 +5118,52 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                 aoVideoIndisponivelParaCapturaFrame={() => {
                   pushToast("Aguarde o vídeo carregar antes de capturar.", "error");
                 }}
+                onDuracaoVideoConhecidaSegundos={(duracaoSegundos) => {
+                  setJob((atual) => {
+                    if (!atual) return atual;
+                    const steps = { ...(atual.steps_json ?? {}), duracao_video_segundos: duracaoSegundos };
+                    return { ...atual, steps_json: steps };
+                  });
+                }}
               />
-              {jobPodeConsultarHistoricoVersoesTutorialMarkdown ? (
-                <div className="tb-historico-tutorial-versao-compacto">
-                  <label className="tb-label-historico-versao" htmlFor="tbSelectHistoricoVersaoTutorialMarkdown">
-                    Histórico do tutorial
-                  </label>
-                  <select
-                    id="tbSelectHistoricoVersaoTutorialMarkdown"
-                    className="tb-select-historico-versao-tutorial"
-                    disabled={
-                      carregandoListaHistoricoVersoesTutorialMarkdown ||
-                      listaHistoricoVersoesTutorialMarkdownApi === null
-                    }
-                    value={
-                      historicoVersaoTutorialSelecionadaId === null
-                        ? ""
-                        : String(historicoVersaoTutorialSelecionadaId)
-                    }
-                    onChange={(e) => {
-                      const v = e.target.value.trim();
-                      setHistoricoVersaoTutorialSelecionadaId(v === "" ? null : Number(v));
-                    }}
-                  >
-                    <option value="">Versão atual (servidor)</option>
-                    {(listaHistoricoVersoesTutorialMarkdownApi ?? []).map((row) => {
-                      const rótuloData =
-                        formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers(row.criado_em);
-                      const rótuloOrigem =
-                        obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothers(row.origem);
-                      const trunc =
-                        row.preview_linha.length > 44
-                          ? `${row.preview_linha.slice(0, 43)}…`
-                          : row.preview_linha;
-                      return (
-                        <option key={row.id} value={String(row.id)}>
-                          #{row.id} · {rótuloData} · {rótuloOrigem}
-                          {trunc ? ` — ${trunc}` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {listaHistoricoVersoesTutorialMarkdownApi &&
-                  listaHistoricoVersoesTutorialMarkdownApi.length === 0 &&
-                  !carregandoListaHistoricoVersoesTutorialMarkdown ? (
-                    <p className="tb-muted tb-hint-historico-vazio">
-                      Ainda não há versões guardadas (aparecem após o pipeline, regenerações ou uma edição gravada
-                      com texto novo).
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           </div>
+          ) : null}
           <div
             className={`tb-card tb-md tb-grid-col-tutorial${modoInserirImagemAssetNoPreviewTutorialAtivo ? " tb-grid-col-tutorial--modo-inserir-imagem-markdown" : ""}`}
           >
             <div className="tb-md-header">
               <div className="tb-md-header-titulo-linha">
-                <h2 id="tb-tutorial-markdown-titulo">Tutorial (Markdown)</h2>
+                <h2 id="tb-tutorial-markdown-titulo">{tituloFrameDocumentoResultadoTranscribrothers}</h2>
+                {subtituloVersaoEDataFrameDocumentoTranscribrothers ? (
+                  jobPodeConsultarHistoricoVersoesTutorialMarkdown ? (
+                    <button
+                      type="button"
+                      className={[
+                        "tb-md-header-documento-versao-disparador",
+                        modalEscolherVersaoHistoricoTutorialAberta
+                          ? "tb-md-header-documento-versao-disparador--aberto"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      title="Abrir histórico de versões deste projeto"
+                      aria-label={`Versão e data: ${subtituloVersaoEDataFrameDocumentoTranscribrothers}. Abrir lista de versões.`}
+                      aria-haspopup="dialog"
+                      aria-expanded={modalEscolherVersaoHistoricoTutorialAberta}
+                      onClick={() => setModalEscolherVersaoHistoricoTutorialAberta(true)}
+                    >
+                      <span>{subtituloVersaoEDataFrameDocumentoTranscribrothers}</span>
+                      <span className="tb-md-header-documento-versao-disparador-caret" aria-hidden>
+                        ▼
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="tb-md-header-documento-versao-data tb-muted">
+                      {subtituloVersaoEDataFrameDocumentoTranscribrothers}
+                    </span>
+                  )
+                ) : null}
                 <div
                   className="tb-md-header-toolbar"
                   role="toolbar"
@@ -4464,84 +5221,35 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                   </button>
                 ) : null}
                 {job?.result_markdown && !modoEdicaoMarkdownTutorialAtivo ? (
-                  <>
-                    <button
-                      type="button"
-                      className="tb-btn-md-toolbar-icone"
-                      disabled={
-                        abrindoTutorialMarkdownNovaAba ||
-                        baixandoMarkdownComImagens ||
-                        baixandoPdfTutorial ||
-                        historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                      }
-                      title={
-                        abrindoTutorialMarkdownNovaAba
-                          ? "Preparando visualização com imagens embutidas…"
-                          : historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                            ? "Volte à «Versão atual» no seletor sob o vídeo para abrir a versão do servidor."
-                            : "Abrir tutorial no navegador (nova aba)"
-                      }
-                      aria-label={
-                        abrindoTutorialMarkdownNovaAba
-                          ? "Preparando abertura do tutorial no navegador"
-                          : "Abrir tutorial no navegador em nova aba"
-                      }
-                      aria-busy={abrindoTutorialMarkdownNovaAba}
-                      onClick={() => void abrirTutorialMarkdownEmNovaAbaNavegador()}
-                    >
-                      <IconeAbrirMarkdownNovaAbaTutorialTranscribrothers />
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-btn-md-toolbar-icone"
-                      disabled={
-                        abrindoTutorialMarkdownNovaAba ||
-                        baixandoMarkdownComImagens ||
-                        baixandoPdfTutorial ||
-                        historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                      }
-                      title={
-                        baixandoMarkdownComImagens
-                          ? "Preparando arquivo .md com imagens embutidas…"
-                          : historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                            ? "Volte à «Versão atual» no seletor sob o vídeo para baixar o .md do servidor."
-                            : "Baixar tutorial (.md) com imagens embutidas"
-                      }
-                      aria-label={
-                        baixandoMarkdownComImagens
-                          ? "Preparando download do tutorial"
-                          : "Baixar tutorial em Markdown (.md)"
-                      }
-                      aria-busy={baixandoMarkdownComImagens}
-                      onClick={() => void baixarTutorialMarkdownComoArquivoComImagensEmbutidas()}
-                    >
-                      <IconeBaixarMarkdownTutorialTranscribrothers />
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-btn-md-toolbar-icone tb-btn-md-toolbar-icone--formato-pdf"
-                      disabled={
-                        abrindoTutorialMarkdownNovaAba ||
-                        baixandoMarkdownComImagens ||
-                        baixandoPdfTutorial ||
-                        historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                      }
-                      title={
-                        baixandoPdfTutorial
-                          ? "Gerando PDF com imagens embutidas (pode levar um minuto em tutoriais longos)…"
-                          : historicoVersaoTutorialMarkdownEstaAtivoNaUi
-                            ? "Volte à «Versão atual» no seletor sob o vídeo para exportar o PDF do servidor."
-                            : "Baixar tutorial em PDF (imagens incluídas)"
-                      }
-                      aria-label={
-                        baixandoPdfTutorial ? "Gerando PDF do tutorial" : "Baixar tutorial em PDF"
-                      }
-                      aria-busy={baixandoPdfTutorial}
-                      onClick={() => void baixarTutorialPdfComImagensEmbutidas()}
-                    >
-                      <IconeBaixarPdfTutorialTranscribrothers />
-                    </button>
-                  </>
+                  <ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTranscribrothers
+                    bloqueadoPorHistoricoVersao={historicoVersaoTutorialMarkdownEstaAtivoNaUi}
+                    abrindoNovaAba={abrindoTutorialMarkdownNovaAba}
+                    criandoIssueGitlab={criandoIssueGitlab}
+                    comentandoIssueGitlab={comentandoIssueGitlab}
+                    criandoPaginaWikiGitlab={criandoPaginaWikiGitlab}
+                    baixandoMarkdown={baixandoMarkdownComImagens}
+                    baixandoPdf={baixandoPdfTutorial}
+                    gitlabCriarIssueHabilitadoNoServidor={gitlabCriarIssueHabilitadoNoServidorTranscribrothers}
+                    gitlabCriarWikiHabilitadoNoServidor={gitlabCriarWikiHabilitadoNoServidorTranscribrothers}
+                    onAbrirTutorialMarkdownEmNovaAba={() => void abrirTutorialMarkdownEmNovaAbaNavegador()}
+                    onAbrirModalCriarIssueGitlab={() => setModalCriarIssueGitlabAberto(true)}
+                    onAbrirModalComentarIssueGitlab={() => setModalComentarIssueGitlabAberto(true)}
+                    onAbrirModalCriarPaginaWikiGitlab={() => setModalCriarPaginaWikiGitlabAberto(true)}
+                    onAvisoGitlabNaoConfigurado={() =>
+                      pushToast(
+                        "GitLab não configurado no servidor. Defina GITLAB_BASE_URL e GITLAB_TOKEN em env.local (raiz) ou backend/.env e reinicie o uvicorn.",
+                        "info",
+                      )
+                    }
+                    onAvisoGitlabWikiNaoConfigurado={() =>
+                      pushToast(
+                        "Wiki GitLab não configurada no servidor. Defina GITLAB_BASE_URL, GITLAB_TOKEN e GITLAB_WIKI_PROJECT_PATH em env.local (raiz) ou backend/.env e reinicie o uvicorn.",
+                        "info",
+                      )
+                    }
+                    onBaixarMarkdown={() => void baixarTutorialMarkdownComoArquivoComImagensEmbutidas()}
+                    onBaixarPdf={() => void baixarTutorialPdfComImagensEmbutidas()}
+                  />
                 ) : null}
                 </div>
               </div>
@@ -4710,21 +5418,32 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                 <div className="tb-banner-historico-versao-tutorial" role="status">
                   <span className="tb-banner-historico-versao-tutorial-texto">
                     Visualizando uma versão antiga do histórico
-                    {metaVersaoHistoricoTutorialMarkdownSelecionada ? (
+                    {rotuloNumeroVersaoHistoricoTutorialSelecionadaNoProjeto ||
+                    metaVersaoHistoricoTutorialMarkdownSelecionada ? (
                       <>
                         {" "}
                         (
-                        {formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers(
-                          metaVersaoHistoricoTutorialMarkdownSelecionada.criado_em || null,
-                        )}
-                        {" · "}
-                        {obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothers(
-                          metaVersaoHistoricoTutorialMarkdownSelecionada.origem,
-                        )}
-                        )
+                        {rotuloNumeroVersaoHistoricoTutorialSelecionadaNoProjeto}
+                        {rotuloNumeroVersaoHistoricoTutorialSelecionadaNoProjeto &&
+                        metaVersaoHistoricoTutorialMarkdownSelecionada
+                          ? " · "
+                          : null}
+                        {metaVersaoHistoricoTutorialMarkdownSelecionada ? (
+                          <>
+                            {formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers(
+                              metaVersaoHistoricoTutorialMarkdownSelecionada.criado_em || null,
+                            )}
+                            {" · "}
+                            {obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothers(
+                              metaVersaoHistoricoTutorialMarkdownSelecionada.origem,
+                            )}
+                          </>
+                        ) : null}
+                        ).
                       </>
-                    ) : null}
-                    .
+                    ) : (
+                      "."
+                    )}
                   </span>
                   <button
                     type="button"
@@ -4843,6 +5562,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       !modalProgressoJobAberto &&
       !modalTranscricaoOriginalAberta &&
       !modalListaJobsServidorAberta &&
+      !modalEscolherVersaoHistoricoTutorialAberta &&
       !modalGaleriaAssetsImagensAberta &&
       !modalPromptTutorialLitellmAberta &&
       !modalPreviewRegeneracaoSecaoAberto &&
@@ -4860,10 +5580,43 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                 />
               ) : null}
               {painelRegeneracaoFabAberto ? (
-                <div className="tb-fab-regen-panel" role="dialog" aria-label="Atualizar tutorial">
+                <div
+                  className={`tb-fab-regen-panel${
+                    jobEhProjetoEmBrancoAtual ? " tb-fab-regen-panel--chat-projeto-em-branco" : ""
+                  }${arrastandoArquivosSobreChatFab ? " tb-fab-regen-panel--arrastando-arquivo" : ""}${
+                    processandoArquivosAnexoContextoFab ? " tb-fab-regen-panel--processando-anexo" : ""
+                  }`}
+                  role="dialog"
+                  aria-label={
+                    jobEhProjetoEmBrancoAtual ? "Chat — atualizar documento" : "Atualizar tutorial"
+                  }
+                  onPaste={
+                    jobEhProjetoEmBrancoAtual
+                      ? tratarColarImagemNoPainelFabProjetoEmBrancoTranscribrothers
+                      : undefined
+                  }
+                  onDragEnter={jobEhProjetoEmBrancoAtual ? aoEntrarArrasteChatFabTranscribrothers : undefined}
+                  onDragLeave={jobEhProjetoEmBrancoAtual ? aoSairArrasteChatFabTranscribrothers : undefined}
+                  onDragOver={
+                    jobEhProjetoEmBrancoAtual
+                      ? (e) => {
+                          e.preventDefault();
+                        }
+                      : undefined
+                  }
+                  onDrop={jobEhProjetoEmBrancoAtual ? aoSoltarArquivosChatFabTranscribrothers : undefined}
+                >
                   <div className="tb-fab-regen-panel-header">
                     <div className="tb-fab-regen-panel-title-row">
-                      <span className="tb-fab-regen-panel-title">Atualizar tutorial</span>
+                      <span className="tb-fab-regen-panel-title">
+                        {jobEhProjetoEmBrancoAtual
+                          ? "Atualizar documento"
+                          : jobEhReproducaoBugAtual
+                            ? "Atualizar reprodução do bug"
+                            : jobEhNotasPropostaAtual
+                              ? "Atualizar notas de proposta"
+                              : "Atualizar tutorial"}
+                      </span>
                       <button
                         type="button"
                         className="tb-fab-regen-info-hint"
@@ -4882,7 +5635,64 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                       ×
                     </button>
                   </div>
-                  {listaReferenciasFigurasImagensMarkdownTutorialFab.length > 0 ? (
+                  {jobEhProjetoEmBrancoAtual ? (
+                    <div className="tb-fab-chat-anexos-secao">
+                      {anexosContextoFabProjetoEmBranco.length > 0 ||
+                      processandoArquivosAnexoContextoFab ||
+                      arrastandoArquivosSobreChatFab ? (
+                        <div className="tb-fab-chat-corpo" aria-live="polite">
+                          {processandoArquivosAnexoContextoFab ? (
+                            <p className="tb-muted tb-fab-chat-status">Processando anexos…</p>
+                          ) : null}
+                          {arrastandoArquivosSobreChatFab ? (
+                            <p className="tb-fab-chat-status tb-fab-chat-status--arraste">
+                              Solte para anexar ao pedido
+                            </p>
+                          ) : null}
+                          {anexosContextoFabProjetoEmBranco.length > 0 ? (
+                            <ul className="tb-fab-anexos-lista" aria-label="Anexos do pedido">
+                              {anexosContextoFabProjetoEmBranco.map((anexo, indiceAnexo) => (
+                                <li key={anexo.id} className="tb-fab-anexos-item">
+                                  <span className="tb-fab-anexos-item-rotulo">
+                                    {anexo.tipo === "imagem"
+                                      ? `Imagem · ${anexo.nomeArquivo}`
+                                      : `Texto · ${rotuloExibicaoAnexoTextoContextoFabUiTranscribrothers(anexo, indiceAnexo)}`}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="tb-fab-anexos-remover"
+                                    aria-label="Remover anexo"
+                                    onClick={() =>
+                                      setAnexosContextoFabProjetoEmBranco((prev) =>
+                                        prev.filter((x) => x.id !== anexo.id),
+                                      )
+                                    }
+                                  >
+                                    ×
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {listaImagensContextoPedidoFabProjetoEmBranco.length > 0 ? (
+                        <details className="tb-fab-refs-imagens-details">
+                          <summary className="tb-fab-refs-imagens-summary">
+                            Imagens que o modelo verá neste pedido
+                          </summary>
+                          <ol className="tb-fab-refs-imagens-ol">
+                            {listaImagensContextoPedidoFabProjetoEmBranco.map((item) => (
+                              <li key={item.caminho} className="tb-fab-refs-imagens-li">
+                                <strong>Figura {item.figura}</strong> — {item.rotulo} —{" "}
+                                <code className="tb-fab-refs-code">{item.caminho}</code>
+                              </li>
+                            ))}
+                          </ol>
+                        </details>
+                      ) : null}
+                    </div>
+                  ) : listaReferenciasFigurasImagensMarkdownTutorialFab.length > 0 ? (
                     <details className="tb-fab-refs-imagens-details">
                       <summary className="tb-fab-refs-imagens-summary">
                         Referências no chat (ordem do tutorial)
@@ -4897,30 +5707,89 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     </details>
                   ) : (
                     <p className="tb-muted tb-fab-refs-vazio">
-                      Nenhum <code>![](assets/…png)</code> no tutorial: cite um ficheiro existente em{" "}
-                      <code>assets/</code> no texto das instruções para o modelo receber essa imagem.
+                      Nenhum <code>![](assets/…png)</code> no documento: cite um arquivo em <code>assets/</code> nas
+                      instruções para o modelo receber essa imagem.
                     </p>
                   )}
-                  <div className="tb-fab-templates-row">
-                    <button
-                      type="button"
-                      className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === "sem_video" ? " tb-fab-template-btn--ativo" : ""}`}
-                      disabled={
-                        regenerandoTutorialMarkdown ||
-                        regeneracaoTutorialEmAndamento ||
-                        !jobPodeRegenerarSomenteMarkdown
-                      }
-                      title="Carrega instruções para tutorial sem depender do vídeo; leia o texto e clique em Enviar quando quiser"
-                      onClick={() => {
-                        setModoPainelFabAtualizarTutorial("regeneracao_inteira");
-                        setFabPresetRegeneracaoInteiraTranscribrothers("sem_video");
-                        setInstrucoesRegeneracaoTutorialMarkdown(
-                          TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS,
-                        );
-                      }}
-                    >
-                      Sem vídeo
-                    </button>
+                  <div
+                    className={`tb-fab-templates-row${
+                      jobEhProjetoEmBrancoAtual ? " tb-fab-templates-row--chat" : ""
+                    }`}
+                  >
+                    {jobEhNotasPropostaAtual ? (
+                      <button
+                        type="button"
+                        className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === null && modoPainelFabAtualizarTutorial === "regeneracao_inteira" ? " tb-fab-template-btn--ativo" : ""}`}
+                        disabled={
+                          regenerandoTutorialMarkdown ||
+                          regeneracaoTutorialEmAndamento ||
+                          !jobPodeRegenerarSomenteMarkdown
+                        }
+                        title="Regenera as notas com transcrição, imagens e instruções abaixo"
+                        onClick={() => {
+                          setModoPainelFabAtualizarTutorial("regeneracao_inteira");
+                          setFabPresetRegeneracaoInteiraTranscribrothers(null);
+                        }}
+                      >
+                        Refinar notas
+                      </button>
+                    ) : null}
+                    {jobEhReproducaoBugAtual ? (
+                      <button
+                        type="button"
+                        className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === null && modoPainelFabAtualizarTutorial === "regeneracao_inteira" ? " tb-fab-template-btn--ativo" : ""}`}
+                        disabled={
+                          regenerandoTutorialMarkdown ||
+                          regeneracaoTutorialEmAndamento ||
+                          !jobPodeRegenerarSomenteMarkdown
+                        }
+                        title="Regenera o roteiro com cliques, imagens e transcrição; descreva ajustes abaixo"
+                        onClick={() => {
+                          setModoPainelFabAtualizarTutorial("regeneracao_inteira");
+                          setFabPresetRegeneracaoInteiraTranscribrothers(null);
+                        }}
+                      >
+                        Refinar roteiro
+                      </button>
+                    ) : null}
+                    {jobEhReproducaoBugAtual || jobEhNotasPropostaAtual || !jobEhProjetoEmBrancoAtual ? (
+                      <button
+                        type="button"
+                        className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === "sem_video" ? " tb-fab-template-btn--ativo" : ""}`}
+                        disabled={
+                          regenerandoTutorialMarkdown ||
+                          regeneracaoTutorialEmAndamento ||
+                          !jobPodeRegenerarSomenteMarkdown
+                        }
+                        title={
+                          jobEhReproducaoBugAtual
+                            ? "Roteiro autônomo: só texto e imagens, sem links para o vídeo"
+                            : jobEhNotasPropostaAtual
+                              ? "Notas autônomas: só texto e imagens, sem links para o vídeo"
+                            : jobEhProjetoEmBrancoAtual
+                              ? "Regenera o documento inteiro só com o Markdown e imagens em assets (sem transcrição de vídeo)"
+                              : "Carrega instruções para tutorial sem depender do vídeo; leia o texto e clique em Enviar quando quiser"
+                        }
+                        onClick={() => {
+                          setModoPainelFabAtualizarTutorial("regeneracao_inteira");
+                          setFabPresetRegeneracaoInteiraTranscribrothers("sem_video");
+                          setInstrucoesRegeneracaoTutorialMarkdown(
+                            jobEhReproducaoBugAtual
+                              ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_REPRODUCAO_BUG_SEM_VIDEO_TRANSCRIBROTHERS
+                              : jobEhNotasPropostaAtual
+                                ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_NOTAS_PROPOSTA_SEM_VIDEO_TRANSCRIBROTHERS
+                              : jobEhProjetoEmBrancoAtual
+                                ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS
+                                : TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS,
+                          );
+                        }}
+                      >
+                        {jobEhProjetoEmBrancoAtual && !jobEhReproducaoBugAtual && !jobEhNotasPropostaAtual
+                          ? "Documento inteiro"
+                          : "Sem vídeo"}
+                      </button>
+                    ) : null}
+                    {jobEhProjetoEmBrancoAtual || jobEhReproducaoBugAtual || jobEhNotasPropostaAtual ? null : (
                     <button
                       type="button"
                       className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda" ? " tb-fab-template-btn--ativo" : ""}`}
@@ -4937,6 +5806,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     >
                       Revisão profunda
                     </button>
+                    )}
                     <button
                       type="button"
                       className={`tb-fab-template-btn${modoPainelFabAtualizarTutorial === "edicao_parcial" ? " tb-fab-template-btn--ativo" : ""}`}
@@ -4956,57 +5826,192 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                       Edição parcial
                     </button>
                   </div>
-                  <label className="tb-label" htmlFor="tb-fab-instrucoes">
-                    {modoPainelFabAtualizarTutorial === "edicao_parcial"
-                      ? "Edição parcial — o que você quer mudar"
-                      : "Regenerar documento inteiro (instruções opcionais)"}
-                  </label>
-                  <textarea
-                    id="tb-fab-instrucoes"
-                    className="tb-input tb-fab-textarea"
-                    rows={4}
-                    value={instrucoesRegeneracaoTutorialMarkdown}
-                    onChange={(e) => {
-                      setInstrucoesRegeneracaoTutorialMarkdown(e.target.value);
-                      setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
-                        preset === "sem_video" ? null : preset,
-                      );
-                    }}
-                    placeholder={
-                      modoPainelFabAtualizarTutorial === "edicao_parcial"
-                        ? "Ex.: Na intro, deixe mais claro o foco nos relatórios SEEU. Ou: nessa parte da Visão Geral, detalhe com exemplos…"
-                        : "Ex.: tom mais formal. Para UI: «Figura 2» ou cole assets/….png"
+                  {jobEhProjetoEmBrancoAtual ? (
+                    <div className="tb-fab-chat-composer">
+                      <div className="tb-fab-chat-composer-capsule">
+                        <div className="tb-fab-mais-menu-wrap" ref={refMenuMaisConteudoFabTranscribrothers}>
+                          <button
+                            type="button"
+                            className="tb-fab-mais-btn"
+                            aria-label="Adicionar conteúdo ao pedido"
+                            aria-expanded={menuMaisConteudoFabAberto}
+                            aria-haspopup="menu"
+                            disabled={
+                              processandoArquivosAnexoContextoFab ||
+                              regenerandoTutorialMarkdown ||
+                              regeneracaoTutorialEmAndamento
+                            }
+                            onClick={() => setMenuMaisConteudoFabAberto((aberto) => !aberto)}
+                          >
+                            +
+                          </button>
+                          {menuMaisConteudoFabAberto ? (
+                            <div className="tb-fab-mais-menu" role="menu">
+                              <button
+                                type="button"
+                                className="tb-fab-mais-menu-item"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuMaisConteudoFabAberto(false);
+                                  setModalTextoAnexoContextoFabAberta(true);
+                                }}
+                              >
+                                Texto
+                              </button>
+                              <button
+                                type="button"
+                                className="tb-fab-mais-menu-item"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuMaisConteudoFabAberto(false);
+                                  refInputImagemAnexoContextoFabTranscribrothers.current?.click();
+                                }}
+                              >
+                                Imagem
+                              </button>
+                              <button
+                                type="button"
+                                className="tb-fab-mais-menu-item"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuMaisConteudoFabAberto(false);
+                                  refInputDocumentoAnexoContextoFabTranscribrothers.current?.click();
+                                }}
+                              >
+                                Arquivo (.pdf, .md, .txt)
+                              </button>
+                            </div>
+                          ) : null}
+                          <input
+                            ref={refInputImagemAnexoContextoFabTranscribrothers}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            className="tb-fab-anexos-input-file"
+                            aria-hidden
+                            tabIndex={-1}
+                            onChange={(e) => {
+                              const arquivo = e.target.files?.[0];
+                              e.target.value = "";
+                              if (arquivo) {
+                                void processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers(
+                                  arquivo,
+                                );
+                              }
+                            }}
+                          />
+                          <input
+                            ref={refInputDocumentoAnexoContextoFabTranscribrothers}
+                            type="file"
+                            multiple
+                            accept=".md,.txt,.pdf,text/plain,text/markdown,application/pdf"
+                            className="tb-fab-anexos-input-file"
+                            aria-hidden
+                            tabIndex={-1}
+                            onChange={(e) => {
+                              const lista = Array.from(e.target.files ?? []);
+                              e.target.value = "";
+                              if (lista.length > 0) {
+                                void processarListaArquivosAnexoContextoFabTranscribrothers(lista);
+                              }
+                            }}
+                          />
+                        </div>
+                        <textarea
+                          ref={refTextareaInstrucoesChatFabTranscribrothers}
+                          id="tb-fab-instrucoes"
+                          className="tb-input tb-fab-chat-textarea"
+                          rows={3}
+                          value={instrucoesRegeneracaoTutorialMarkdown}
+                          onChange={(e) => {
+                            setInstrucoesRegeneracaoTutorialMarkdown(e.target.value);
+                            setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
+                              preset === "sem_video" ? null : preset,
+                            );
+                            requestAnimationFrame(() => {
+                              ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+                            });
+                          }}
+                          placeholder={
+                            modoPainelFabAtualizarTutorial === "edicao_parcial"
+                              ? "O que mudar nesta edição…"
+                              : "Mensagem para a IA (opcional)…"
+                          }
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <label className="tb-label" htmlFor="tb-fab-instrucoes">
+                        {modoPainelFabAtualizarTutorial === "edicao_parcial"
+                          ? "Edição parcial — o que você quer mudar"
+                          : "Regenerar documento inteiro (instruções opcionais)"}
+                      </label>
+                      <textarea
+                        id="tb-fab-instrucoes"
+                        className="tb-input tb-fab-textarea"
+                        rows={4}
+                        value={instrucoesRegeneracaoTutorialMarkdown}
+                        onChange={(e) => {
+                          setInstrucoesRegeneracaoTutorialMarkdown(e.target.value);
+                          setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
+                            preset === "sem_video" ? null : preset,
+                          );
+                        }}
+                        placeholder={
+                          modoPainelFabAtualizarTutorial === "edicao_parcial"
+                            ? "Ex.: Na intro, deixe mais claro o foco nos relatórios SEEU. Ou: nessa parte da Visão Geral, detalhe com exemplos…"
+                            : "Ex.: tom mais formal. Para UI: «Figura 2» ou cole assets/….png"
+                        }
+                      />
+                    </>
+                  )}
+                  <div
+                    className={
+                      jobEhProjetoEmBrancoAtual ? "tb-fab-chat-rodape" : "tb-fab-regen-rodape-padrao"
                     }
-                  />
-                  <button
-                    type="button"
-                    className="tb-primary tb-fab-regen-submit"
-                    disabled={
-                      modoPainelFabAtualizarTutorial === "edicao_parcial"
-                        ? !jobPermiteModoEdicaoPorSecaoTutorial ||
-                          regenerandoSecaoMarkdownTutorial ||
-                          regeneracaoSecaoEmAndamento ||
-                          Boolean(previewRegeneracaoSecaoMarkdown) ||
-                          Boolean(previewRegeneracaoTutorialMarkdownDocumentoInteiro) ||
-                          !instrucoesRegeneracaoTutorialMarkdown.trim()
-                        : regenerandoTutorialMarkdown ||
-                          regeneracaoTutorialEmAndamento ||
-                          !jobPodeRegenerarSomenteMarkdown
-                    }
-                    onClick={() => void enviarPedidoPainelFabAtualizarTutorialTranscribrothers()}
                   >
-                    {modoPainelFabAtualizarTutorial === "edicao_parcial"
-                      ? regenerandoSecaoMarkdownTutorial || regeneracaoSecaoEmAndamento
-                        ? "Pedindo edição…"
-                        : "Enviar edição parcial"
-                      : regenerandoTutorialMarkdown || regeneracaoTutorialEmAndamento
-                        ? "Regenerando…"
-                        : fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
-                          ? "Enviar revisão profunda"
-                          : fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
-                            ? "Enviar (sem vídeo)"
-                            : "Enviar regeneração"}
-                  </button>
+                    <button
+                      type="button"
+                      className={`tb-primary tb-fab-regen-submit${
+                        jobEhProjetoEmBrancoAtual ? " tb-fab-regen-submit--chat" : ""
+                      }`}
+                      disabled={
+                        modoPainelFabAtualizarTutorial === "edicao_parcial"
+                          ? !jobPermiteModoEdicaoPorSecaoTutorial ||
+                            regenerandoSecaoMarkdownTutorial ||
+                            regeneracaoSecaoEmAndamento ||
+                            Boolean(previewRegeneracaoSecaoMarkdown) ||
+                            Boolean(previewRegeneracaoTutorialMarkdownDocumentoInteiro) ||
+                            !instrucoesRegeneracaoTutorialMarkdown.trim()
+                          : regenerandoTutorialMarkdown ||
+                            regeneracaoTutorialEmAndamento ||
+                            !jobPodeRegenerarSomenteMarkdown
+                      }
+                      onClick={() => void enviarPedidoPainelFabAtualizarTutorialTranscribrothers()}
+                    >
+                      {modoPainelFabAtualizarTutorial === "edicao_parcial"
+                        ? regenerandoSecaoMarkdownTutorial || regeneracaoSecaoEmAndamento
+                          ? "Pedindo…"
+                          : "Enviar"
+                        : regenerandoTutorialMarkdown || regeneracaoTutorialEmAndamento
+                          ? "Enviando…"
+                          : jobEhProjetoEmBrancoAtual
+                            ? "Enviar"
+                            : jobEhReproducaoBugAtual
+                              ? fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
+                                ? "Enviar (sem vídeo)"
+                                : "Enviar refinamento"
+                              : jobEhNotasPropostaAtual
+                                ? fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
+                                  ? "Enviar (sem vídeo)"
+                                  : "Enviar refinamento"
+                              : fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
+                                ? "Enviar revisão profunda"
+                                : fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
+                                  ? "Enviar (sem vídeo)"
+                                  : "Enviar regeneração"}
+                    </button>
+                  </div>
                 </div>
               ) : null}
               <button
@@ -5014,9 +6019,25 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                 className="tb-fab-principal"
                 aria-expanded={painelRegeneracaoFabAberto}
                 aria-label={
-                  painelRegeneracaoFabAberto ? "Fechar opções de atualização" : "Atualizar tutorial"
+                  painelRegeneracaoFabAberto
+                    ? "Fechar opções de atualização"
+                    : jobEhProjetoEmBrancoAtual
+                      ? "Atualizar documento"
+                      : jobEhReproducaoBugAtual
+                        ? "Atualizar reprodução do bug"
+                        : jobEhNotasPropostaAtual
+                          ? "Atualizar notas de proposta"
+                        : "Atualizar tutorial"
                 }
-                title="Atualizar tutorial (regenerar inteiro ou edição parcial)"
+                title={
+                  jobEhProjetoEmBrancoAtual
+                    ? "Atualizar documento com IA (edição parcial ou documento inteiro)"
+                    : jobEhReproducaoBugAtual
+                      ? "Atualizar roteiro de reprodução do bug (refinar, sem vídeo ou edição parcial)"
+                      : jobEhNotasPropostaAtual
+                        ? "Atualizar notas de proposta (refinar, sem vídeo ou edição parcial)"
+                      : "Atualizar tutorial (regenerar inteiro ou edição parcial)"
+                }
                 onClick={() => setPainelRegeneracaoFabAberto((v) => !v)}
               >
                 {regeneracaoTutorialEmAndamento ? "…" : "↻"}

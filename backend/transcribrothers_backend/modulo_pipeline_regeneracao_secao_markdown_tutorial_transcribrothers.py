@@ -175,7 +175,36 @@ async def executar_regeneracao_secao_markdown_tutorial_em_background(
         fatia_escopo = prep.fatia
         linha_heading_ctx = regiao.rotulo_regiao
         transcricao_corta, rels = _snapshot_dict_para_transcricao_e_rels(snap)
+        from transcribrothers_backend.modulo_util_snapshot_regeneracao_tutorial_projeto_em_branco_transcribrothers import (
+            job_steps_indicam_projeto_em_branco_transcribrothers,
+        )
+        from transcribrothers_backend.modulo_util_montar_rels_anexo_regeneracao_tutorial_com_disco_projeto_em_branco_transcribrothers import (
+            montar_pool_rels_completos_disponiveis_regeneracao_tutorial_transcribrothers,
+        )
+
+        eh_projeto_em_branco = job_steps_indicam_projeto_em_branco_transcribrothers(steps)
         assets_dir = work / "assets_exportados_para_markdown"
+        if eh_projeto_em_branco and assets_dir.is_dir():
+            caminhos_ctx_fab = steps.get("regeneracao_fab_contexto_caminhos_assets_png")
+            extras_ctx: list[str] = []
+            if isinstance(caminhos_ctx_fab, list):
+                extras_ctx = [str(x) for x in caminhos_ctx_fab if isinstance(x, str)]
+            rels = montar_pool_rels_completos_disponiveis_regeneracao_tutorial_transcribrothers(
+                markdown=md_atual,
+                rels_snapshot=rels,
+                assets_dir=assets_dir,
+                caminhos_assets_png_contexto_fab_extra=extras_ctx,
+                eh_projeto_em_branco=True,
+            )
+            textos_ctx_fab = steps.get("regeneracao_fab_contexto_textos")
+            if isinstance(textos_ctx_fab, list):
+                partes_txt = [str(x).strip() for x in textos_ctx_fab if isinstance(x, str) and str(x).strip()]
+                if partes_txt:
+                    instrucoes_efetivas = (
+                        (instrucoes_efetivas or "").strip()
+                        + "\n\n---\nContexto adicional anexado neste pedido:\n\n"
+                        + "\n\n---\n".join(partes_txt)
+                    )
 
         steps["pipeline_identificador"] = IDENTIFICADOR_VERSAO_PIPELINE_DIAGNOSTICO_TRANSCRIBROTHERS
         steps["pipeline_fase"] = "regenerando_secao_markdown_litellm"

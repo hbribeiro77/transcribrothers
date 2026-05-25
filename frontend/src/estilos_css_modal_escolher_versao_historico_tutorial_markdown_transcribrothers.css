@@ -1,0 +1,115 @@
+.tb-modal-job-shell-historico-versoes-tutorial {
+  max-width: min(96vw, 720px);
+}
+
+.tb-modal-historico-versoes-tutorial .tb-modal-historico-versoes-intro {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tb-modal-historico-versoes-loading,
+.tb-modal-historico-versoes-vazio {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+}
+
+.tb-modal-historico-versoes-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(60vh, 480px);
+  overflow: auto;
+}
+
+.tb-modal-historico-versoes-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  color: #0f172a;
+}
+
+.tb-modal-historico-versoes-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.tb-modal-historico-versoes-item--selecionada {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.tb-modal-historico-versoes-item-titulo {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tb-modal-historico-versoes-item-meta {
+  font-size: 0.82rem;
+}
+
+.tb-modal-historico-versoes-item-preview {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.tb-modal-historico-versoes-rodape {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.tb-md-header-documento-versao-disparador {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 2px 8px 2px 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.tb-md-header-documento-versao-disparador:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tb-md-header-documento-versao-disparador:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.tb-md-header-documento-versao-disparador--aberto {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tb-md-header-documento-versao-disparador-caret {
+  font-size: 0.62rem;
+  line-height: 1;
+  opacity: 0.85;
+  transform: translateY(1px);
+}

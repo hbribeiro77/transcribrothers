@@ -316,9 +316,20 @@ async def executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_no_markdown
             motivo="desativada_por_configuracao_ambiente"
         )
 
+    assets_dir = diretorio_assets_absoluto.resolve()
+    if not assets_dir.is_dir():
+        return markdown_tutorial, blob_verificacao_imagens_duplicadas_omitida_transcribrothers(
+            motivo="diretorio_assets_inexistente"
+        )
+
     caminhos = listar_caminhos_assets_png_em_ordem_primeira_ocorrencia_no_markdown_transcribrothers(
         markdown_tutorial
     )
+    caminhos = [
+        rel
+        for rel in caminhos
+        if (assets_dir / rel.strip().replace("\\", "/").split("/")[-1]).is_file()
+    ]
     if len(caminhos) < 2:
         return markdown_tutorial, blob_verificacao_imagens_duplicadas_omitida_transcribrothers(
             motivo="menos_de_duas_imagens_no_markdown"
@@ -328,12 +339,6 @@ async def executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_no_markdown
     if not chave:
         return markdown_tutorial, blob_verificacao_imagens_duplicadas_omitida_transcribrothers(
             motivo="sem_api_key_litellm"
-        )
-
-    assets_dir = diretorio_assets_absoluto.resolve()
-    if not assets_dir.is_dir():
-        return markdown_tutorial, blob_verificacao_imagens_duplicadas_omitida_transcribrothers(
-            motivo="diretorio_assets_inexistente"
         )
 
     lotes_idx = listar_indices_lotes_sobrepostos_verificacao_imagens_duplicadas_transcribrothers(

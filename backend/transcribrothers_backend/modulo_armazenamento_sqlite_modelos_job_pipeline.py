@@ -30,6 +30,7 @@ class StatusJobTranscribrothers(str, enum.Enum):
 class OrigemEntradaJobTranscribrothers:
     drive = "drive"
     upload_local = "upload_local"
+    projeto_em_branco = "projeto_em_branco"
 
 
 class RegistroRuntimeConfigValorTranscribrothers(Base):
