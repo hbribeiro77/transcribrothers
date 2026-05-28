@@ -4,8 +4,10 @@ import pytest
 
 from transcribrothers_backend.modulo_cliente_gitlab_comentar_issue_existente_transcribrothers import (
     DestinoIssueGitlabTranscribrothers,
+    adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers,
     comentar_issue_gitlab_existente_transcribrothers,
     extrair_destino_issue_gitlab_a_partir_url_transcribrothers,
+    montar_descricao_issue_gitlab_com_markdown_anexado_transcribrothers,
     montar_url_api_comentar_issue_gitlab_transcribrothers,
 )
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
@@ -135,6 +137,88 @@ async def test_comentar_issue_gitlab_existente_posta_note_com_body(monkeypatch: 
     }
     assert chamadas[1]["json"] == {"body": "# Documento"}
     assert resp["id"] == 456
+    assert resp["project_path"] == "grupo/projeto"
+    assert resp["issue_iid"] == 77
+    assert resp["issue_url"] == "https://gitlab.defpub.local/grupo/projeto/-/issues/77"
+
+
+def test_montar_descricao_issue_gitlab_preserva_atual_e_adiciona_documento_no_final_sem_titulo_extra() -> None:
+    saida = montar_descricao_issue_gitlab_com_markdown_anexado_transcribrothers(
+        "Descrição atual da issue.",
+        "# Documento\n\nConteúdo gerado.",
+    )
+
+    assert saida.startswith("Descrição atual da issue.")
+    assert saida == "Descrição atual da issue.\n\n---\n\n# Documento\n\nConteúdo gerado."
+    assert "Documento exportado pelo Transcribrothers" not in saida
+    assert saida.endswith("# Documento\n\nConteúdo gerado.")
+
+
+@pytest.mark.asyncio
+async def test_adicionar_markdown_na_descricao_busca_issue_e_atualiza_put(monkeypatch: pytest.MonkeyPatch) -> None:
+    chamadas: list[dict[str, object]] = []
+
+    class _RespostaGetFake:
+        status_code = 200
+        text = ""
+
+        def json(self) -> dict[str, object]:
+            return {
+                "id": 99,
+                "iid": 77,
+                "description": "Descrição atual.",
+                "web_url": "https://gitlab.defpub.local/grupo/projeto/-/issues/77",
+            }
+
+    class _RespostaPutFake:
+        status_code = 200
+        text = ""
+
+        def json(self) -> dict[str, object]:
+            return {
+                "id": 99,
+                "iid": 77,
+                "description": "Descrição atual.\n\n---\n\n# Documento",
+                "web_url": "https://gitlab.defpub.local/grupo/projeto/-/issues/77",
+            }
+
+    class _ClienteFake:
+        def __init__(self, *, timeout: float, verify: bool) -> None:
+            chamadas.append({"timeout": timeout, "verify": verify})
+
+        async def __aenter__(self) -> "_ClienteFake":
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def get(self, url: str, *, headers: dict[str, str]) -> _RespostaGetFake:
+            chamadas.append({"metodo": "GET", "url": url, "headers": headers})
+            return _RespostaGetFake()
+
+        async def put(self, url: str, *, headers: dict[str, str], json: dict[str, str]) -> _RespostaPutFake:
+            chamadas.append({"metodo": "PUT", "url": url, "headers": headers, "json": json})
+            return _RespostaPutFake()
+
+    monkeypatch.setattr(
+        "transcribrothers_backend.modulo_cliente_gitlab_comentar_issue_existente_transcribrothers.httpx.AsyncClient",
+        _ClienteFake,
+    )
+
+    resp = await adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers(
+        _cfg_gitlab(),
+        issue_url="https://gitlab.defpub.local/grupo/projeto/-/issues/77",
+        markdown_documento="# Documento",
+        timeout_segundos=15.0,
+    )
+
+    assert chamadas[0] == {"timeout": 15.0, "verify": True}
+    assert chamadas[1]["metodo"] == "GET"
+    assert chamadas[1]["url"] == "https://gitlab.defpub.local/api/v4/projects/grupo%2Fprojeto/issues/77"
+    assert chamadas[2]["metodo"] == "PUT"
+    assert chamadas[2]["json"]["description"].startswith("Descrição atual.")
+    assert "Documento exportado pelo Transcribrothers" not in chamadas[2]["json"]["description"]
+    assert chamadas[2]["json"]["description"].endswith("# Documento")
     assert resp["project_path"] == "grupo/projeto"
     assert resp["issue_iid"] == 77
     assert resp["issue_url"] == "https://gitlab.defpub.local/grupo/projeto/-/issues/77"

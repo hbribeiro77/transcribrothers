@@ -127,6 +127,7 @@ from transcribrothers_backend.modulo_cliente_gitlab_criar_issue_portal_defensori
 )
 from transcribrothers_backend.modulo_cliente_gitlab_comentar_issue_existente_transcribrothers import (
     LIMITE_CARACTERES_CORPO_NOTA_ISSUE_GITLAB_TRANSCRIBROTHERS,
+    adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers,
     comentar_issue_gitlab_existente_transcribrothers,
     extrair_destino_issue_gitlab_a_partir_url_transcribrothers,
 )
@@ -489,6 +490,16 @@ class RespostaComentarIssueGitlabDocumentoMarkdownTranscribrothers(BaseModel):
     ok: bool = True
     note_id: int
     note_url: str
+    issue_url: str
+    project: str
+    issue_iid: int
+    imagens_png_enviadas_gitlab: int = 0
+    imagens_png_ignoradas_gitlab: int = 0
+
+
+class RespostaAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers(BaseModel):
+    ok: bool = True
+    web_url: str
     issue_url: str
     project: str
     issue_iid: int
@@ -954,6 +965,93 @@ async def comentar_issue_gitlab_documento_markdown_api_transcribrothers(
         note_id=note_id,
         note_url=note_url,
         issue_url=destino.issue_url,
+        project=destino.project_path,
+        issue_iid=destino.issue_iid,
+        imagens_png_enviadas_gitlab=imagens_enviadas,
+        imagens_png_ignoradas_gitlab=imagens_ignoradas,
+    )
+
+
+@app.post(
+    "/api/gitlab/issues/append-to-existing-issue-description",
+    response_model=RespostaAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers,
+)
+async def anexar_markdown_descricao_issue_gitlab_documento_api_transcribrothers(
+    corpo: CorpoComentarIssueGitlabDocumentoMarkdownTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers:
+    from transcribrothers_backend.modulo_util_reescrever_markdown_tutorial_assets_png_com_urls_upload_gitlab_transcribrothers import (
+        preparar_descricao_markdown_issue_gitlab_com_upload_imagens_assets_png_transcribrothers,
+    )
+
+    cfg = obter_configuracao()
+    if not gitlab_criar_issue_configurado_no_ambiente_transcribrothers(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "GitLab não configurado no servidor. Defina GITLAB_BASE_URL e GITLAB_TOKEN "
+                "(por exemplo em env.local na raiz do repositório) e reinicie o uvicorn."
+            ),
+        )
+    try:
+        destino = extrair_destino_issue_gitlab_a_partir_url_transcribrothers(cfg, corpo.issue_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    steps_json: dict | None = None
+    markdown_fonte: str
+    if corpo.job_id:
+        async with session_factory() as session:
+            row = await session.get(JobPipelineTranscribrothers, corpo.job_id)
+            if row is None:
+                raise HTTPException(status_code=404, detail="Job não encontrado.")
+            markdown_fonte = (row.result_markdown or "").strip()
+            steps_json = dict(row.steps_json or {}) if isinstance(row.steps_json, dict) else {}
+    else:
+        markdown_fonte = (corpo.description or "").strip()
+
+    if not markdown_fonte:
+        raise HTTPException(status_code=400, detail="Markdown do documento vazio.")
+
+    imagens_enviadas = 0
+    imagens_ignoradas = 0
+    descricao_anexada = markdown_fonte
+    if corpo.incluir_imagens_png_markdown and corpo.job_id:
+        assets_dir = _diretorio_assets_png_exportados_markdown_do_job(data_dir, corpo.job_id)
+        try:
+            descricao_anexada, imagens_enviadas, imagens_ignoradas = (
+                await preparar_descricao_markdown_issue_gitlab_com_upload_imagens_assets_png_transcribrothers(
+                    cfg,
+                    markdown_fonte,
+                    assets_dir,
+                    steps_json,
+                    incluir_imagens_png_markdown=True,
+                    project_path_gitlab=destino.project_path,
+                )
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except RuntimeError as e:
+            raise HTTPException(status_code=502, detail=str(e)) from e
+
+    try:
+        issue = await adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers(
+            cfg,
+            issue_url=destino.issue_url,
+            markdown_documento=descricao_anexada,
+            timeout_segundos=120.0 if imagens_enviadas > 0 else 60.0,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    web_url = str(issue.get("web_url") or destino.issue_url).strip() or destino.issue_url
+    return RespostaAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers(
+        ok=True,
+        web_url=web_url,
+        issue_url=web_url,
         project=destino.project_path,
         issue_iid=destino.issue_iid,
         imagens_png_enviadas_gitlab=imagens_enviadas,

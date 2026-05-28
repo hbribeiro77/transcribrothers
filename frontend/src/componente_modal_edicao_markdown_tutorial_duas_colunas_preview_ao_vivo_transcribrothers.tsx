@@ -176,6 +176,13 @@ export function ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTra
 
   aoNotificarToastMarkdown,
 }: PropsComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTranscribrothers) {
+  useEffect(() => {
+    document.body.setAttribute("data-tb-modal-md-edit-aberto", "");
+    return () => {
+      document.body.removeAttribute("data-tb-modal-md-edit-aberto");
+    };
+  }, []);
+
   const [confirmacaoDescartarAlteracoesMarkdownAberta, setConfirmacaoDescartarAlteracoesMarkdownAberta] =
     useState(false);
 

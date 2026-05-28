@@ -168,3 +168,54 @@ def test_comment_in_existing_issue_com_job_id_prepara_imagens_no_projeto_extraid
     assert body["imagens_png_ignoradas_gitlab"] == 0
     assert chamadas_preparar[0]["project_path_gitlab"] == "grupo/projeto"
     assert comentar_mock.await_args.kwargs["corpo_markdown"] == "# Documento\n\n![tela](/uploads/abc/foto.png)"
+
+
+def test_append_to_issue_description_com_job_id_prepara_imagens_no_projeto_extraido() -> None:
+    cfg = _cfg_gitlab_mock()
+    job = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    chamadas_preparar: list[dict[str, object]] = []
+
+    async def _fake_preparar(*_args, **kwargs):
+        chamadas_preparar.append(dict(kwargs))
+        return "# Documento\n\n![tela](/uploads/abc/foto.png)", 1, 0
+
+    async def _fake_anexar(*_a, **_k):
+        return {
+            "id": 99,
+            "iid": 55,
+            "web_url": "https://gitlab.defpub.local/grupo/projeto/-/issues/55",
+        }
+
+    with patch("transcribrothers_backend.main.obter_configuracao", return_value=cfg):
+        with patch(
+            "transcribrothers_backend.modulo_util_reescrever_markdown_tutorial_assets_png_com_urls_upload_gitlab_transcribrothers.preparar_descricao_markdown_issue_gitlab_com_upload_imagens_assets_png_transcribrothers",
+            new_callable=AsyncMock,
+            side_effect=_fake_preparar,
+        ):
+            with patch(
+                "transcribrothers_backend.main.adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers",
+                new_callable=AsyncMock,
+                side_effect=_fake_anexar,
+            ) as anexar_mock:
+                with TestClient(app) as client:
+                    client.app.state.session_factory = _session_factory_com_job_markdown(
+                        "# Documento\n\n![tela](assets/foto.png)",
+                    )
+                    r = client.post(
+                        "/api/gitlab/issues/append-to-existing-issue-description",
+                        json={
+                            "issue_url": "https://gitlab.defpub.local/grupo/projeto/-/issues/55",
+                            "job_id": job,
+                            "incluir_imagens_png_markdown": True,
+                        },
+                    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["issue_url"] == "https://gitlab.defpub.local/grupo/projeto/-/issues/55"
+    assert body["project"] == "grupo/projeto"
+    assert body["issue_iid"] == 55
+    assert body["imagens_png_enviadas_gitlab"] == 1
+    assert chamadas_preparar[0]["project_path_gitlab"] == "grupo/projeto"
+    assert anexar_mock.await_args.kwargs["markdown_documento"] == "# Documento\n\n![tela](/uploads/abc/foto.png)"

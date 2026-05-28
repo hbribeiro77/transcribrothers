@@ -18,9 +18,11 @@ import {
 } from "./modulo_util_extrair_titulo_h1_markdown_e_sanitizar_nome_arquivo_download_tutorial_transcribrothers.ts";
 import { criarIssueGitlabPortalDefensoriaGatewayApiTranscribrothers } from "./modulo_api_criar_issue_gitlab_portal_defensoria_gateway_transcribrothers.ts";
 import { comentarIssueGitlabDocumentoMarkdownApiTranscribrothers } from "./modulo_api_comentar_issue_gitlab_documento_markdown_transcribrothers.ts";
+import { anexarDescricaoIssueGitlabDocumentoMarkdownApiTranscribrothers } from "./modulo_api_anexar_descricao_issue_gitlab_documento_markdown_transcribrothers.ts";
 import { criarPaginaWikiGitlabDocumentacaoApiTranscribrothers } from "./modulo_api_criar_pagina_wiki_gitlab_documentacao_transcribrothers.ts";
 import { ComponenteModalConfirmarCriarIssueGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_criar_issue_gitlab_documento_markdown_transcribrothers.tsx";
 import { ComponenteModalConfirmarComentarIssueGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_comentar_issue_gitlab_documento_markdown_transcribrothers.tsx";
+import { ComponenteModalConfirmarAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_anexar_descricao_issue_gitlab_documento_markdown_transcribrothers.tsx";
 import { ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers } from "./componente_modal_confirmar_criar_pagina_wiki_gitlab_documento_markdown_transcribrothers.tsx";
 import { ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTranscribrothers } from "./componente_menu_split_exportar_e_download_markdown_tutorial_toolbar_transcribrothers.tsx";
 import {
@@ -783,6 +785,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
   const [criandoIssueGitlab, setCriandoIssueGitlab] = useState(false);
   const [modalComentarIssueGitlabAberto, setModalComentarIssueGitlabAberto] = useState(false);
   const [comentandoIssueGitlab, setComentandoIssueGitlab] = useState(false);
+  const [modalAnexarDescricaoIssueGitlabAberto, setModalAnexarDescricaoIssueGitlabAberto] = useState(false);
+  const [anexandoDescricaoIssueGitlab, setAnexandoDescricaoIssueGitlab] = useState(false);
   const [modalCriarPaginaWikiGitlabAberto, setModalCriarPaginaWikiGitlabAberto] = useState(false);
   const [criandoPaginaWikiGitlab, setCriandoPaginaWikiGitlab] = useState(false);
   const [anexosContextoFabProjetoEmBranco, setAnexosContextoFabProjetoEmBranco] = useState<
@@ -1397,6 +1401,42 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         pushToast(msg, "error");
       } finally {
         setComentandoIssueGitlab(false);
+      }
+    },
+    [job?.id, job?.result_markdown, pushToast],
+  );
+
+  const confirmarAnexarDescricaoIssueGitlabTranscribrothers = useCallback(
+    async (issueUrl: string, incluirImagensPngMarkdown: boolean) => {
+      const id = job?.id;
+      const md = job?.result_markdown;
+      if (!id || !md?.trim()) return;
+      setAnexandoDescricaoIssueGitlab(true);
+      setErro(null);
+      try {
+        const resp = await anexarDescricaoIssueGitlabDocumentoMarkdownApiTranscribrothers({
+          issueUrl,
+          jobId: id,
+          incluirImagensPngMarkdown,
+        });
+        setModalAnexarDescricaoIssueGitlabAberto(false);
+        const enviadas = resp.imagens_png_enviadas_gitlab ?? 0;
+        const ignoradas = resp.imagens_png_ignoradas_gitlab ?? 0;
+        let msg = `Descrição da issue #${resp.issue_iid} atualizada.`;
+        if (incluirImagensPngMarkdown && enviadas > 0) {
+          msg += ` ${enviadas} imagem(ns) enviada(s).`;
+          if (ignoradas > 0) {
+            msg += ` ${ignoradas} referência(s) sem arquivo no servidor foram mantidas como assets/.`;
+          }
+        }
+        pushToast(msg, "success");
+        abrirUrlExternaNovaAbaNavegadorTranscribrothers(resp.web_url || resp.issue_url);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setAnexandoDescricaoIssueGitlab(false);
       }
     },
     [job?.id, job?.result_markdown, pushToast],
@@ -4737,6 +4777,19 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         }
       />
 
+      <ComponenteModalConfirmarAnexarDescricaoIssueGitlabDocumentoMarkdownTranscribrothers
+        aberto={modalAnexarDescricaoIssueGitlabAberto}
+        tamanhoDocumentoCaracteres={(job?.result_markdown ?? "").length}
+        quantidadeReferenciasImagensAssetsPng={quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers}
+        processando={anexandoDescricaoIssueGitlab}
+        onFechar={() => {
+          if (!anexandoDescricaoIssueGitlab) setModalAnexarDescricaoIssueGitlabAberto(false);
+        }}
+        onConfirmar={(issueUrl, incluirImagens) =>
+          void confirmarAnexarDescricaoIssueGitlabTranscribrothers(issueUrl, incluirImagens)
+        }
+      />
+
       <ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers
         aberto={modalCriarPaginaWikiGitlabAberto}
         tituloInicial={tituloSugeridoIssueGitlabMarkdownAtualTranscribrothers}
@@ -5226,6 +5279,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     abrindoNovaAba={abrindoTutorialMarkdownNovaAba}
                     criandoIssueGitlab={criandoIssueGitlab}
                     comentandoIssueGitlab={comentandoIssueGitlab}
+                    anexandoDescricaoIssueGitlab={anexandoDescricaoIssueGitlab}
                     criandoPaginaWikiGitlab={criandoPaginaWikiGitlab}
                     baixandoMarkdown={baixandoMarkdownComImagens}
                     baixandoPdf={baixandoPdfTutorial}
@@ -5234,6 +5288,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     onAbrirTutorialMarkdownEmNovaAba={() => void abrirTutorialMarkdownEmNovaAbaNavegador()}
                     onAbrirModalCriarIssueGitlab={() => setModalCriarIssueGitlabAberto(true)}
                     onAbrirModalComentarIssueGitlab={() => setModalComentarIssueGitlabAberto(true)}
+                    onAbrirModalAnexarDescricaoIssueGitlab={() => setModalAnexarDescricaoIssueGitlabAberto(true)}
                     onAbrirModalCriarPaginaWikiGitlab={() => setModalCriarPaginaWikiGitlabAberto(true)}
                     onAvisoGitlabNaoConfigurado={() =>
                       pushToast(

@@ -11,6 +11,11 @@
   pointer-events: none;
 }
 
+/* Modal de edição Markdown: evita sobrepor o botão fechar (canto superior direito do painel). */
+body[data-tb-modal-md-edit-aberto] .tb-toast-stack {
+  top: max(4.5rem, calc(env(safe-area-inset-top, 0px) + 3.25rem));
+}
+
 .tb-toast {
   pointer-events: auto;
   max-width: min(26rem, 92vw);

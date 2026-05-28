@@ -84,6 +84,31 @@ def montar_url_api_comentar_issue_gitlab_transcribrothers(
     return f"{base}/api/v4/projects/{project_enc}/issues/{destino.issue_iid}/notes"
 
 
+def montar_url_api_issue_gitlab_transcribrothers(
+    cfg: ConfiguracaoAmbienteTranscribrothers,
+    destino: DestinoIssueGitlabTranscribrothers,
+) -> str:
+    base = (cfg.gitlab_base_url or "").strip().rstrip("/")
+    if not base:
+        raise ValueError("GITLAB_BASE_URL não configurado no servidor.")
+    project_enc = quote(destino.project_path, safe="")
+    return f"{base}/api/v4/projects/{project_enc}/issues/{destino.issue_iid}"
+
+
+def montar_descricao_issue_gitlab_com_markdown_anexado_transcribrothers(
+    descricao_atual: str | None,
+    markdown_documento: str,
+) -> str:
+    documento = (markdown_documento or "").strip()
+    if not documento:
+        raise ValueError("Markdown do documento vazio.")
+    prefixo = (descricao_atual or "").strip()
+    bloco = f"---\n\n{documento}"
+    if prefixo:
+        return f"{prefixo}\n\n{bloco}"
+    return bloco
+
+
 async def comentar_issue_gitlab_existente_transcribrothers(
     cfg: ConfiguracaoAmbienteTranscribrothers,
     *,
@@ -126,6 +151,62 @@ async def comentar_issue_gitlab_existente_transcribrothers(
     data = resp.json()
     if not isinstance(data, dict):
         raise RuntimeError("Resposta inesperada do GitLab ao criar comentário na issue.")
+    data.setdefault("project_path", destino.project_path)
+    data.setdefault("issue_iid", destino.issue_iid)
+    data.setdefault("issue_url", destino.issue_url)
+    return data
+
+
+async def adicionar_markdown_na_descricao_issue_gitlab_existente_transcribrothers(
+    cfg: ConfiguracaoAmbienteTranscribrothers,
+    *,
+    issue_url: str,
+    markdown_documento: str,
+    timeout_segundos: float = 60.0,
+) -> dict[str, Any]:
+    """GET da issue atual e PUT preservando a descrição existente com Markdown anexado ao final."""
+    if not gitlab_criar_issue_configurado_no_ambiente_transcribrothers(cfg):
+        raise ValueError(
+            "GitLab não configurado: defina GITLAB_BASE_URL e GITLAB_TOKEN no servidor (ex.: env.local na raiz)."
+        )
+    destino = extrair_destino_issue_gitlab_a_partir_url_transcribrothers(cfg, issue_url)
+    token = (cfg.gitlab_token or "").strip()
+    url = montar_url_api_issue_gitlab_transcribrothers(cfg, destino)
+    headers = {
+        "PRIVATE-TOKEN": token,
+        "Content-Type": "application/json",
+    }
+    verify = resolver_parametro_httpx_verify_ssl_para_chamadas_gitlab_transcribrothers(cfg)
+
+    async with httpx.AsyncClient(timeout=timeout_segundos, verify=verify) as client:
+        resp_get = await client.get(url, headers=headers)
+        if resp_get.status_code >= 400:
+            detalhe = resp_get.text.strip()
+            if len(detalhe) > 800:
+                detalhe = f"{detalhe[:800]}…"
+            raise RuntimeError(
+                f"GitLab recusou a consulta da issue (HTTP {resp_get.status_code}). {detalhe or 'sem corpo'}"
+            )
+        issue_atual = resp_get.json()
+        if not isinstance(issue_atual, dict):
+            raise RuntimeError("Resposta inesperada do GitLab ao consultar issue.")
+        nova_descricao = montar_descricao_issue_gitlab_com_markdown_anexado_transcribrothers(
+            str(issue_atual.get("description") or ""),
+            markdown_documento,
+        )
+        resp_put = await client.put(url, headers=headers, json={"description": nova_descricao})
+
+    if resp_put.status_code >= 400:
+        detalhe = resp_put.text.strip()
+        if len(detalhe) > 800:
+            detalhe = f"{detalhe[:800]}…"
+        raise RuntimeError(
+            f"GitLab recusou a atualização da descrição da issue (HTTP {resp_put.status_code}). {detalhe or 'sem corpo'}"
+        )
+
+    data = resp_put.json()
+    if not isinstance(data, dict):
+        raise RuntimeError("Resposta inesperada do GitLab ao atualizar descrição da issue.")
     data.setdefault("project_path", destino.project_path)
     data.setdefault("issue_iid", destino.issue_iid)
     data.setdefault("issue_url", destino.issue_url)

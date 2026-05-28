@@ -102,6 +102,7 @@ export type PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTran
   abrindoNovaAba: boolean;
   criandoIssueGitlab: boolean;
   comentandoIssueGitlab: boolean;
+  anexandoDescricaoIssueGitlab: boolean;
   criandoPaginaWikiGitlab: boolean;
   baixandoMarkdown: boolean;
   baixandoPdf: boolean;
@@ -110,6 +111,7 @@ export type PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTran
   onAbrirTutorialMarkdownEmNovaAba: () => void;
   onAbrirModalCriarIssueGitlab: () => void;
   onAbrirModalComentarIssueGitlab: () => void;
+  onAbrirModalAnexarDescricaoIssueGitlab: () => void;
   onAbrirModalCriarPaginaWikiGitlab: () => void;
   onAvisoGitlabNaoConfigurado: () => void;
   onAvisoGitlabWikiNaoConfigurado: () => void;
@@ -122,6 +124,7 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   abrindoNovaAba,
   criandoIssueGitlab,
   comentandoIssueGitlab,
+  anexandoDescricaoIssueGitlab,
   criandoPaginaWikiGitlab,
   baixandoMarkdown,
   baixandoPdf,
@@ -130,6 +133,7 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   onAbrirTutorialMarkdownEmNovaAba,
   onAbrirModalCriarIssueGitlab,
   onAbrirModalComentarIssueGitlab,
+  onAbrirModalAnexarDescricaoIssueGitlab,
   onAbrirModalCriarPaginaWikiGitlab,
   onAvisoGitlabNaoConfigurado,
   onAvisoGitlabWikiNaoConfigurado,
@@ -143,7 +147,12 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   const [menuExportarAberto, setMenuExportarAberto] = useState(false);
   const [menuDownloadAberto, setMenuDownloadAberto] = useState(false);
 
-  const exportarOcupado = abrindoNovaAba || criandoIssueGitlab || comentandoIssueGitlab || criandoPaginaWikiGitlab;
+  const exportarOcupado =
+    abrindoNovaAba ||
+    criandoIssueGitlab ||
+    comentandoIssueGitlab ||
+    anexandoDescricaoIssueGitlab ||
+    criandoPaginaWikiGitlab;
   const downloadOcupado = baixandoMarkdown || baixandoPdf;
   const exportarDesabilitado = bloqueadoPorHistoricoVersao || exportarOcupado;
   const downloadDesabilitado = bloqueadoPorHistoricoVersao || downloadOcupado;
@@ -215,6 +224,15 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
       return;
     }
     onAbrirModalComentarIssueGitlab();
+  }
+
+  function executarAnexarDescricaoGitlabIssue() {
+    setMenuExportarAberto(false);
+    if (!gitlabCriarIssueHabilitadoNoServidor) {
+      onAvisoGitlabNaoConfigurado();
+      return;
+    }
+    onAbrirModalAnexarDescricaoIssueGitlab();
   }
 
   function executarExportarGitlabWiki() {
@@ -382,6 +400,18 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
               >
                 <IconeGitlabMenuExportarToolbarTranscribrothers />
                 <span>Comentar em issue do GitLab</span>
+              </button>
+            </li>
+            <li role="none">
+              <button
+                type="button"
+                className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--gitlab"
+                role="menuitem"
+                disabled={exportarDesabilitado}
+                onClick={() => executarAnexarDescricaoGitlabIssue()}
+              >
+                <IconeGitlabMenuExportarToolbarTranscribrothers />
+                <span>Adicionar à descrição da issue</span>
               </button>
             </li>
             <li role="none">
