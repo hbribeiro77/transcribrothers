@@ -44,7 +44,11 @@ def deve_reutilizar_video_entrada_pipeline_sem_redownload_transcribrothers(
         min_bytes=_TAMANHO_MINIMO_VIDEO_ENTRADA_BYTES,
     ):
         return False
-    return bool(steps.get("download_ok") or steps.get("upload_ok"))
+    if steps.get("download_ok") or steps.get("upload_ok"):
+        return True
+    if int(steps.get("bytes_written") or 0) >= _TAMANHO_MINIMO_VIDEO_ENTRADA_BYTES:
+        return True
+    return str(steps.get("source") or "").strip() == "upload_local"
 
 
 def deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers(
