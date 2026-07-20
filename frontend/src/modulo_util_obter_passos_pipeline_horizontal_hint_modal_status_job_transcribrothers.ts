@@ -69,6 +69,183 @@ const ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS: Record<
   },
 };
 
+/** Rótulos curtos alinhados ao catálogo de agentes (`GET /api/pipelines/catalogo`). */
+const ROTULO_PASSO_PREPARACAO_TRANSCRIBROTHERS = "Preparação";
+const ROTULO_PASSO_PREPARACAO_REUTILIZACAO_TRANSCRIBROTHERS = "Preparação (reutilização)";
+const ROTULO_PASSO_RASCUNHO_TUTORIAL_TRANSCRIBROTHERS = "Rascunho (tutorial)";
+const ROTULO_PASSO_RASCUNHO_NOTAS_TRANSCRIBROTHERS = "Rascunho (notas)";
+const ROTULO_PASSO_PLANO_CAPTURAS_TUTORIAL_TRANSCRIBROTHERS = "Plano capturas (tutorial)";
+const ROTULO_PASSO_PLANO_CAPTURAS_NOTAS_TRANSCRIBROTHERS = "Plano capturas (notas)";
+const ROTULO_PASSO_CAPTURAS_TRANSCRIBROTHERS = "Capturas";
+const ROTULO_PASSO_CAPTURAS_RECBROTHERS_TRANSCRIBROTHERS = "Capturas (RecBrothers)";
+const ROTULO_PASSO_GERADOR_TUTORIAL_TRANSCRIBROTHERS = "Gerador (tutorial)";
+const ROTULO_PASSO_GERADOR_NOTAS_TRANSCRIBROTHERS = "Gerador (notas)";
+const ROTULO_PASSO_GERADOR_BUG_TRANSCRIBROTHERS = "Gerador (bug)";
+const ROTULO_PASSO_GERADOR_REGENERACAO_TRANSCRIBROTHERS = "Gerador (regeneração)";
+const ROTULO_PASSO_IMAGENS_DUPLICADAS_TRANSCRIBROTHERS = "Imagens (duplicadas)";
+const ROTULO_PASSO_AUDITOR_TUTORIAL_TRANSCRIBROTHERS = "Auditor (tutorial)";
+const ROTULO_PASSO_AUDITOR_NOTAS_TRANSCRIBROTHERS = "Auditor (notas)";
+const ROTULO_PASSO_PLANEJADOR_REVISAO_TRANSCRIBROTHERS = "Planejador (revisão)";
+const ROTULO_PASSO_EDITOR_TOPICO_REVISAO_TRANSCRIBROTHERS = "Editor por tópico";
+const ROTULO_PASSO_CONSOLIDADOR_REVISAO_TRANSCRIBROTHERS = "Consolidador (revisão)";
+const ROTULO_PASSO_ESCOPO_EDICAO_PARCIAL_TRANSCRIBROTHERS = "Escopo (edição parcial)";
+const ROTULO_PASSO_REGENERACAO_SECAO_TRANSCRIBROTHERS = "Regeneração de seção";
+const ROTULO_PASSO_REDUNDANCIA_SECOES_TRANSCRIBROTHERS = "Redundância entre seções";
+const ROTULO_PASSO_PREVIEW_DOCUMENTO_TRANSCRIBROTHERS = "Preview (documento)";
+const ROTULO_PASSO_PREVIEW_SECAO_TRANSCRIBROTHERS = "Preview (seção)";
+
+type DestinoPipelineInicialModalStatusTranscribrothers = "tutorial" | "notas" | "bug";
+
+type PassoSnapshotPipelineCustomStepsJsonTranscribrothers = {
+  id: string;
+  rotulo: string;
+  descricao: string;
+  handler_chave: string;
+};
+
+/** Mapeia handler do catálogo → id do passo na barra de progresso do modal. */
+const HANDLER_AGENTE_PARA_ID_PASSO_MODAL_STATUS_JOB_TRANSCRIBROTHERS: Record<string, IdPassoPipelineHorizontalModalStatusTranscribrothers> = {
+  preparacao_transcricao: "preparacao",
+  rascunho_tutorial_sob_demanda: "rascunho",
+  rascunho_notas_proposta: "rascunho",
+  plano_capturas_tutorial: "plano_capturas",
+  plano_capturas_notas: "plano_capturas",
+  capturas_ffmpeg_plano: "capturas",
+  capturas_ffmpeg_rec_brothers: "capturas",
+  gerador_tutorial_markdown: "gerador",
+  gerador_notas_proposta: "gerador",
+  gerador_reproducao_bug: "gerador",
+  verificacao_imagens_duplicadas: "verificacao_imagens",
+  auditor_sustentacao_tutorial: "auditor",
+  auditor_sustentacao_notas: "auditor",
+};
+
+function lerPassosSnapshotPipelineCustomDeStepsTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+): PassoSnapshotPipelineCustomStepsJsonTranscribrothers[] {
+  const raw = steps?.pipeline_custom_passos;
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  const passos: PassoSnapshotPipelineCustomStepsJsonTranscribrothers[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const p = item as Record<string, unknown>;
+    const handler = String(p.handler_chave || "").trim();
+    if (!handler) continue;
+    passos.push({
+      id: String(p.id || handler),
+      rotulo: String(p.rotulo || "").trim(),
+      descricao: String(p.descricao || "").trim(),
+      handler_chave: handler,
+    });
+  }
+  return passos;
+}
+
+function lerHandlersSnapshotPipelineCustomDeStepsTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+): Set<string> {
+  const raw = steps?.pipeline_custom_agentes;
+  if (!raw || typeof raw !== "object") return new Set();
+  return new Set(
+    Object.keys(raw as Record<string, unknown>).filter((k) => typeof k === "string" && k.trim()),
+  );
+}
+
+function montarContextoPipelineCustomModalStatusJobTranscribrothers(
+  status: string,
+  steps: Record<string, unknown> | null | undefined,
+  passosSistema: PassoPipelineHorizontalModalStatusTranscribrothers[],
+): ContextoPipelineHorizontalModalStatusJobTranscribrothers | null {
+  if (!steps?.pipeline_custom_id) return null;
+
+  const titulo = String(steps.pipeline_custom_titulo || "").trim() || "Pipeline custom";
+  const descricao =
+    String(steps.pipeline_custom_descricao || "").trim() ||
+    ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS.pipeline_inicial.descricao;
+
+  let passosCustom = lerPassosSnapshotPipelineCustomDeStepsTranscribrothers(steps);
+  if (passosCustom.length === 0) {
+    const handlers = lerHandlersSnapshotPipelineCustomDeStepsTranscribrothers(steps);
+    if (handlers.size === 0) return null;
+    passosCustom = passosSistema
+      .map((p) => {
+        const handler = Object.entries(HANDLER_AGENTE_PARA_ID_PASSO_MODAL_STATUS_JOB_TRANSCRIBROTHERS).find(
+          ([, id]) => id === p.id,
+        )?.[0];
+        if (!handler || !handlers.has(handler)) return null;
+        return {
+          id: p.id,
+          rotulo: p.rotuloCurto,
+          descricao: p.hintTitulo,
+          handler_chave: handler,
+        };
+      })
+      .filter((p): p is PassoSnapshotPipelineCustomStepsJsonTranscribrothers => p !== null);
+  }
+
+  if (passosCustom.length === 0) return null;
+
+  const mapaEstadoPorIdModal = new Map(passosSistema.map((p) => [p.id, p]));
+
+  const passos: PassoPipelineHorizontalModalStatusTranscribrothers[] = passosCustom.map((pc) => {
+    const idModal =
+      HANDLER_AGENTE_PARA_ID_PASSO_MODAL_STATUS_JOB_TRANSCRIBROTHERS[pc.handler_chave] ?? "preparacao";
+    const base = mapaEstadoPorIdModal.get(idModal);
+    return {
+      id: idModal,
+      rotuloCurto: pc.rotulo || base?.rotuloCurto || pc.handler_chave,
+      hintTitulo: pc.descricao || base?.hintTitulo || "",
+      estado: base?.estado ?? (status === "completed" ? "done" : "pending"),
+    };
+  });
+
+  return {
+    modoFluxo: "pipeline_inicial",
+    tituloFluxo: titulo,
+    descricaoFluxo: descricao,
+    passos,
+  };
+}
+
+function destinoPipelineInicialDeStepsTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+): DestinoPipelineInicialModalStatusTranscribrothers {
+  const destino = steps?.destino_apos_transcricao;
+  if (destino === "notas_proposta_funcionalidade") return "notas";
+  if (destino === "reproducao_bug") return "bug";
+  return "tutorial";
+}
+
+function rotulosFluxoPipelineInicialPorDestinoTranscribrothers(
+  destino: DestinoPipelineInicialModalStatusTranscribrothers,
+): { titulo: string; descricao: string } {
+  if (destino === "notas") {
+    return {
+      titulo: "Fluxo 1 — Vídeo até notas de proposta",
+      descricao: "Transcrição de reunião, capturas de evidências visuais e notas de proposta em Markdown.",
+    };
+  }
+  if (destino === "bug") {
+    return {
+      titulo: "Fluxo 1 — Vídeo até reprodução de bug",
+      descricao: "Transcrição opcional, capturas nos cliques RecBrothers e roteiro Markdown para reproduzir o bug.",
+    };
+  }
+  return ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS.pipeline_inicial;
+}
+
+function rotuloGeradorRegeneracaoMarkdownDeStepsTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+): string {
+  if (boolDeStepsJsonTranscribrothers(steps?.regeneracao_reproducao_bug)) {
+    return ROTULO_PASSO_GERADOR_BUG_TRANSCRIBROTHERS;
+  }
+  if (boolDeStepsJsonTranscribrothers(steps?.regeneracao_notas_proposta)) {
+    return ROTULO_PASSO_GERADOR_NOTAS_TRANSCRIBROTHERS;
+  }
+  return ROTULO_PASSO_GERADOR_REGENERACAO_TRANSCRIBROTHERS;
+}
+
 const CHAVE_PREVIEW_REGENERACAO_TUTORIAL_MARKDOWN_DOCUMENTO_INTEIRO_TRANSCRIBROTHERS =
   "regeneracao_tutorial_markdown_preview";
 
@@ -256,7 +433,7 @@ function montarPassoPreviewDocumentoRegeneracaoTutorialTranscribrothers(
     fase !== FASE_PIPELINE_PREVIEW_TUTORIAL_MARKDOWN_DOCUMENTO_INTEIRO_PRONTA_TRANSCRIBROTHERS;
   return {
     id: "preview_documento",
-    rotuloCurto: "Preview",
+    rotuloCurto: ROTULO_PASSO_PREVIEW_DOCUMENTO_TRANSCRIBROTHERS,
     hintTitulo: omitidoSemBlobPreview
       ? "Não há pré-visualização neste job (regeneração antiga, backend desatualizado na época, ou já aplicou/descartou). Use «Atualizar tutorial» (FAB ↻) para gerar outra regeneração — ao terminar, o passo fica ativo e abre o modal antes/depois."
       : previewPendente && !previewAplicado
@@ -377,10 +554,28 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     (planoCapturasAplicavel && planoConcluido) ||
     capturasConcluido;
 
+  const destino = destinoPipelineInicialDeStepsTranscribrothers(steps);
+  const rotuloRascunho =
+    destino === "notas" ? ROTULO_PASSO_RASCUNHO_NOTAS_TRANSCRIBROTHERS : ROTULO_PASSO_RASCUNHO_TUTORIAL_TRANSCRIBROTHERS;
+  const rotuloPlanoCapturas =
+    destino === "notas"
+      ? ROTULO_PASSO_PLANO_CAPTURAS_NOTAS_TRANSCRIBROTHERS
+      : ROTULO_PASSO_PLANO_CAPTURAS_TUTORIAL_TRANSCRIBROTHERS;
+  const rotuloCapturas =
+    destino === "bug" ? ROTULO_PASSO_CAPTURAS_RECBROTHERS_TRANSCRIBROTHERS : ROTULO_PASSO_CAPTURAS_TRANSCRIBROTHERS;
+  const rotuloGerador =
+    destino === "notas"
+      ? ROTULO_PASSO_GERADOR_NOTAS_TRANSCRIBROTHERS
+      : destino === "bug"
+        ? ROTULO_PASSO_GERADOR_BUG_TRANSCRIBROTHERS
+        : ROTULO_PASSO_GERADOR_TUTORIAL_TRANSCRIBROTHERS;
+  const rotuloAuditor =
+    destino === "notas" ? ROTULO_PASSO_AUDITOR_NOTAS_TRANSCRIBROTHERS : ROTULO_PASSO_AUDITOR_TUTORIAL_TRANSCRIBROTHERS;
+
   return [
     {
       id: "preparacao",
-      rotuloCurto: "Preparação",
+      rotuloCurto: ROTULO_PASSO_PREPARACAO_TRANSCRIBROTHERS,
       hintTitulo:
         "Metadados do job, extração de áudio (ffmpeg) e transcrição do vídeo. É a base antes de qualquer captura ou geração do tutorial.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -391,7 +586,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "rascunho",
-      rotuloCurto: "Rascunho",
+      rotuloCurto: rotuloRascunho,
       hintTitulo:
         "Com captura sob demanda: gera um tutorial provisório só com texto e links ?t= para decidir onde tirar screenshots, antes das capturas reais.",
       estado: rascunhoAplicavel
@@ -405,7 +600,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "plano_capturas",
-      rotuloCurto: "Plano capturas",
+      rotuloCurto: rotuloPlanoCapturas,
       hintTitulo:
         "Planejamento (LiteLLM) dos instantes de captura a partir do rascunho e da transcrição, respeitando margem mínima entre links temporais.",
       estado: planoCapturasAplicavel
@@ -419,7 +614,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "capturas",
-      rotuloCurto: "Capturas",
+      rotuloCurto: rotuloCapturas,
       hintTitulo:
         "Screenshots PNG do vídeo (ffmpeg), gravados em assets/ e referenciados no tutorial. No modo legado usa amostragem por segmentos da transcrição.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -431,7 +626,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "gerador",
-      rotuloCurto: "Gerador",
+      rotuloCurto: rotuloGerador,
       hintTitulo:
         "Gera o tutorial em Markdown final (transcrição + imagens). Com captura sob demanda, incorpora o rascunho e as capturas já feitas.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -443,7 +638,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "verificacao_imagens",
-      rotuloCurto: "Imagens",
+      rotuloCurto: ROTULO_PASSO_IMAGENS_DUPLICADAS_TRANSCRIBROTHERS,
       hintTitulo:
         "Verificação por visão: remove ou funde referências a screenshots visualmente duplicadas no Markdown. Pode ser desligada no .env.",
       estado: verifImagensOmitida
@@ -457,7 +652,7 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
     },
     {
       id: "auditor",
-      rotuloCurto: "Auditor",
+      rotuloCurto: rotuloAuditor,
       hintTitulo:
         "Verificação automática do tutorial em relação à transcrição (inconsistências). Pode ser desligada no servidor ou em Configurações.",
       estado: auditorOmitido
@@ -523,13 +718,13 @@ function montarPassosPipelineRegeneracaoSimplesTranscribrothers(
   return [
     {
       id: "preparacao",
-      rotuloCurto: "Preparação",
+      rotuloCurto: ROTULO_PASSO_PREPARACAO_REUTILIZACAO_TRANSCRIBROTHERS,
       hintTitulo: "Regeneração: reutiliza transcrição, frames e snapshot já gravados no job (sem reprocessar o vídeo).",
       estado: "done",
     },
     {
       id: "gerador",
-      rotuloCurto: "Gerador",
+      rotuloCurto: rotuloGeradorRegeneracaoMarkdownDeStepsTranscribrothers(steps),
       hintTitulo:
         "Regenera o documento inteiro em um passe ao modelo (Markdown atual + transcrição + imagens anexadas conforme instruções).",
       estado: estadoPassoPipelineTranscribrothers({
@@ -540,7 +735,7 @@ function montarPassosPipelineRegeneracaoSimplesTranscribrothers(
     },
     {
       id: "verificacao_imagens",
-      rotuloCurto: "Imagens",
+      rotuloCurto: ROTULO_PASSO_IMAGENS_DUPLICADAS_TRANSCRIBROTHERS,
       hintTitulo: "Verificação de screenshots duplicadas no Markdown regenerado.",
       estado: verifImagensOmitida
         ? "skipped"
@@ -553,7 +748,7 @@ function montarPassosPipelineRegeneracaoSimplesTranscribrothers(
     },
     {
       id: "auditor",
-      rotuloCurto: "Auditor",
+      rotuloCurto: ROTULO_PASSO_AUDITOR_TUTORIAL_TRANSCRIBROTHERS,
       hintTitulo: "Verificação tutorial vs transcrição após a regeneração.",
       estado: auditorOmitido
         ? "skipped"
@@ -644,13 +839,13 @@ function montarPassosPipelineRevisaoProfundaTranscribrothers(
   return [
     {
       id: "preparacao",
-      rotuloCurto: "Preparação",
+      rotuloCurto: ROTULO_PASSO_PREPARACAO_REUTILIZACAO_TRANSCRIBROTHERS,
       hintTitulo: "Revisão profunda: usa snapshot e tutorial já existentes (sem nova transcrição nem capturas).",
       estado: "done",
     },
     {
       id: "planejador",
-      rotuloCurto: "Planejador",
+      rotuloCurto: ROTULO_PASSO_PLANEJADOR_REVISAO_TRANSCRIBROTHERS,
       hintTitulo:
         "Analista lê transcrição, frames e tutorial atual e devolve um plano estruturado (JSON) com tópicos a aprofundar.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -661,7 +856,7 @@ function montarPassosPipelineRevisaoProfundaTranscribrothers(
     },
     {
       id: "editores",
-      rotuloCurto: "Editores",
+      rotuloCurto: ROTULO_PASSO_EDITOR_TOPICO_REVISAO_TRANSCRIBROTHERS,
       hintTitulo:
         "Um passe ao modelo por tópico do plano. O detalhe tópico x/y aparece na linha de progresso quando este passo estiver ativo.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -673,7 +868,7 @@ function montarPassosPipelineRevisaoProfundaTranscribrothers(
     },
     {
       id: "consolidador",
-      rotuloCurto: "Consolidador",
+      rotuloCurto: ROTULO_PASSO_CONSOLIDADOR_REVISAO_TRANSCRIBROTHERS,
       hintTitulo: "Harmoniza o Markdown completo após os passes por tópico (editor final multimodal).",
       estado: estadoPassoPipelineTranscribrothers({
         erro: indiceErro === 2,
@@ -684,7 +879,7 @@ function montarPassosPipelineRevisaoProfundaTranscribrothers(
     },
     {
       id: "verificacao_imagens",
-      rotuloCurto: "Imagens",
+      rotuloCurto: ROTULO_PASSO_IMAGENS_DUPLICADAS_TRANSCRIBROTHERS,
       hintTitulo: "Verificação de screenshots duplicadas após a consolidação.",
       estado: verifImagensOmitida
         ? "skipped"
@@ -697,7 +892,7 @@ function montarPassosPipelineRevisaoProfundaTranscribrothers(
     },
     {
       id: "auditor",
-      rotuloCurto: "Auditor",
+      rotuloCurto: ROTULO_PASSO_AUDITOR_TUTORIAL_TRANSCRIBROTHERS,
       hintTitulo: "Verificação tutorial vs transcrição após a revisão profunda.",
       estado: auditorOmitido
         ? "skipped"
@@ -834,7 +1029,7 @@ function montarPassosPipelineEdicaoParcialSecaoMarkdownTranscribrothers(
   return [
     {
       id: "escopo_edicao_secao",
-      rotuloCurto: "Escopo",
+      rotuloCurto: ROTULO_PASSO_ESCOPO_EDICAO_PARCIAL_TRANSCRIBROTHERS,
       hintTitulo:
         "Interpreta ou valida o pedido em linguagem natural: qual seção ##, trecho ou «a partir de» será editado.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -845,7 +1040,7 @@ function montarPassosPipelineEdicaoParcialSecaoMarkdownTranscribrothers(
     },
     {
       id: "regeneracao_secao",
-      rotuloCurto: "Seção",
+      rotuloCurto: ROTULO_PASSO_REGENERACAO_SECAO_TRANSCRIBROTHERS,
       hintTitulo: "Chamada ao modelo para reescrever só a região delimitada, mantendo o restante do tutorial.",
       estado: estadoPassoPipelineTranscribrothers({
         erro: indiceErro === 1,
@@ -856,7 +1051,7 @@ function montarPassosPipelineEdicaoParcialSecaoMarkdownTranscribrothers(
     },
     {
       id: "redundancia_secao",
-      rotuloCurto: "Redundância",
+      rotuloCurto: ROTULO_PASSO_REDUNDANCIA_SECOES_TRANSCRIBROTHERS,
       hintTitulo:
         "Verifica se o trecho proposto repete conteúdo de outras seções; pode corrigir automaticamente conforme Configurações.",
       estado: redundanciaOmitida
@@ -870,7 +1065,7 @@ function montarPassosPipelineEdicaoParcialSecaoMarkdownTranscribrothers(
     },
     {
       id: "preview_secao",
-      rotuloCurto: "Preview",
+      rotuloCurto: ROTULO_PASSO_PREVIEW_SECAO_TRANSCRIBROTHERS,
       hintTitulo:
         "Pré-visualização pronta no editor: aplique para gravar no job ou descarte. Enquanto pendente, o passo fica ativo.",
       estado: estadoPassoPipelineTranscribrothers({
@@ -953,12 +1148,23 @@ export function obterContextoPipelineHorizontalModalStatusJobTranscribrothers(
   steps: Record<string, unknown> | null | undefined,
 ): ContextoPipelineHorizontalModalStatusJobTranscribrothers {
   const modoFluxo = resolverModoFluxoPipelineModalStatusJobTranscribrothers(status, steps);
-  const rotulos = ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS[modoFluxo];
+  const rotulosBase = ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS[modoFluxo];
+  const rotulosFluxo =
+    modoFluxo === "pipeline_inicial"
+      ? rotulosFluxoPipelineInicialPorDestinoTranscribrothers(destinoPipelineInicialDeStepsTranscribrothers(steps))
+      : rotulosBase;
+  const passosSistema = obterPassosPipelinePorModoFluxoTranscribrothers(modoFluxo, status, steps);
+
+  if (modoFluxo === "pipeline_inicial") {
+    const custom = montarContextoPipelineCustomModalStatusJobTranscribrothers(status, steps, passosSistema);
+    if (custom) return custom;
+  }
+
   return {
     modoFluxo,
-    tituloFluxo: rotulos.titulo,
-    descricaoFluxo: rotulos.descricao,
-    passos: obterPassosPipelinePorModoFluxoTranscribrothers(modoFluxo, status, steps),
+    tituloFluxo: rotulosFluxo.titulo,
+    descricaoFluxo: rotulosFluxo.descricao,
+    passos: passosSistema,
   };
 }
 

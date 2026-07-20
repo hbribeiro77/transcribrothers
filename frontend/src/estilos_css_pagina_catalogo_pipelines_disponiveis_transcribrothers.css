@@ -1,0 +1,623 @@
+.tb-catalogo-pipelines-pagina {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.tb-catalogo-pipelines-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1.25rem;
+}
+
+.tb-catalogo-pipelines-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tb-catalogo-pipelines-titulo-pagina {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.tb-catalogo-pipelines-subtitulo-pagina {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.tb-catalogo-pipelines-header-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tb-catalogo-pipelines-header-acoes-modal {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  justify-content: flex-end;
+}
+
+.tb-catalogo-pipelines-conteudo {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.tb-catalogo-pipelines-build {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.tb-catalogo-pipelines-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.15rem 1.15rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.tb-catalogo-pipelines-prompts-secao {
+  margin-top: 0.75rem;
+}
+
+.tb-catalogo-pipelines-prompts-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.tb-catalogo-pipelines-prompt-bloco {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.65rem;
+  background: #f8fafc;
+}
+
+.tb-catalogo-pipelines-prompt-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.tb-catalogo-pipelines-prompt-rotulo {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.tb-catalogo-pipelines-prompt-tipo {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tb-catalogo-pipelines-prompt-observacao {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.tb-catalogo-pipelines-prompt-pre {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.tb-catalogo-pipelines-prompt-fonte {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.tb-catalogo-pipelines-erro {
+  color: #b91c1c;
+}
+
+.tb-catalogo-pipelines-descricao-passo {
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.tb-catalogo-pipelines-agente-ref {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+}
+
+.tb-catalogo-agentes-grade {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tb-catalogo-agente-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.9rem 1.05rem 1rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.tb-catalogo-agente-card-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tb-catalogo-agente-card-cabecalho-texto {
+  min-width: 0;
+  flex: 1;
+}
+
+.tb-catalogo-agente-card-cabecalho:hover .tb-catalogo-agente-card-titulo {
+  color: #1d4ed8;
+}
+
+.tb-catalogo-agente-card-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tb-catalogo-agente-card-id {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+}
+
+.tb-catalogo-agente-card-expandir {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.2;
+  padding-top: 0.1rem;
+}
+
+.tb-catalogo-agente-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.tb-catalogo-agente-badges--pipelines {
+  margin-bottom: 0;
+  margin-top: 0.55rem;
+}
+
+.tb-catalogo-agente-badges-rotulo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-right: 0.15rem;
+}
+
+.tb-catalogo-agente-badge {
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  line-height: 1.25;
+  border: 1px solid transparent;
+}
+
+.tb-catalogo-agente-badge--primario {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.tb-catalogo-agente-badge--neutro {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.tb-catalogo-agente-badge--contagem {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.tb-catalogo-agente-badge--tipo {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.tb-catalogo-agente-badge--reuso {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.tb-catalogo-agente-badge--pipeline {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.72rem;
+}
+
+.tb-catalogo-agente-card-descricao {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.tb-catalogo-agente-card-detalhe {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.tb-catalogo-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  margin-right: 0.35rem;
+}
+
+.tb-catalogo-badge--sistema {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tb-catalogo-badge--custom {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tb-catalogo-badge--aviso {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tb-catalogo-card-acoes-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.tb-catalogo-card-acoes-cabecalho--agente {
+  margin-bottom: 0.5rem;
+}
+
+.tb-catalogo-card-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tb-catalogo-btn-excluir {
+  color: #b91c1c;
+}
+
+.tb-modal-job-shell-catalogo-editor-pipeline {
+  width: min(560px, 100%);
+  max-height: min(90vh, 720px);
+}
+
+.tb-modal-job-shell-catalogo-editor-agente {
+  width: min(720px, 100%);
+  max-height: min(92vh, 800px);
+}
+
+.tb-catalogo-modal-editor-pipeline.tb-modal-job,
+.tb-catalogo-modal-editor-agente.tb-modal-job {
+  max-height: inherit;
+}
+
+.tb-catalogo-modal-editor-pipeline .tb-field,
+.tb-catalogo-modal-editor-agente .tb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 12px;
+}
+
+.tb-catalogo-modal-editor-pipeline .tb-field-label,
+.tb-catalogo-modal-editor-agente .tb-field-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.tb-catalogo-checkbox-entrada-midia {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: #334155;
+  margin: 0.25rem 0;
+}
+
+.tb-catalogo-checkbox-entrada-midia input {
+  margin: 0;
+}
+
+.tb-catalogo-modal-editor-pipeline .tb-input,
+.tb-catalogo-modal-editor-agente .tb-input,
+.tb-catalogo-modal-editor-pipeline .tb-select,
+.tb-catalogo-modal-editor-agente .tb-select {
+  box-sizing: border-box;
+}
+
+.tb-catalogo-modal-prompt-textarea {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.tb-catalogo-pipelines-aviso-nao-executavel {
+  color: #b45309;
+  font-size: 0.9rem;
+  margin: 0 0 12px;
+}
+
+.tb-catalogo-pipeline-passos-lista-editor {
+  margin-top: 0.5rem;
+}
+
+.tb-catalogo-pipeline-passos-lista-editor ol {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tb-catalogo-pipeline-passos-lista-editor li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tb-catalogo-pipeline-passos-lista-editor li:last-child {
+  border-bottom: 0;
+}
+
+.tb-catalogo-pipeline-passo-rotulo {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.tb-catalogo-link-editar-agente-passo {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.tb-stepper-iniciar-transcricao-pipelines-custom {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.tb-catalogo-painel-agente-inline {
+  margin-top: 0.25rem;
+}
+
+.tb-catalogo-painel-agente-inline-badge {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.tb-catalogo-painel-agente-inline .tb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 10px;
+}
+
+.tb-catalogo-painel-agente-inline .tb-field-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.tb-catalogo-painel-agente-inline-prompt {
+  margin-top: 0.5rem;
+}
+
+.tb-catalogo-painel-agente-inline-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.tb-catalogo-modal-pipeline-dica-agentes {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.tb-pipeline-status-hint-painel-corpo .tb-catalogo-painel-agente-inline .tb-input,
+.tb-pipeline-status-hint-painel-corpo .tb-catalogo-painel-agente-inline .tb-select {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.tb-catalogo-secao-pipelines {
+  margin-bottom: 2rem;
+}
+
+.tb-catalogo-secao-pipelines-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.tb-catalogo-secao-pipelines-lead {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+}
+
+.tb-catalogo-secao-pipelines-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.tb-catalogo-card-acoes-cabecalho-esquerda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tb-catalogo-badge--molde {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.tb-catalogo-pipeline-sortable-item {
+  margin-bottom: 0;
+}
+
+.tb-catalogo-pipeline-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: grab;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.tb-catalogo-pipeline-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tb-catalogo-pipeline-drag-handle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tb-catalogo-criar-pipeline-moldes {
+  border: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.tb-catalogo-modal-editor-passos-pipeline {
+  max-width: 36rem;
+}
+
+.tb-catalogo-modal-passos-dica {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.tb-catalogo-passos-editor-lista {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tb-catalogo-passos-editor-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.tb-catalogo-passos-editor-drag {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.tb-catalogo-passos-editor-conteudo {
+  flex: 1;
+  min-width: 0;
+}
+
+.tb-catalogo-passos-editor-conteudo strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.tb-catalogo-passos-editor-agente {
+  display: block;
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.tb-catalogo-passos-editor-descricao {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.tb-catalogo-passos-editor-adicionar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.tb-catalogo-passos-editor-adicionar .tb-field {
+  flex: 1;
+  min-width: 12rem;
+  margin: 0;
+}
