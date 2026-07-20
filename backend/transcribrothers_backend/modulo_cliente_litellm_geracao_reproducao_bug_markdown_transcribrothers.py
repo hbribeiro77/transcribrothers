@@ -76,6 +76,7 @@ async def gerar_markdown_reproducao_bug_recbrothers_com_litellm_transcribrothers
     documento_autonomo_sem_video: bool = False,
     sem_json_cliques_recbrothers: bool = False,
     log_etapa_geracao_tutorial: str = "geracao_reproducao_bug_markdown",
+    instrucao_prefixo_override: str | None = None,
 ) -> str:
     segmentos_serializados = [
         {
@@ -98,7 +99,7 @@ async def gerar_markdown_reproducao_bug_recbrothers_com_litellm_transcribrothers
         ],
     }
 
-    prefixo = montar_instrucao_prefixo_litellm_reproducao_bug_transcribrothers(
+    prefixo = (instrucao_prefixo_override or "").strip() or montar_instrucao_prefixo_litellm_reproducao_bug_transcribrothers(
         documento_autonomo_sem_video=documento_autonomo_sem_video,
         sem_json_cliques_recbrothers=sem_json_cliques_recbrothers,
         instrucoes_revisao_humana=instrucoes_revisao_humana,

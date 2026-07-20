@@ -479,3 +479,6 @@ async def transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_t
 listar_janelas_temporais_segundos_para_transcricao_multimodal_litellm_transcribrothers = (
     _listar_janelas_temporais_segundos_para_transcricao_multimodal
 )
+mesclar_resultados_transcricao_com_offset_temporal_segundos_transcribrothers = (
+    _mesclar_resultados_transcricao_com_offset_temporal_segundos
+)

@@ -230,6 +230,7 @@ async def _chamar_litellm_visao_lote_imagens_duplicadas_transcribrothers(
     blobs_png: list[bytes],
     indice_lote: int,
     total_lotes: int,
+    system_prompt_override: str | None = None,
 ) -> ResultadoLoteImagensDuplicadasVisaoJsonTranscribrothers:
     n = len(caminhos_relativos_lote)
     lista_meta = [
@@ -242,7 +243,15 @@ async def _chamar_litellm_visao_lote_imagens_duplicadas_transcribrothers(
         "Responda só com o JSON pedido."
     )
     partes: list[dict[str, Any]] = [
-        {"type": "text", "text": SYSTEM_PROMPT_VERIFICACAO_IMAGENS_DUPLICADAS_TUTORIAL_VISAO_TRANSCRIBROTHERS + "\n\n" + texto_user}
+        {
+            "type": "text",
+            "text": (
+                (system_prompt_override or "").strip()
+                or SYSTEM_PROMPT_VERIFICACAO_IMAGENS_DUPLICADAS_TUTORIAL_VISAO_TRANSCRIBROTHERS
+            )
+            + "\n\n"
+            + texto_user,
+        }
     ]
     for blob in blobs_png:
         b64 = base64.b64encode(blob).decode("ascii")
@@ -306,6 +315,7 @@ async def executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_no_markdown
     http_verify_litellm: bool | str,
     levantar_se_cancelado: Callable[[], None] | None = None,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
+    system_prompt_override: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """
     Devolve (markdown_atualizado, blob_para_steps_json).
@@ -370,6 +380,7 @@ async def executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_no_markdown
             blobs_png=blobs,
             indice_lote=num_lote,
             total_lotes=total_lotes,
+            system_prompt_override=system_prompt_override,
         )
         if resultado.mensagem_resumo.strip():
             resumos_lotes.append(resultado.mensagem_resumo.strip())

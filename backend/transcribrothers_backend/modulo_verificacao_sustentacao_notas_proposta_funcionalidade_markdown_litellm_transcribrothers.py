@@ -52,6 +52,7 @@ async def executar_verificacao_sustentacao_notas_proposta_funcionalidade_markdow
     http_verify_litellm: bool | str,
     levantar_se_cancelado: Callable[[], None] | None = None,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
+    system_prompt_override: str | None = None,
 ) -> dict[str, Any]:
     """Devolve dicionário para `steps_json['verificacao_sustentacao_notas_proposta']`."""
     if levantar_se_cancelado:
@@ -86,7 +87,10 @@ async def executar_verificacao_sustentacao_notas_proposta_funcionalidade_markdow
             mensagens=[
                 {
                     "role": "system",
-                    "content": SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_VS_TRANSCRICAO_TRANSCRIBROTHERS,
+                    "content": (
+                        (system_prompt_override or "").strip()
+                        or SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_VS_TRANSCRICAO_TRANSCRIBROTHERS
+                    ),
                 },
                 {"role": "user", "content": user},
             ],

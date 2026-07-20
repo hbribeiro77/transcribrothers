@@ -51,14 +51,26 @@ def test_create_wiki_page_sem_gitlab_configurado_retorna_503() -> None:
 
 
 def _session_factory_com_job_markdown(markdown: str):
+    from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline import (
+        JobPipelineTranscribrothers,
+        RegistroRuntimeConfigValorTranscribrothers,
+    )
+
     row = MagicMock()
     row.result_markdown = markdown
     row.steps_json = {}
 
+    async def _get(modelo, chave=None, **_kwargs):
+        if modelo is JobPipelineTranscribrothers:
+            return row
+        if modelo is RegistroRuntimeConfigValorTranscribrothers:
+            return None
+        return None
+
     @asynccontextmanager
     async def _sf():
         session = AsyncMock()
-        session.get = AsyncMock(return_value=row)
+        session.get = AsyncMock(side_effect=_get)
         yield session
 
     return _sf
@@ -167,19 +179,24 @@ def test_preview_create_page_url_com_pasta_customizada() -> None:
     job = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     with patch("transcribrothers_backend.main.obter_configuracao", return_value=cfg):
         with patch(
-            "transcribrothers_backend.main.pagina_wiki_gitlab_existe_no_projeto_transcribrothers",
+            "transcribrothers_backend.main.resolver_pastas_wiki_gitlab_efetivas_transcribrothers",
             new_callable=AsyncMock,
-            return_value=False,
+            return_value=(["workshop", "reviews"], "workshop", True),
         ):
-            with TestClient(app) as client:
-                r = client.get(
-                    "/api/gitlab/wikis/preview-create-page-url",
-                    params={
-                        "title": "Tutorial de teste",
-                        "job_id": job,
-                        "prefixo_pasta_wiki": "reviews",
-                    },
-                )
+            with patch(
+                "transcribrothers_backend.main.pagina_wiki_gitlab_existe_no_projeto_transcribrothers",
+                new_callable=AsyncMock,
+                return_value=False,
+            ):
+                with TestClient(app) as client:
+                    r = client.get(
+                        "/api/gitlab/wikis/preview-create-page-url",
+                        params={
+                            "title": "Tutorial de teste",
+                            "job_id": job,
+                            "prefixo_pasta_wiki": "reviews",
+                        },
+                    )
     assert r.status_code == 200
     body = r.json()
     assert body["prefixo_pasta_wiki"] == "reviews"

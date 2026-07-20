@@ -1,6 +1,9 @@
-import { useEffect, useId, useState } from "react";
+﻿import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { previewUrlPaginaWikiGitlabDocumentacaoApiTranscribrothers } from "./modulo_api_preview_url_pagina_wiki_gitlab_documentacao_transcribrothers.ts";
+
+const CHAVE_LOCAL_STORAGE_ULTIMA_PASTA_WIKI_TRANSCRIBROTHERS =
+  "transcribrothers.gitlab_wiki_pasta_ultima";
 
 export type PropsComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers = {
   aberto: boolean;
@@ -8,6 +11,7 @@ export type PropsComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownT
   jobId: string;
   projetoGitlab: string;
   prefixoPastaWikiPadrao: string;
+  pastasWikiDisponiveis: string[];
   wikiHabilitadaNoServidor: boolean;
   tamanhoConteudoCaracteres: number;
   quantidadeReferenciasImagensAssetsPng: number;
@@ -20,12 +24,25 @@ export type PropsComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownT
   ) => void;
 };
 
+function resolverPastaInicialModalWikiTranscribrothers(pastas: string[], padrao: string): string {
+  if (pastas.length === 0) return padrao || "workshop";
+  try {
+    const ultima = (localStorage.getItem(CHAVE_LOCAL_STORAGE_ULTIMA_PASTA_WIKI_TRANSCRIBROTHERS) || "").trim();
+    if (ultima && pastas.includes(ultima)) return ultima;
+  } catch {
+    /* ignore */
+  }
+  if (padrao && pastas.includes(padrao)) return padrao;
+  return pastas[0];
+}
+
 export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTranscribrothers({
   aberto,
   tituloInicial,
   jobId,
   projetoGitlab,
   prefixoPastaWikiPadrao,
+  pastasWikiDisponiveis,
   wikiHabilitadaNoServidor,
   tamanhoConteudoCaracteres,
   quantidadeReferenciasImagensAssetsPng,
@@ -37,8 +54,15 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
   const checkboxImagensId = useId();
   const urlPrevistaId = useId();
   const diretorioWikiId = useId();
+  const pastas = useMemo(() => {
+    const base =
+      pastasWikiDisponiveis.length > 0 ? pastasWikiDisponiveis : [prefixoPastaWikiPadrao || "workshop"];
+    return [...new Set(base.map((p) => p.trim()).filter(Boolean))];
+  }, [pastasWikiDisponiveis, prefixoPastaWikiPadrao]);
   const [titulo, setTitulo] = useState(tituloInicial);
-  const [nomeDiretorioWiki, setNomeDiretorioWiki] = useState(prefixoPastaWikiPadrao);
+  const [nomeDiretorioWiki, setNomeDiretorioWiki] = useState(() =>
+    resolverPastaInicialModalWikiTranscribrothers(pastas, prefixoPastaWikiPadrao),
+  );
   const [incluirImagensPngMarkdown, setIncluirImagensPngMarkdown] = useState(true);
   const [urlPrevista, setUrlPrevista] = useState<string | null>(null);
   const [urlIndicePasta, setUrlIndicePasta] = useState<string | null>(null);
@@ -49,13 +73,13 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
   useEffect(() => {
     if (!aberto) return;
     setTitulo(tituloInicial);
-    setNomeDiretorioWiki(prefixoPastaWikiPadrao);
+    setNomeDiretorioWiki(resolverPastaInicialModalWikiTranscribrothers(pastas, prefixoPastaWikiPadrao));
     setIncluirImagensPngMarkdown(quantidadeReferenciasImagensAssetsPng > 0);
     setUrlPrevista(null);
     setUrlIndicePasta(null);
     setPaginaJaExiste(null);
     setErroUrlPrevista(null);
-  }, [aberto, tituloInicial, prefixoPastaWikiPadrao, quantidadeReferenciasImagensAssetsPng]);
+  }, [aberto, tituloInicial, prefixoPastaWikiPadrao, pastas, quantidadeReferenciasImagensAssetsPng]);
 
   useEffect(() => {
     if (!aberto) return;
@@ -104,9 +128,6 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
           setUrlPrevista(resp.web_url);
           setUrlIndicePasta(resp.web_url_indice_workshop);
           setPaginaJaExiste(resp.pagina_destino_ja_existe_no_gitlab);
-          if (resp.prefixo_pasta_wiki && resp.prefixo_pasta_wiki !== pastaTrim) {
-            setNomeDiretorioWiki(resp.prefixo_pasta_wiki);
-          }
           setErroUrlPrevista(null);
         } catch (e) {
           if (cancelado) return;
@@ -130,11 +151,12 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
 
   const tituloTrim = titulo.trim();
   const pastaTrim = nomeDiretorioWiki.trim();
-  const pasta = pastaTrim || "workshop";
+  const pasta = pastaTrim || pastas[0] || "workshop";
   const podeConfirmar =
     tituloTrim.length > 0 &&
     tituloTrim.length <= 255 &&
     pastaTrim.length > 0 &&
+    pastas.includes(pastaTrim) &&
     tamanhoConteudoCaracteres > 0 &&
     wikiHabilitadaNoServidor &&
     Boolean(jobId.trim()) &&
@@ -167,23 +189,27 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
             <code>{projetoGitlab || "portal-da-defensoria/documentacao"}</code>. A página índice{" "}
             <strong>{pasta}</strong> (que já existe) e as demais páginas da wiki{" "}
             <strong>não são alteradas</strong>. Se a subpágina ainda não existir, ela será criada em{" "}
-            <strong>{pasta}/…</strong>, nunca na raiz da wiki.
+            <strong>{pasta}/…</strong>, nunca na raiz da wiki. Pastas vêm de{" "}
+            <strong>Configurações</strong>.
           </p>
           <label className="tb-modal-criar-issue-gitlab-campo" htmlFor={diretorioWikiId}>
             <span className="tb-modal-criar-issue-gitlab-rotulo">Pasta wiki (diretório)</span>
-            <input
+            <select
               id={diretorioWikiId}
-              type="text"
-              className="tb-input"
-              maxLength={64}
-              value={nomeDiretorioWiki}
-              disabled={processando}
-              placeholder="workshop"
+              className="tb-select"
+              value={pastas.includes(nomeDiretorioWiki) ? nomeDiretorioWiki : pastas[0] || ""}
+              disabled={processando || pastas.length === 0}
               onChange={(e) => setNomeDiretorioWiki(e.target.value)}
-            />
+            >
+              {pastas.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                  {p === prefixoPastaWikiPadrao ? " (padrão)" : ""}
+                </option>
+              ))}
+            </select>
             <span className="tb-muted tb-modal-criar-issue-gitlab-contador">
-              Sugestão: <code>{prefixoPastaWikiPadrao || "workshop"}</code> — pode alterar para outra
-              pasta existente na wiki.
+              Para incluir outra pasta, cadastre-a em Configurações → Wiki GitLab.
             </span>
           </label>
           <div className="tb-modal-criar-wiki-gitlab-url-prevista" aria-live="polite">
@@ -279,7 +305,14 @@ export function ComponenteModalConfirmarCriarPaginaWikiGitlabDocumentoMarkdownTr
               className="tb-primary"
               disabled={!podeConfirmar || processando}
               aria-busy={processando}
-              onClick={() => onConfirmar(tituloTrim, incluirImagensPngMarkdown, pastaTrim)}
+              onClick={() => {
+                try {
+                  localStorage.setItem(CHAVE_LOCAL_STORAGE_ULTIMA_PASTA_WIKI_TRANSCRIBROTHERS, pastaTrim);
+                } catch {
+                  /* ignore */
+                }
+                onConfirmar(tituloTrim, incluirImagensPngMarkdown, pastaTrim);
+              }}
             >
               {processando
                 ? "Publicando…"

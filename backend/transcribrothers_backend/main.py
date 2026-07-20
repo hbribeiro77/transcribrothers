@@ -21,6 +21,14 @@ from transcribrothers_backend.modulo_controle_cancelamento_pipeline_jobs_transcr
     limpar_marcacao_cancelamento_pipeline_job_transcribrothers,
     marcar_cancelamento_pipeline_solicitado_para_job_transcribrothers,
 )
+from transcribrothers_backend.modulo_log_diagnostico_upload_video_job_pipeline_transcribrothers import (
+    configurar_logging_upload_video_job_pipeline_transcribrothers,
+    gravar_arquivo_upload_video_com_limite_bytes_transcribrothers,
+    log_erro_upload_video_job_transcribrothers,
+    log_fim_gravacao_video_upload_job_transcribrothers,
+    log_inicio_upload_video_job_transcribrothers,
+    log_job_upload_registrado_e_pipeline_agendado_transcribrothers,
+)
 from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline import (
     JobPipelineTranscribrothers,
     OrigemEntradaJobTranscribrothers,
@@ -33,6 +41,36 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
     ConfiguracaoAmbienteTranscribrothers,
     obter_configuracao,
+)
+from transcribrothers_backend.modulo_catalogo_pipelines_disponiveis_documentacao_transcribrothers import (
+    RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers,
+    mapear_pipeline_sistema_para_destino_apos_transcricao_transcribrothers,
+    montar_resposta_catalogo_pipelines_disponiveis_documentacao_transcribrothers,
+)
+from transcribrothers_backend.modulo_editar_passos_internos_pipeline_custom_transcribrothers import (
+    adicionar_passo_pipeline_custom_transcribrothers,
+    reordenar_passos_pipeline_custom_transcribrothers,
+    remover_passo_pipeline_custom_transcribrothers,
+)
+from transcribrothers_backend.modulo_montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers import (
+    montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers,
+)
+from transcribrothers_backend.modulo_persistencia_pipelines_e_agentes_custom_sqlite_transcribrothers import (
+    atualizar_agente_custom_transcribrothers,
+    atualizar_pipeline_custom_transcribrothers,
+    carregar_agentes_custom_da_pipeline_transcribrothers,
+    criar_pipeline_custom_a_partir_de_molde_transcribrothers,
+    duplicar_agente_catalogo_para_custom_transcribrothers,
+    duplicar_pipeline_catalogo_para_custom_transcribrothers,
+    excluir_agente_custom_transcribrothers,
+    excluir_pipeline_custom_transcribrothers,
+    obter_agente_custom_por_id_transcribrothers,
+    obter_pipeline_custom_por_id_transcribrothers,
+    pipeline_custom_e_executavel_upload_transcribrothers,
+    reordenar_pipelines_custom_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
+    montar_snapshot_completo_pipeline_custom_para_steps_json_transcribrothers,
 )
 from transcribrothers_backend.modulo_constante_identificador_versao_pipeline_diagnostico_transcribrothers import (
     IDENTIFICADOR_VERSAO_PIPELINE_DIAGNOSTICO_TRANSCRIBROTHERS,
@@ -77,6 +115,12 @@ from transcribrothers_backend.modulo_persistencia_runtime_config_verificacao_sus
     gravar_verificacao_sustentacao_tutorial_desativada_runtime_sqlite_transcribrothers,
     verificacao_sustentacao_tutorial_desativada_efetiva_e_flag_override_sqlite_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_runtime_config_pastas_wiki_gitlab_sqlite_transcribrothers import (
+    apagar_override_pastas_wiki_gitlab_runtime_sqlite_transcribrothers,
+    gravar_pastas_wiki_gitlab_runtime_sqlite_transcribrothers,
+    pasta_wiki_esta_na_lista_permitida_transcribrothers,
+    resolver_pastas_wiki_gitlab_efetivas_transcribrothers,
+)
 from transcribrothers_backend.modulo_verificacao_redundancia_secao_markdown_entre_secoes_litellm_transcribrothers import (
     SYSTEM_PROMPT_VERIFICACAO_REDUNDANCIA_SECAO_MARKDOWN_TRANSCRIBROTHERS,
 )
@@ -93,6 +137,20 @@ from transcribrothers_backend.modulo_pipeline_regeneracao_markdown_notas_propost
 from transcribrothers_backend.modulo_pipeline_regeneracao_secao_markdown_tutorial_transcribrothers import (
     CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_SECAO_MARKDOWN_TRANSCRIBROTHERS,
     agendar_regeneracao_secao_markdown_tutorial_em_task_assincrona,
+)
+from transcribrothers_backend.modulo_orquestrar_reprocessamento_pos_transcricao_com_novo_destino_job_transcribrothers import (
+    ErroGerarOutroFormatoJobTranscribrothers,
+    aplicar_gerar_outro_formato_no_job_transcribrothers,
+    job_pode_gerar_outro_formato_pos_transcricao_transcribrothers,
+    resolver_snapshot_pipeline_custom_para_gerar_outro_formato_transcribrothers,
+    validar_job_pode_gerar_outro_formato_transcribrothers,
+)
+from transcribrothers_backend.modulo_criar_job_a_partir_transcricao_importada_pronta_transcribrothers import (
+    ErroImportarTranscricaoProntaTranscribrothers,
+    criar_job_a_partir_transcricao_importada_pronta_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_parsear_arquivo_ou_texto_transcricao_importada_srt_vtt_txt_transcribrothers import (
+    ErroTranscricaoImportadaVaziaOuInvalidaTranscribrothers,
 )
 from transcribrothers_backend.modulo_util_job_steps_indicam_notas_proposta_funcionalidade_transcribrothers import (
     job_steps_indicam_notas_proposta_funcionalidade_transcribrothers,
@@ -179,6 +237,10 @@ from transcribrothers_backend.modulo_staging_video_importacao_recbrothers_transc
     resolver_caminho_video_staging,
     salvar_upload_video_em_staging_recbrothers_transcribrothers,
 )
+from transcribrothers_backend.modulo_validacao_extensao_nome_arquivo_audio_upload_local_transcribrothers import (
+    classificar_tipo_entrada_midia_por_nome_arquivo_transcribrothers,
+    extrair_extensao_audio_sanitizada_para_upload_local,
+)
 from transcribrothers_backend.modulo_validacao_extensao_nome_arquivo_video_upload_local import (
     ErroExtensaoVideoUploadTranscribrothers,
     extrair_extensao_video_sanitizada_para_upload_local,
@@ -227,6 +289,12 @@ class CorpoRegenerarNotasPropostaMarkdownTranscribrothers(BaseModel):
 
 class CorpoPatchResultMarkdownJobTranscribrothers(BaseModel):
     result_markdown: str
+
+
+class CorpoGerarOutroFormatoPosTranscricaoJobTranscribrothers(BaseModel):
+    destino_apos_transcricao: str
+    pipeline_custom_id: str | None = None
+    litellm_model: str | None = None
 
 
 class ResumoSecaoMarkdownNivel2TutorialApiTranscribrothers(BaseModel):
@@ -411,8 +479,15 @@ class RespostaConfigPublicaTranscribrothers(BaseModel):
     gitlab_criar_wiki_habilitado: bool = False
     gitlab_wiki_project_path: str = ""
     gitlab_wiki_slug_prefixo_pasta: str = "workshop"
+    gitlab_wiki_pastas_disponiveis: list[str] = Field(default_factory=lambda: ["workshop"])
+    gitlab_wiki_pastas_preferencia_sqlite_definida: bool = False
     ffmpeg_disponivel: bool = False
     ffprobe_disponivel: bool = False
+
+
+class CorpoPatchPastasWikiGitlabRuntimeTranscribrothers(BaseModel):
+    pastas: list[str] = Field(..., min_length=1)
+    pasta_padrao: str | None = None
 
 
 class CorpoCriarIssueGitlabPortalDefensoriaGatewayTranscribrothers(BaseModel):
@@ -606,6 +681,51 @@ class CorpoPatchVerificacaoRedundanciaSecaoMarkdownRuntimeTranscribrothers(BaseM
     verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao: bool
 
 
+class CorpoDuplicarFonteCatalogoCustomTranscribrothers(BaseModel):
+    fonte_id: str
+
+
+class CorpoCriarPipelineCustomTranscribrothers(BaseModel):
+    fonte_id: str
+    titulo: str | None = None
+    descricao: str | None = None
+
+
+class CorpoReordenarPipelinesCustomTranscribrothers(BaseModel):
+    pipeline_ids_ordenados: list[str] = Field(..., min_length=0)
+
+
+class CorpoPatchPipelineCustomTranscribrothers(BaseModel):
+    titulo: str | None = None
+    descricao: str | None = None
+    entradas_aceitas: list[str] | None = None
+
+
+class CorpoReordenarPassosPipelineCustomTranscribrothers(BaseModel):
+    passo_ids_ordenados: list[str] = Field(..., min_length=1)
+
+
+class CorpoAdicionarPassoPipelineCustomTranscribrothers(BaseModel):
+    agente_fonte_id: str
+    rotulo: str | None = None
+    descricao: str | None = None
+
+
+class PromptPatchAgenteCustomTranscribrothers(BaseModel):
+    chave: str
+    tipo: str
+    rotulo: str
+    texto: str = ""
+    observacao: str | None = None
+
+
+class CorpoPatchAgenteCustomTranscribrothers(BaseModel):
+    rotulo: str | None = None
+    descricao: str | None = None
+    modelo_litellm: str | None = None
+    prompts: list[PromptPatchAgenteCustomTranscribrothers] | None = None
+
+
 def _resolver_modelo_litellm_para_job_ou_erro_http_400(
     cfg: ConfiguracaoAmbienteTranscribrothers,
     modelo_solicitado: str | None,
@@ -618,6 +738,7 @@ def _resolver_modelo_litellm_para_job_ou_erro_http_400(
 
 @asynccontextmanager
 async def lifespan_transcribrothers_app(app: FastAPI):
+    configurar_logging_upload_video_job_pipeline_transcribrothers()
     cfg = obter_configuracao()
     data_dir = cfg.transcribrothers_data_dir.resolve()
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -697,6 +818,9 @@ async def _montar_resposta_config_publica_transcribrothers(
             session,
             cfg,
         )
+        pastas_wiki, pasta_wiki_padrao, pastas_wiki_sqlite = (
+            await resolver_pastas_wiki_gitlab_efetivas_transcribrothers(session, obter_configuracao())
+        )
     janela_ef, paralelas_ef, formato_ef, bitrate_ef, mono_ef = (
         resolver_janela_paralelas_formato_bitrate_mono_efetivos_com_overrides_sqlite_transcribrothers(
             int(cfg.transcricao_multimodal_janela_segundos),
@@ -769,8 +893,9 @@ async def _montar_resposta_config_publica_transcribrothers(
         gitlab_create_issue_project_path=(cfg_gitlab.gitlab_create_issue_project_path or "").strip(),
         gitlab_criar_wiki_habilitado=gitlab_criar_wiki_configurado_no_ambiente_transcribrothers(cfg_gitlab),
         gitlab_wiki_project_path=(cfg_gitlab.gitlab_wiki_project_path or "").strip(),
-        gitlab_wiki_slug_prefixo_pasta=(cfg_gitlab.gitlab_wiki_slug_prefixo_pasta or "workshop").strip()
-        or "workshop",
+        gitlab_wiki_slug_prefixo_pasta=pasta_wiki_padrao,
+        gitlab_wiki_pastas_disponiveis=pastas_wiki,
+        gitlab_wiki_pastas_preferencia_sqlite_definida=bool(pastas_wiki_sqlite),
         ffmpeg_disponivel=ffmpeg_disponivel_transcribrothers(cfg),
         ffprobe_disponivel=ffprobe_disponivel_transcribrothers(cfg),
     )
@@ -1066,6 +1191,7 @@ async def anexar_markdown_descricao_issue_gitlab_documento_api_transcribrothers(
 async def preview_url_pagina_wiki_gitlab_documentacao_api_transcribrothers(
     title: str,
     job_id: str,
+    session_factory: SessionFactoryDep,
     prefixo_pasta_wiki: str | None = None,
 ) -> RespostaPreviewUrlPaginaWikiGitlabDocumentacaoTranscribrothers:
     """URL prevista {pasta}/… e se a subpágina já existe no GitLab (somente leitura)."""
@@ -1089,6 +1215,17 @@ async def preview_url_pagina_wiki_gitlab_documentacao_api_transcribrothers(
         prefixo = resolver_prefixo_pasta_wiki_gitlab_transcribrothers(cfg, prefixo_pasta_wiki)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    async with session_factory() as session:
+        pastas_permitidas, _, _ = await resolver_pastas_wiki_gitlab_efetivas_transcribrothers(session, cfg)
+    if not pasta_wiki_esta_na_lista_permitida_transcribrothers(prefixo, pastas_permitidas):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Pasta wiki {prefixo!r} não está na lista permitida. "
+                f"Disponíveis: {', '.join(pastas_permitidas)}. "
+                "Cadastre pastas em Configurações."
+            ),
+        )
 
     slug_filho = montar_slug_filho_pagina_wiki_gitlab_transcribrothers(titulo)
     slug_api = montar_slug_api_completo_pagina_wiki_gitlab_transcribrothers(
@@ -1184,6 +1321,17 @@ async def criar_pagina_wiki_gitlab_documentacao_api_transcribrothers(
         prefixo = resolver_prefixo_pasta_wiki_gitlab_transcribrothers(cfg, corpo.prefixo_pasta_wiki)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    async with session_factory() as session:
+        pastas_permitidas, _, _ = await resolver_pastas_wiki_gitlab_efetivas_transcribrothers(session, cfg)
+    if not pasta_wiki_esta_na_lista_permitida_transcribrothers(prefixo, pastas_permitidas):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Pasta wiki {prefixo!r} não está na lista permitida. "
+                f"Disponíveis: {', '.join(pastas_permitidas)}. "
+                "Cadastre pastas em Configurações."
+            ),
+        )
     slug_destino = montar_slug_api_completo_pagina_wiki_gitlab_transcribrothers(
         cfg, titulo, prefixo_pasta=prefixo
     )
@@ -1275,6 +1423,219 @@ async def obter_prompts_fixos_revisao_profunda_e_verificacao_sustentacao_tutoria
             INSTRUCAO_EDITOR_FINAL_REVISAO_PROFUNDA_CONSOLIDACAO_MARKDOWN_TRANSCRIBROTHERS
         ),
     )
+
+
+@app.get(
+    "/api/pipelines/catalogo",
+    response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers,
+)
+async def obter_catalogo_pipelines_disponiveis_documentacao_transcribrothers(
+    session_factory: SessionFactoryDep,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    """Catálogo de pipelines (sistema + custom), passos e prompts."""
+    async with session_factory() as session:
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.post("/api/pipelines/custom/duplicar", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def duplicar_pipeline_custom_a_partir_de_fonte_catalogo_transcribrothers(
+    session_factory: SessionFactoryDep,
+    body: CorpoDuplicarFonteCatalogoCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await duplicar_pipeline_catalogo_para_custom_transcribrothers(session, body.fonte_id.strip())
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.post("/api/pipelines/custom/criar", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def criar_pipeline_custom_a_partir_de_molde_catalogo_transcribrothers(
+    session_factory: SessionFactoryDep,
+    body: CorpoCriarPipelineCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await criar_pipeline_custom_a_partir_de_molde_transcribrothers(
+                session,
+                body.fonte_id.strip(),
+                titulo=body.titulo,
+                descricao=body.descricao,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.put("/api/pipelines/custom/ordem", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def reordenar_pipelines_custom_catalogo_transcribrothers(
+    session_factory: SessionFactoryDep,
+    body: CorpoReordenarPipelinesCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await reordenar_pipelines_custom_transcribrothers(session, body.pipeline_ids_ordenados)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.patch("/api/pipelines/custom/{pipeline_id}", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def atualizar_pipeline_custom_transcribrothers_api(
+    pipeline_id: str,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchPipelineCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await atualizar_pipeline_custom_transcribrothers(
+                session,
+                pipeline_id,
+                titulo=body.titulo,
+                descricao=body.descricao,
+                entradas_aceitas=body.entradas_aceitas,
+            )
+        except ValueError as e:
+            msg = str(e)
+            codigo = 404 if "não encontrada" in msg.lower() else 400
+            raise HTTPException(status_code=codigo, detail=msg) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.put(
+    "/api/pipelines/custom/{pipeline_id}/passos/ordem",
+    response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers,
+)
+async def reordenar_passos_pipeline_custom_catalogo_transcribrothers(
+    pipeline_id: str,
+    session_factory: SessionFactoryDep,
+    body: CorpoReordenarPassosPipelineCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await reordenar_passos_pipeline_custom_transcribrothers(
+                session, pipeline_id, body.passo_ids_ordenados
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.post(
+    "/api/pipelines/custom/{pipeline_id}/passos",
+    response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers,
+)
+async def adicionar_passo_pipeline_custom_catalogo_transcribrothers(
+    pipeline_id: str,
+    session_factory: SessionFactoryDep,
+    body: CorpoAdicionarPassoPipelineCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await adicionar_passo_pipeline_custom_transcribrothers(
+                session,
+                pipeline_id,
+                agente_fonte_id=body.agente_fonte_id.strip(),
+                rotulo=body.rotulo,
+                descricao=body.descricao,
+            )
+        except ValueError as e:
+            msg = str(e)
+            status = 404 if "não encontrad" in msg.lower() else 400
+            raise HTTPException(status_code=status, detail=msg) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.delete(
+    "/api/pipelines/custom/{pipeline_id}/passos/{passo_id}",
+    response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers,
+)
+async def remover_passo_pipeline_custom_catalogo_transcribrothers(
+    pipeline_id: str,
+    passo_id: str,
+    session_factory: SessionFactoryDep,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await remover_passo_pipeline_custom_transcribrothers(session, pipeline_id, passo_id)
+        except ValueError as e:
+            msg = str(e)
+            status = 404 if "não encontrad" in msg.lower() else 400
+            raise HTTPException(status_code=status, detail=msg) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.delete("/api/pipelines/custom/{pipeline_id}", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def excluir_pipeline_custom_transcribrothers_api(
+    pipeline_id: str,
+    session_factory: SessionFactoryDep,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await excluir_pipeline_custom_transcribrothers(session, pipeline_id)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.post("/api/agentes/custom/duplicar", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def duplicar_agente_custom_a_partir_de_fonte_catalogo_transcribrothers(
+    session_factory: SessionFactoryDep,
+    body: CorpoDuplicarFonteCatalogoCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await duplicar_agente_catalogo_para_custom_transcribrothers(session, body.fonte_id.strip())
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.patch("/api/agentes/custom/{agente_id}", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def atualizar_agente_custom_transcribrothers_api(
+    agente_id: str,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchAgenteCustomTranscribrothers,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    cfg = obter_cfg(request)
+    modelo_norm: str | None | object = ...
+    if "modelo_litellm" in body.model_fields_set:
+        modelo_norm = (
+            _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, body.modelo_litellm or None)
+            if (body.modelo_litellm or "").strip()
+            else None
+        )
+    prompts_json = None
+    if body.prompts is not None:
+        prompts_json = [p.model_dump() for p in body.prompts]
+    async with session_factory() as session:
+        try:
+            await atualizar_agente_custom_transcribrothers(
+                session,
+                agente_id,
+                rotulo=body.rotulo,
+                descricao=body.descricao,
+                prompts_json=prompts_json,
+                modelo_litellm=modelo_norm,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
+
+
+@app.delete("/api/agentes/custom/{agente_id}", response_model=RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers)
+async def excluir_agente_custom_transcribrothers_api(
+    agente_id: str,
+    session_factory: SessionFactoryDep,
+) -> RespostaCatalogoPipelinesDisponiveisDocumentacaoTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await excluir_agente_custom_transcribrothers(session, agente_id)
+        except ValueError as e:
+            raise HTTPException(status_code=409, detail=str(e)) from e
+        return await montar_resposta_catalogo_pipelines_mesclado_sistema_e_custom_transcribrothers(session)
 
 
 @app.patch("/api/config/transcribrothers/transcricao-multimodal-runtime", response_model=RespostaConfigPublicaTranscribrothers)
@@ -1369,7 +1730,83 @@ async def apagar_preferencia_runtime_verificacao_redundancia_secao_markdown_volt
     return await _montar_resposta_config_publica_transcribrothers(request)
 
 
+@app.patch(
+    "/api/config/transcribrothers/gitlab-wiki-pastas-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def atualizar_pastas_wiki_gitlab_runtime_via_sqlite_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchPastasWikiGitlabRuntimeTranscribrothers,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await gravar_pastas_wiki_gitlab_runtime_sqlite_transcribrothers(
+                session,
+                pastas=list(body.pastas),
+                pasta_padrao=body.pasta_padrao,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.delete(
+    "/api/config/transcribrothers/gitlab-wiki-pastas-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def apagar_pastas_wiki_gitlab_runtime_volta_ao_env_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        await apagar_override_pastas_wiki_gitlab_runtime_sqlite_transcribrothers(session)
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+class RespostaValidarPastaWikiGitlabIndiceTranscribrothers(BaseModel):
+    pasta: str
+    existe_no_gitlab: bool
+    web_url_indice: str
+
+
+@app.get(
+    "/api/gitlab/wikis/validar-pasta-indice",
+    response_model=RespostaValidarPastaWikiGitlabIndiceTranscribrothers,
+)
+async def validar_pasta_indice_wiki_gitlab_existe_api_transcribrothers(
+    pasta: str,
+) -> RespostaValidarPastaWikiGitlabIndiceTranscribrothers:
+    """Confirma se a página índice da pasta existe no projeto wiki (somente leitura)."""
+    cfg = obter_configuracao()
+    if not gitlab_criar_wiki_configurado_no_ambiente_transcribrothers(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "GitLab wiki não configurado no servidor. Defina GITLAB_BASE_URL, GITLAB_TOKEN e "
+                "GITLAB_WIKI_PROJECT_PATH."
+            ),
+        )
+    try:
+        pasta_norm = resolver_prefixo_pasta_wiki_gitlab_transcribrothers(cfg, pasta)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    existe = await pagina_wiki_gitlab_existe_no_projeto_transcribrothers(cfg, pasta_norm)
+    web_indice = montar_web_url_pagina_indice_pasta_wiki_gitlab_documentacao_transcribrothers(
+        cfg, prefixo_pasta=pasta_norm
+    )
+    return RespostaValidarPastaWikiGitlabIndiceTranscribrothers(
+        pasta=pasta_norm,
+        existe_no_gitlab=bool(existe),
+        web_url_indice=web_indice,
+    )
+
+
 _DESTINOS_APOS_TRANSCRICAO_UPLOAD_VALIDOS_TRANSCRIBROTHERS = frozenset(
+    {"gerar_tutorial", "reproducao_bug", "notas_proposta_funcionalidade", "so_transcricao"},
+)
+
+_DESTINOS_UPLOAD_SOMENTE_VIDEO_TRANSCRIBROTHERS = frozenset(
     {"gerar_tutorial", "reproducao_bug", "notas_proposta_funcionalidade"},
 )
 
@@ -1448,12 +1885,49 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
     litellm_model: Annotated[str | None, Form()] = None,
     tutorial_litellm_instrucao_prefixo: Annotated[str | None, Form()] = None,
     destino_apos_transcricao: Annotated[str | None, Form()] = None,
+    pipeline_custom_id: Annotated[str | None, Form()] = None,
     cliques_json: Annotated[
         UploadFile | None,
         File(description="JSON opcional de cliques (reproducao_bug)"),
     ] = None,
 ) -> RespostaJobTranscribrothers:
     cfg = obter_cfg(request)
+    job_id = novo_id_job()
+    try:
+        return await _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_transcribrothers(
+            session_factory=session_factory,
+            data_dir=data_dir,
+            cfg=cfg,
+            job_id=job_id,
+            video=video,
+            staging_id=staging_id,
+            litellm_model=litellm_model,
+            tutorial_litellm_instrucao_prefixo=tutorial_litellm_instrucao_prefixo,
+            destino_apos_transcricao=destino_apos_transcricao,
+            pipeline_custom_id=pipeline_custom_id,
+            cliques_json=cliques_json,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_erro_upload_video_job_transcribrothers(job_id=job_id, etapa="upload_nao_tratado", exc=e)
+        raise
+
+
+async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_transcribrothers(
+    *,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+    cfg: ConfiguracaoAmbienteTranscribrothers,
+    job_id: str,
+    video: UploadFile | None,
+    staging_id: str | None,
+    litellm_model: str | None,
+    tutorial_litellm_instrucao_prefixo: str | None,
+    destino_apos_transcricao: str | None,
+    pipeline_custom_id: str | None,
+    cliques_json: UploadFile | None,
+) -> RespostaJobTranscribrothers:
     if not tem_credencial_para_transcricao_no_pipeline(cfg):
         raise HTTPException(
             status_code=503,
@@ -1462,14 +1936,6 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
                 "Modo openai_whisper exige POST /v1/audio/transcriptions no gateway. "
                 "Modo litellm_multimodal_audio exige POST /v1/chat/completions e um modelo gemini/ "
                 "(TRANSCRICAO_LITELLM_MODELO ou LITELLM_MODELOS_PROVISIONADOS / LITELLM_MODEL)."
-            ),
-        )
-    if not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(cfg):
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "O job inclui geração do tutorial no proxy LiteLLM: defina LITELLM_API_KEY e LITELLM_ENDPOINT "
-                "(POST /v1/chat/completions). Não há fluxo sem proxy neste projeto."
             ),
         )
     staging_id_norm = (staging_id or "").strip()
@@ -1497,12 +1963,68 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     destino_pipeline = (destino_apos_transcricao or "gerar_tutorial").strip()
+    pipeline_custom_norm = (pipeline_custom_id or "").strip()
+    snapshot_pipeline_custom: dict[str, Any] | None = None
+    entradas_aceitas_efetivas: list[str] = ["video"]
+    if pipeline_custom_norm:
+        async with session_factory() as session:
+            pipeline_row = await obter_pipeline_custom_por_id_transcribrothers(session, pipeline_custom_norm)
+            if pipeline_row is None:
+                raise HTTPException(status_code=400, detail=f"pipeline_custom_id inválido: {pipeline_custom_norm!r}.")
+            copiado_de = str(pipeline_row.copiado_de or "")
+            if not pipeline_custom_e_executavel_upload_transcribrothers(copiado_de):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Esta pipeline custom não pode ser usada no upload (fluxo 2). "
+                        "Duplique um fluxo inicial (tutorial, notas, bug ou só transcrição)."
+                    ),
+                )
+            destino_mapeado = mapear_pipeline_sistema_para_destino_apos_transcricao_transcribrothers(copiado_de)
+            if not destino_mapeado:
+                raise HTTPException(status_code=400, detail=f"Pipeline sem destino de upload mapeado: {copiado_de!r}.")
+            destino_pipeline = destino_mapeado
+            from transcribrothers_backend.modulo_catalogo_pipelines_disponiveis_documentacao_transcribrothers import (
+                normalizar_entradas_aceitas_pipeline_catalogo_transcribrothers,
+                obter_pipeline_catalogo_sistema_por_id_transcribrothers,
+            )
+
+            molde = obter_pipeline_catalogo_sistema_por_id_transcribrothers(copiado_de)
+            padrao_e = list(molde.entradas_aceitas) if molde else ["video"]
+            entradas_aceitas_efetivas = list(
+                normalizar_entradas_aceitas_pipeline_catalogo_transcribrothers(
+                    pipeline_row.entradas_aceitas_json,
+                    padrao=padrao_e,  # type: ignore[arg-type]
+                )
+            )
+            agentes_rows = await carregar_agentes_custom_da_pipeline_transcribrothers(session, pipeline_row)
+            snapshot_pipeline_custom = montar_snapshot_completo_pipeline_custom_para_steps_json_transcribrothers(
+                pipeline_row,
+                agentes_rows,
+            )
+    else:
+        if destino_pipeline == "so_transcricao":
+            entradas_aceitas_efetivas = ["video", "audio"]
+        else:
+            entradas_aceitas_efetivas = ["video"]
+
     if destino_pipeline not in _DESTINOS_APOS_TRANSCRICAO_UPLOAD_VALIDOS_TRANSCRIBROTHERS:
         raise HTTPException(
             status_code=400,
             detail=(
                 f"destino_apos_transcricao inválido: {destino_pipeline!r}. "
                 f"Valores aceitos: {', '.join(sorted(_DESTINOS_APOS_TRANSCRICAO_UPLOAD_VALIDOS_TRANSCRIBROTHERS))}."
+            ),
+        )
+
+    if destino_pipeline != "so_transcricao" and not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(
+        cfg
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "O job inclui geração de documento no proxy LiteLLM: defina LITELLM_API_KEY e LITELLM_ENDPOINT "
+                "(POST /v1/chat/completions). Não há fluxo sem proxy neste projeto."
             ),
         )
 
@@ -1513,49 +2035,71 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
             detail="JSON de cliques só pode ser enviado com destino_apos_transcricao=reproducao_bug.",
         )
 
-    job_id = novo_id_job()
+    log_inicio_upload_video_job_transcribrothers(
+        job_id=job_id,
+        destino_apos_transcricao=destino_pipeline,
+        nome_arquivo=nome_arquivo_video or staging_id_norm or "?",
+        max_video_bytes=int(cfg.max_video_bytes),
+        data_dir=data_dir.resolve(),
+        via_staging=tem_staging,
+    )
+
     work = _diretorio_trabalho_job(data_dir, job_id)
     work.mkdir(parents=True, exist_ok=True)
 
     importado_recbrothers_staging_id: str | None = None
     extras_staging: dict = {}
     total_cliques_reproducao_bug = 0
+    tipo_entrada_midia = "video"
+    destino_midia: Path
     if tem_staging:
         meta_staging = obter_metadados_staging_video_ou_erro_http(data_dir, staging_id_norm)
-        destino_video = work / f"video_entrada_arquivo_local{meta_staging.ext}"
+        destino_midia = work / f"video_entrada_arquivo_local{meta_staging.ext}"
         nome_original, total, ext, extras_staging = consumir_staging_video_para_destino_job(
             data_dir,
             staging_id_norm,
-            destino_video,
+            destino_midia,
         )
         importado_recbrothers_staging_id = staging_id_norm
         total_cliques_reproducao_bug = int(extras_staging.get("total_cliques") or 0)
+        tipo_entrada_midia = "video"
     else:
         nome_original = video.filename or "video.mp4"  # type: ignore[union-attr]
         try:
-            ext = extrair_extensao_video_sanitizada_para_upload_local(nome_original)
-        except ErroExtensaoVideoUploadTranscribrothers as e:
+            tipo_entrada_midia = classificar_tipo_entrada_midia_por_nome_arquivo_transcribrothers(nome_original)
+        except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
-        destino_video = work / f"video_entrada_arquivo_local{ext}"
-        max_b = int(cfg.max_video_bytes)
-        chunk_size = 1024 * 1024
-        total = 0
-        try:
-            with destino_video.open("wb") as f:
-                while True:
-                    bloco = await video.read(chunk_size)  # type: ignore[union-attr]
-                    if not bloco:
-                        break
-                    total += len(bloco)
-                    if total > max_b:
-                        destino_video.unlink(missing_ok=True)
-                        raise HTTPException(
-                            status_code=413,
-                            detail=f"Arquivo excede o limite de {max_b} bytes.",
-                        )
-                    f.write(bloco)
-        finally:
-            await video.close()  # type: ignore[union-attr]
+        if tipo_entrada_midia not in entradas_aceitas_efetivas:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Esta pipeline/destino não aceita entrada '{tipo_entrada_midia}'. "
+                    f"Aceitas: {', '.join(entradas_aceitas_efetivas)}."
+                ),
+            )
+        if tipo_entrada_midia == "audio" and destino_pipeline in _DESTINOS_UPLOAD_SOMENTE_VIDEO_TRANSCRIBROTHERS:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Tutorial, notas e reprodução de bug exigem vídeo nesta versão. "
+                    "Use «Só transcrição» para áudio."
+                ),
+            )
+        if tipo_entrada_midia == "audio":
+            ext = extrair_extensao_audio_sanitizada_para_upload_local(nome_original)
+            destino_midia = work / f"audio_entrada_arquivo_local{ext}"
+        else:
+            try:
+                ext = extrair_extensao_video_sanitizada_para_upload_local(nome_original)
+            except ErroExtensaoVideoUploadTranscribrothers as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
+            destino_midia = work / f"video_entrada_arquivo_local{ext}"
+        total = await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+            video,  # type: ignore[arg-type]
+            destino_midia,
+            int(cfg.max_video_bytes),
+            job_id=job_id,
+        )
         if cliques_json is not None and nome_cliques_json:
             from transcribrothers_backend.modulo_util_validar_e_gravar_json_cliques_reproducao_bug_job_transcribrothers import (
                 validar_e_gravar_upload_cliques_json_reproducao_bug_job_transcribrothers,
@@ -1568,16 +2112,33 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
                 )
             )
 
-    duracao_video_segundos_ffprobe = await obter_duracao_video_segundos_via_ffprobe(destino_video)
+    if tem_staging and tipo_entrada_midia not in entradas_aceitas_efetivas:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Esta pipeline/destino não aceita entrada '{tipo_entrada_midia}'. "
+                f"Aceitas: {', '.join(entradas_aceitas_efetivas)}."
+            ),
+        )
+
+    duracao_video_segundos_ffprobe = await obter_duracao_video_segundos_via_ffprobe(destino_midia)
+    log_fim_gravacao_video_upload_job_transcribrothers(
+        job_id=job_id,
+        destino_video=destino_midia,
+        bytes_gravados=total,
+        duracao_ffprobe_segundos=float(duracao_video_segundos_ffprobe),
+    )
 
     async with session_factory() as session:
         steps_json = {
             "source": OrigemEntradaJobTranscribrothers.upload_local,
+            "upload_ok": True,
             "original_filename": nome_original,
-            "saved_as": destino_video.name,
+            "saved_as": destino_midia.name,
             "bytes_written": total,
             "litellm_model": modelo_litellm,
             "destino_apos_transcricao": destino_pipeline,
+            "tipo_entrada_midia": tipo_entrada_midia,
         }
         if duracao_video_segundos_ffprobe > 0:
             steps_json["duracao_video_segundos"] = round(float(duracao_video_segundos_ffprobe), 3)
@@ -1590,6 +2151,8 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
             if total_cliques_reproducao_bug <= 0:
                 steps_json["reproducao_bug_sem_json_cliques"] = True
             steps_json["modo_recbrothers"] = extras_staging.get("modo_recbrothers")
+        if snapshot_pipeline_custom:
+            steps_json.update(snapshot_pipeline_custom)
         row = JobPipelineTranscribrothers(
             id=job_id,
             status=StatusJobTranscribrothers.pending.value,
@@ -1608,6 +2171,7 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
         session_factory=session_factory,
         configuracao=cfg,
     )
+    log_job_upload_registrado_e_pipeline_agendado_transcribrothers(job_id=job_id)
 
     async with session_factory() as session:
         created = await session.get(JobPipelineTranscribrothers, job_id)
@@ -1667,6 +2231,79 @@ async def criar_job_projeto_em_branco_sem_video_nem_pipeline_transcribrothers(
         created = await session.get(JobPipelineTranscribrothers, job_id)
         assert created is not None
         return _job_para_resposta(created)
+
+
+@app.post("/api/jobs/importar-transcricao", response_model=RespostaJobTranscribrothers)
+async def importar_transcricao_pronta_criar_job_sem_stt_transcribrothers(
+    request: Request,
+    data_dir: DataDirDep,
+    session_factory: SessionFactoryDep,
+    destino_apos_transcricao: Annotated[str, Form()] = "so_transcricao",
+    texto: Annotated[str | None, Form()] = None,
+    pipeline_custom_id: Annotated[str | None, Form()] = None,
+    litellm_model: Annotated[str | None, Form()] = None,
+    arquivo: UploadFile | None = File(None),
+) -> RespostaJobTranscribrothers:
+    """Cria job a partir de texto/legendas já existentes (sem STT nem mídia)."""
+    cfg = obter_cfg(request)
+    destino = (destino_apos_transcricao or "").strip() or "so_transcricao"
+    modelo_litellm = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, litellm_model)
+
+    if destino == "notas_proposta_funcionalidade" or (pipeline_custom_id or "").strip():
+        if not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(cfg):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Geração de notas usa o proxy LiteLLM: defina LITELLM_API_KEY e LITELLM_ENDPOINT "
+                    "(POST /v1/chat/completions)."
+                ),
+            )
+
+    conteudo_arquivo: bytes | None = None
+    nome_arquivo: str | None = None
+    if arquivo is not None and (arquivo.filename or "").strip():
+        nome_arquivo = (arquivo.filename or "").strip()
+        conteudo_arquivo = await arquivo.read()
+        if len(conteudo_arquivo) > int(cfg.max_video_bytes):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Arquivo excede o limite de {int(cfg.max_video_bytes)} bytes.",
+            )
+
+    try:
+        row, deve_agendar = await criar_job_a_partir_transcricao_importada_pronta_transcribrothers(
+            data_dir=data_dir,
+            session_factory=session_factory,
+            texto=texto,
+            nome_arquivo=nome_arquivo,
+            conteudo_arquivo=conteudo_arquivo,
+            destino_solicitado=destino,
+            pipeline_custom_id=pipeline_custom_id,
+            modelo_litellm=modelo_litellm,
+        )
+    except (
+        ErroTranscricaoImportadaVaziaOuInvalidaTranscribrothers,
+        ErroImportarTranscricaoProntaTranscribrothers,
+    ) as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    if deve_agendar:
+        agendar_pipeline_job_em_task_assincrona(
+            job_id=row.id,
+            session_factory=session_factory,
+            configuracao=cfg,
+        )
+
+    async with session_factory() as session:
+        criado = await session.get(JobPipelineTranscribrothers, row.id)
+        assert criado is not None
+        resp = _job_para_resposta(criado)
+        work = _diretorio_trabalho_job(data_dir, row.id)
+        steps_enriquecidos = dict(resp.steps_json)
+        steps_enriquecidos["pode_gerar_outro_formato"] = (
+            job_pode_gerar_outro_formato_pos_transcricao_transcribrothers(job=criado, work=work)
+        )
+        return resp.model_copy(update={"steps_json": steps_enriquecidos})
 
 
 @app.get("/api/jobs", response_model=list[ResumoJobListaPipelineTranscribrothers])
@@ -1796,7 +2433,12 @@ async def obter_status_e_resultado_do_job_pipeline(
             work,
         )
         await session.refresh(row)
-        return _job_para_resposta(row)
+        resp = _job_para_resposta(row)
+        steps_enriquecidos = dict(resp.steps_json)
+        steps_enriquecidos["pode_gerar_outro_formato"] = (
+            job_pode_gerar_outro_formato_pos_transcricao_transcribrothers(job=row, work=work)
+        )
+        return resp.model_copy(update={"steps_json": steps_enriquecidos})
 
 
 @app.post("/api/jobs/{job_id}/cancel", response_model=RespostaJobTranscribrothers)
@@ -1863,6 +2505,77 @@ async def repetir_job_pipeline_apos_falha_ou_cancelamento_transcribrothers(
         criado = await session.get(JobPipelineTranscribrothers, job_id)
         assert criado is not None
         return _job_para_resposta(criado)
+
+
+@app.post("/api/jobs/{job_id}/gerar-outro-formato", response_model=RespostaJobTranscribrothers)
+async def gerar_outro_formato_pos_transcricao_reutilizando_transcricao_job_transcribrothers(
+    job_id: str,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+    body: CorpoGerarOutroFormatoPosTranscricaoJobTranscribrothers,
+) -> RespostaJobTranscribrothers:
+    cfg = obter_cfg(request)
+    if not tem_credencial_para_transcricao_no_pipeline(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Transcrição: configure o proxy LiteLLM com LITELLM_API_KEY e LITELLM_ENDPOINT."
+            ),
+        )
+    if not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Geração de documento usa o proxy LiteLLM: defina LITELLM_API_KEY e LITELLM_ENDPOINT."
+            ),
+        )
+    modelo_litellm = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, body.litellm_model)
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    destino_solicitado = (body.destino_apos_transcricao or "").strip()
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        try:
+            validar_job_pode_gerar_outro_formato_transcribrothers(
+                job=row,
+                work=work,
+                novo_destino=destino_solicitado,
+            )
+            novo_destino, snapshot_pipeline_custom = (
+                await resolver_snapshot_pipeline_custom_para_gerar_outro_formato_transcribrothers(
+                    session,
+                    body.pipeline_custom_id,
+                    destino_solicitado,
+                )
+            )
+        except ErroGerarOutroFormatoJobTranscribrothers as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        row = await aplicar_gerar_outro_formato_no_job_transcribrothers(
+            session,
+            job=row,
+            novo_destino=novo_destino,
+            snapshot_pipeline_custom=snapshot_pipeline_custom,
+            modelo_litellm=modelo_litellm,
+            session_factory=session_factory,
+        )
+
+    agendar_pipeline_job_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+    )
+
+    async with session_factory() as session:
+        criado = await session.get(JobPipelineTranscribrothers, job_id)
+        assert criado is not None
+        resp = _job_para_resposta(criado)
+        steps_enriquecidos = dict(resp.steps_json)
+        steps_enriquecidos["pode_gerar_outro_formato"] = False
+        return resp.model_copy(update={"steps_json": steps_enriquecidos})
 
 
 @app.post("/api/jobs/{job_id}/regenerate-tutorial", response_model=RespostaJobTranscribrothers)

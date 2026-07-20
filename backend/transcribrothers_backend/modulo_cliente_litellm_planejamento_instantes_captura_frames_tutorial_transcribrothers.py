@@ -170,6 +170,7 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
     modo_notas_proposta_funcionalidade: bool = False,
+    system_prompt_override: str | None = None,
 ) -> tuple[list[float], dict[str, Any]]:
     """
     Devolve instantes alinhados aos candidatos e metadados para `steps_json`.
@@ -196,6 +197,12 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
         max_capturas_apos_limites=max_capturas_apos_limites,
     )
     try:
+        system_default = (
+            SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS
+            if modo_notas_proposta_funcionalidade
+            else SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS
+        )
+        system_efetivo = (system_prompt_override or "").strip() or system_default
         texto = await litellm_chat_completions_texto_simples_transcribrothers(
             modelo=modelo_litellm,
             api_key=api_key,
@@ -204,11 +211,7 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
             mensagens=[
                 {
                     "role": "system",
-                    "content": (
-                        SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS
-                        if modo_notas_proposta_funcionalidade
-                        else SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS
-                    ),
+                    "content": system_efetivo,
                 },
                 {"role": "user", "content": mensagem_usuario},
             ],

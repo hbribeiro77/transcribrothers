@@ -16,6 +16,7 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
     StatusJobTranscribrothers,
 )
 from transcribrothers_backend.modulo_cliente_litellm_geracao_reproducao_bug_markdown_transcribrothers import (
+    INSTRUCAO_LITELLM_REPRODUCAO_BUG_RECBROTHERS_TRANSCRIBROTHERS,
     gerar_markdown_reproducao_bug_recbrothers_com_litellm_transcribrothers,
 )
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
@@ -52,6 +53,10 @@ from transcribrothers_backend.modulo_pipeline_job_transcricao_tutorial import (
 )
 from transcribrothers_backend.modulo_pipeline_transcrever_audio_wav_janelas_multimodal_ou_whisper_transcribrothers import (
     transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
+    resolver_modelo_agente_pipeline_custom_transcribrothers,
+    resolver_prompt_agente_pipeline_custom_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     resolver_api_key_e_api_base_para_chamada_litellm,
@@ -177,6 +182,7 @@ async def executar_pipeline_job_reproducao_bug_recbrothers_em_background(
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
+        reprocessamento_pos_transcricao_apenas = bool(steps.get("reprocessamento_pos_transcricao_apenas"))
         tem_audio = await video_tem_faixa_audio_via_ffprobe_transcribrothers(video)
         steps["video_tem_faixa_audio_ffprobe"] = tem_audio
         transcricao = ResultadoTranscricaoComSegmentos(
@@ -185,7 +191,17 @@ async def executar_pipeline_job_reproducao_bug_recbrothers_em_background(
             idioma_detectado=None,
         )
 
-        if tem_audio:
+        if reprocessamento_pos_transcricao_apenas:
+            from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+                carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers,
+            )
+
+            transcricao = carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers(
+                work, steps
+            )
+            steps["audio_ok"] = True
+            await _atualizar_job(session_factory, job_id, steps=steps)
+        elif tem_audio:
             await marcar(StatusJobTranscribrothers.extracting_audio)
             steps["pipeline_fase"] = "ffmpeg_extrair_audio"
             try:
@@ -270,7 +286,9 @@ async def executar_pipeline_job_reproducao_bug_recbrothers_em_background(
             cliques=cliques,
             transcricao=transcricao,
             caminhos_frames_rel_job=rels,
-            modelo=modelo_litellm,
+            modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                "gerador_reproducao_bug", steps, modelo_litellm, configuracao
+            ),
             api_key=api_key_litellm,
             api_base=api_base_litellm,
             httpx_verify=http_verify_litellm,
@@ -279,12 +297,19 @@ async def executar_pipeline_job_reproducao_bug_recbrothers_em_background(
             diretorio_assets_absoluto=assets_dir,
             steps_para_log_decisoes_ia=steps,
             sem_json_cliques_recbrothers=sem_json_cliques,
+            instrucao_prefixo_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                "gerador_reproducao_bug",
+                "instrucao_reproducao_bug",
+                steps,
+                INSTRUCAO_LITELLM_REPRODUCAO_BUG_RECBROTHERS_TRANSCRIBROTHERS,
+            ),
         )
         steps["regeneracao_tutorial_snapshot"] = _montar_snapshot_regeneracao_tutorial_transcribrothers(
             transcricao,
             rels,
         )
         steps["pipeline_fase"] = "reproducao_bug_concluida"
+        era_reprocessamento_pos_transcricao = bool(steps.get("reprocessamento_pos_transcricao_apenas"))
         await _atualizar_job(
             session_factory,
             job_id,
@@ -292,6 +317,25 @@ async def executar_pipeline_job_reproducao_bug_recbrothers_em_background(
             markdown=md,
             steps=steps,
         )
+        if era_reprocessamento_pos_transcricao:
+            from transcribrothers_backend.modulo_constante_origem_historico_versao_tutorial_markdown_job_transcribrothers import (
+                ORIGEM_HISTORICO_REPRODUCAO_BUG_PIPELINE_INICIAL_TRANSCRIBROTHERS,
+            )
+            from transcribrothers_backend.modulo_persistencia_historico_versoes_tutorial_markdown_job_sqlite_transcribrothers import (
+                inserir_versao_historico_tutorial_markdown_se_conteudo_novo_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+                finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers,
+            )
+
+            await inserir_versao_historico_tutorial_markdown_se_conteudo_novo_transcribrothers(
+                session_factory,
+                job_id=job_id,
+                conteudo_markdown=md,
+                origem=ORIGEM_HISTORICO_REPRODUCAO_BUG_PIPELINE_INICIAL_TRANSCRIBROTHERS,
+            )
+            finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers(steps)
+            await _atualizar_job(session_factory, job_id, steps=steps)
     except PipelineCanceladoPeloUsuarioTranscribrothers:
         limpar_marcacao_cancelamento_pipeline_job_transcribrothers(job_id)
         await _atualizar_job(

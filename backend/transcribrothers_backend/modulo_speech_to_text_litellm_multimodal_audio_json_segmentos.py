@@ -360,6 +360,8 @@ class TranscriberLiteLLmMultimodalAudioJsonSegmentos:
         httpx_timeout_read_segundos: float = 7200.0,
         usar_response_format_json_object: bool = True,
         formato_input_audio_inline: str = "wav",
+        prompt_transcricao_janela: str | None = None,
+        prompt_transcricao_retry: str | None = None,
     ) -> None:
         if not model.strip():
             raise ValueError("Modelo de transcrição multimodal é obrigatório.")
@@ -388,6 +390,8 @@ class TranscriberLiteLLmMultimodalAudioJsonSegmentos:
         self._usar_response_format_json_object = bool(usar_response_format_json_object)
         fmt = str(formato_input_audio_inline or "wav").strip().lower()
         self._formato_input_audio_inline = fmt if fmt in ("wav", "mp3", "opus", "aac") else "wav"
+        self._prompt_transcricao_janela = (prompt_transcricao_janela or "").strip() or _PROMPT_TRANSCRICAO_JSON_PT
+        self._prompt_transcricao_retry = (prompt_transcricao_retry or "").strip() or _PROMPT_TRANSCRICAO_JSON_RETRY_PT
 
     async def transcrever_arquivo_audio_com_segmentos(
         self,
@@ -416,9 +420,9 @@ class TranscriberLiteLLmMultimodalAudioJsonSegmentos:
         async with httpx.AsyncClient(timeout=self._httpx_timeout, verify=self._httpx_verify) as client:
             for tentativa in range(_MAX_TENTATIVAS_HTTP_TRANSCRICAO_JSON):
                 prompt = (
-                    _PROMPT_TRANSCRICAO_JSON_PT
+                    self._prompt_transcricao_janela
                     if tentativa == 0
-                    else _PROMPT_TRANSCRICAO_JSON_RETRY_PT
+                    else self._prompt_transcricao_retry
                 )
                 messages = [
                     {

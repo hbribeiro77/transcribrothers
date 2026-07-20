@@ -51,7 +51,11 @@ async def gerar_rascunho_notas_proposta_funcionalidade_com_litellm_transcribroth
     httpx_timeout_connect_segundos: float = 120.0,
     httpx_timeout_read_segundos: float = 7200.0,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
+    instrucao_prefixo_override: str | None = None,
 ) -> str:
+    prefixo = (instrucao_prefixo_override or "").strip() or montar_instrucao_prefixo_litellm_notas_proposta_funcionalidade_transcribrothers(
+        rascunho_sem_imagens=True,
+    )
     return await gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
         transcricao=transcricao,
         caminhos_frames_rel_job=[],
@@ -62,9 +66,7 @@ async def gerar_rascunho_notas_proposta_funcionalidade_com_litellm_transcribroth
         httpx_timeout_connect_segundos=httpx_timeout_connect_segundos,
         httpx_timeout_read_segundos=httpx_timeout_read_segundos,
         enviar_screenshots_png_como_imagens_multimodais=False,
-        instrucao_prefixo_litellm_custom=montar_instrucao_prefixo_litellm_notas_proposta_funcionalidade_transcribrothers(
-            rascunho_sem_imagens=True,
-        ),
+        instrucao_prefixo_litellm_custom=prefixo,
         steps_para_log_decisoes_ia=steps_para_log_decisoes_ia,
         log_etapa_geracao_tutorial="geracao_rascunho_notas_proposta",
     )
@@ -87,8 +89,9 @@ async def gerar_markdown_notas_proposta_funcionalidade_com_litellm_transcribroth
     markdown_rascunho_para_contexto: str | None = None,
     documento_autonomo_sem_video: bool = False,
     log_etapa_geracao_tutorial: str = "geracao_markdown_notas_proposta",
+    instrucao_prefixo_override: str | None = None,
 ) -> str:
-    prefixo = montar_instrucao_prefixo_litellm_notas_proposta_funcionalidade_transcribrothers(
+    prefixo = (instrucao_prefixo_override or "").strip() or montar_instrucao_prefixo_litellm_notas_proposta_funcionalidade_transcribrothers(
         documento_autonomo_sem_video=documento_autonomo_sem_video,
         instrucoes_revisao_humana=instrucoes_revisao_humana,
     )
