@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
+import time
 from pathlib import Path
 
 import pytest
@@ -39,13 +40,29 @@ def _listar_ids_jobs_persistidos_transcribrothers(db_path: Path) -> set[str]:
 def _apagar_jobs_persistidos_transcribrothers(db_path: Path, job_ids: set[str]) -> None:
     if not job_ids or not db_path.is_file():
         return
-    con = sqlite3.connect(db_path, timeout=15)
-    try:
-        con.executemany("DELETE FROM historico_versoes_tutorial_markdown_job_transcribrothers WHERE job_id = ?", [(j,) for j in job_ids])
-        con.executemany("DELETE FROM jobs_pipeline_transcribrothers WHERE id = ?", [(j,) for j in job_ids])
-        con.commit()
-    finally:
-        con.close()
+    params_hist = [(j,) for j in job_ids]
+    params_jobs = [(j,) for j in job_ids]
+    ultimo_erro: sqlite3.OperationalError | None = None
+    for tentativa in range(12):
+        con = sqlite3.connect(db_path, timeout=30)
+        try:
+            con.execute("PRAGMA busy_timeout = 30000")
+            con.executemany(
+                "DELETE FROM historico_versoes_tutorial_markdown_job_transcribrothers WHERE job_id = ?",
+                params_hist,
+            )
+            con.executemany("DELETE FROM jobs_pipeline_transcribrothers WHERE id = ?", params_jobs)
+            con.commit()
+            return
+        except sqlite3.OperationalError as erro:
+            ultimo_erro = erro
+            if "locked" not in str(erro).lower():
+                raise
+            time.sleep(0.05 * (tentativa + 1))
+        finally:
+            con.close()
+    if ultimo_erro is not None:
+        raise ultimo_erro
 
 
 def _apagar_pastas_jobs_persistidos_transcribrothers(data_dir: Path, job_ids: set[str]) -> None:
