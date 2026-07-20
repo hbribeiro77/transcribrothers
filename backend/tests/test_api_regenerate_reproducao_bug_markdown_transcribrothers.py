@@ -53,6 +53,7 @@ def test_regenerate_reproducao_bug_destino_errado_retorna_400() -> None:
             "transcribrothers_backend.main.tem_credencial_para_transcricao_no_pipeline",
             return_value=True,
         ),
+        patch("transcribrothers_backend.main.agendar_pipeline_job_em_task_assincrona"),
     ):
         r_up = client.post(
             "/api/jobs/upload",
