@@ -23,6 +23,9 @@ from transcribrothers_backend.modulo_persistencia_arquivo_json_checkpoint_transc
     carregar_checkpoint_transcricao_multimodal_janelas_se_valido_transcribrothers,
     gravar_ou_mesclar_checkpoint_transcricao_multimodal_janelas_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_arquivo_json_snapshot_transcricao_finalizada_job_transcribrothers import (
+    gravar_snapshot_transcricao_finalizada_no_work_transcribrothers,
+)
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO,
     normalizar_backend_transcricao_audio_configurado,
@@ -36,10 +39,18 @@ from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat 
 )
 from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_json_segmentos import (
     TranscriberLiteLLmMultimodalAudioJsonSegmentos,
+    _PROMPT_TRANSCRICAO_JSON_PT,
+    _PROMPT_TRANSCRICAO_JSON_RETRY_PT,
 )
 from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_janelas_mesclagem_segmentos_transcribrothers import (
     listar_janelas_temporais_segundos_para_transcricao_multimodal_litellm_transcribrothers,
     transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_transcribrothers,
+)
+from transcribrothers_backend.modulo_recuperacao_automatica_transcricao_checkpoint_e_snapshot_retry_transcribrothers import (
+    tentar_recuperar_transcricao_automatica_antes_de_reexecutar_pipeline_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
+    resolver_prompt_agente_pipeline_custom_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_reutilizar_artefatos_midia_pipeline_job_retry_transcribrothers import (
     deve_reutilizar_audio_inline_codificado_transcricao_multimodal_pipeline_retry_transcribrothers,
@@ -83,6 +94,18 @@ async def transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipelin
         ).strip().lower()
         if fmt_inline not in ("wav", "mp3", "opus", "aac"):
             fmt_inline = "wav"
+        prompt_janela = resolver_prompt_agente_pipeline_custom_transcribrothers(
+            "preparacao_transcricao",
+            "transcricao_multimodal_janela",
+            steps_mut,
+            _PROMPT_TRANSCRICAO_JSON_PT,
+        )
+        prompt_retry = resolver_prompt_agente_pipeline_custom_transcribrothers(
+            "preparacao_transcricao",
+            "transcricao_multimodal_retry",
+            steps_mut,
+            _PROMPT_TRANSCRICAO_JSON_RETRY_PT,
+        )
         transcriber = TranscriberLiteLLmMultimodalAudioJsonSegmentos(
             model=modelo_tr,
             api_key=ak_tr,
@@ -92,6 +115,8 @@ async def transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipelin
             httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
             usar_response_format_json_object=configuracao.transcricao_litellm_chat_json_object_response_format,
             formato_input_audio_inline=fmt_inline,
+            prompt_transcricao_janela=prompt_janela,
+            prompt_transcricao_retry=prompt_retry,
         )
         steps_mut["transcricao_backend"] = TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO
         steps_mut["transcricao_modelo"] = modelo_tr
@@ -107,6 +132,22 @@ async def transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipelin
         steps_mut["transcricao_backend"] = "openai_whisper"
 
     levantar_se_cancelado()
+
+    recuperado, meta_recuperacao = await tentar_recuperar_transcricao_automatica_antes_de_reexecutar_pipeline_transcribrothers(
+        diretorio_trabalho_job=work,
+        caminho_audio_wav=audio,
+        configuracao=configuracao,
+        configuracao_exec_transcricao_mm=configuracao_exec_transcricao_mm,
+        steps=steps_mut,
+    )
+    if meta_recuperacao:
+        steps_mut.update(meta_recuperacao)
+    if recuperado is not None:
+        steps_mut["transcricao_snapshot_finalizada_em_disco"] = True
+        steps_mut["transcricao_segmentos"] = len(recuperado.segmentos)
+        steps_mut["pipeline_fase"] = "transcricao_recuperada_automaticamente_sem_retranscrever"
+        await ao_persistir_steps(steps_mut)
+        return recuperado
 
     if backend_tr == TRANSCRICAO_BACKEND_LITELLM_MULTIMODAL_AUDIO:
         janela_seg = float(configuracao_exec_transcricao_mm.transcricao_multimodal_janela_segundos)
@@ -267,6 +308,8 @@ async def transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipelin
     else:
         transcricao = await transcriber.transcrever_arquivo_audio_com_segmentos(audio)
 
+    gravar_snapshot_transcricao_finalizada_no_work_transcribrothers(work, transcricao)
+    steps_mut["transcricao_snapshot_finalizada_em_disco"] = True
     steps_mut["transcricao_segmentos"] = len(transcricao.segmentos)
     steps_mut["pipeline_fase"] = "transcricao_concluida"
     await ao_persistir_steps(steps_mut)

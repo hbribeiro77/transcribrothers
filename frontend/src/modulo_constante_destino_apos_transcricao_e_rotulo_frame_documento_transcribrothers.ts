@@ -4,7 +4,8 @@ export type DestinoAposTranscricaoTranscribrothers =
   | "gerar_tutorial"
   | "projeto_em_branco"
   | "reproducao_bug"
-  | "notas_proposta_funcionalidade";
+  | "notas_proposta_funcionalidade"
+  | "so_transcricao";
 
 export const DESTINO_APOS_TRANSCRICAO_PADRAO_NOVO_PROJETO_TRANSCRIBROTHERS: DestinoAposTranscricaoTranscribrothers =
   "gerar_tutorial";
@@ -14,6 +15,7 @@ const DESTINOS_VALIDOS: readonly DestinoAposTranscricaoTranscribrothers[] = [
   "projeto_em_branco",
   "reproducao_bug",
   "notas_proposta_funcionalidade",
+  "so_transcricao",
 ];
 
 /** Título do frame do documento conforme o destino da transcrição. */
@@ -25,6 +27,7 @@ export const ROTULO_TITULO_FRAME_DOCUMENTO_POR_DESTINO_APOS_TRANSCRICAO_TRANSCRI
   projeto_em_branco: "Documento",
   reproducao_bug: "Reprodução do bug",
   notas_proposta_funcionalidade: "Notas de proposta",
+  so_transcricao: "Transcrição",
 };
 
 export function normalizarDestinoAposTranscricaoDeStepsJsonJobTranscribrothers(

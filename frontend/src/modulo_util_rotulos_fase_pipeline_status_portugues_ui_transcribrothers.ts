@@ -50,6 +50,12 @@ const PIPELINE_FASE_PARA_ROTULO_PORTUGUES: Record<string, string> = {
   cancelado_pelo_usuario: "Cancelado",
   retry_reiniciando_pipeline_completo: "Reiniciando pipeline completo…",
   retry_retomando_pipeline_reutilizando_artefatos: "Retomando (reutilizando vídeo/áudio já no servidor)…",
+  transcricao_reutilizada_snapshot_sem_retranscrever:
+    "Retomando: transcrição já concluída (sem retranscrever o áudio)…",
+  transcricao_recuperada_automaticamente_sem_retranscrever:
+    "Transcrição recuperada automaticamente (snapshot ou checkpoint completo)…",
+  rascunho_notas_reutilizado_sem_regenerar_litellm:
+    "Retomando: rascunho das notas já salvo (sem nova chamada ao modelo)…",
   video_entrada_reutilizado_sem_redownload: "Vídeo já no servidor (sem novo download)…",
   audio_wav_reutilizado_sem_reextrair: "Áudio já extraído (sem novo ffmpeg)…",
   gerando_rascunho_tutorial_sem_imagens: "Rascunho do tutorial (sem capturas ainda)…",

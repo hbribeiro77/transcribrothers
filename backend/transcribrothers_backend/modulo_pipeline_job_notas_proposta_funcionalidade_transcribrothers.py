@@ -16,7 +16,14 @@ from transcribrothers_backend.modulo_cliente_litellm_geracao_notas_proposta_func
     gerar_markdown_notas_proposta_funcionalidade_com_litellm_transcribrothers,
     gerar_rascunho_notas_proposta_funcionalidade_com_litellm_transcribrothers,
 )
+from transcribrothers_backend.constante_texto_instrucao_geracao_notas_proposta_funcionalidade_rascunho_sem_imagens_transcribrothers import (
+    TEXTO_INSTRUCAO_GERACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_RASCUNHO_SEM_IMAGENS_TRANSCRIBROTHERS,
+)
+from transcribrothers_backend.constante_texto_instrucao_geracao_notas_proposta_funcionalidade_com_imagens_transcribrothers import (
+    TEXTO_INSTRUCAO_GERACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_COM_IMAGENS_TRANSCRIBROTHERS,
+)
 from transcribrothers_backend.modulo_cliente_litellm_planejamento_instantes_captura_frames_tutorial_transcribrothers import (
+    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS,
     planejar_instantes_captura_frames_tutorial_com_litellm_transcribrothers,
 )
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
@@ -45,6 +52,9 @@ from transcribrothers_backend.modulo_pipeline_captura_frames_png_tutorial_sob_de
     limite_maximo_capturas_frames_tutorial_transcribrothers,
     resolver_timestamps_segundos_captura_frames_sob_demanda_tutorial_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_arquivo_json_snapshot_transcricao_finalizada_job_transcribrothers import (
+    gravar_rascunho_notas_proposta_sem_imagens_no_work_transcribrothers,
+)
 from transcribrothers_backend.modulo_pipeline_job_transcricao_tutorial import (
     PipelineCanceladoPeloUsuarioTranscribrothers,
     _atualizar_job,
@@ -53,8 +63,21 @@ from transcribrothers_backend.modulo_pipeline_job_transcricao_tutorial import (
     _montar_snapshot_regeneracao_tutorial_transcribrothers,
     steps_json_job_para_reexecucao_pipeline_transcribrothers,
 )
+from transcribrothers_backend.modulo_util_reutilizar_artefatos_midia_pipeline_job_retry_transcribrothers import (
+    deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_handlers_pipeline_custom_habilitados_job_steps_transcribrothers import (
+    handler_pipeline_custom_habilitado_no_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_retomar_transcricao_e_rascunho_pipeline_retry_transcribrothers import (
+    tentar_carregar_rascunho_notas_proposta_para_retry_pipeline_transcribrothers,
+)
 from transcribrothers_backend.modulo_pipeline_transcrever_audio_wav_janelas_multimodal_ou_whisper_transcribrothers import (
     transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
+    resolver_modelo_agente_pipeline_custom_transcribrothers,
+    resolver_prompt_agente_pipeline_custom_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     resolver_api_key_e_api_base_para_chamada_litellm,
@@ -64,6 +87,7 @@ from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat 
     ResultadoTranscricaoComSegmentos,
 )
 from transcribrothers_backend.modulo_verificacao_sustentacao_notas_proposta_funcionalidade_markdown_litellm_transcribrothers import (
+    SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_VS_TRANSCRICAO_TRANSCRIBROTHERS,
     executar_verificacao_sustentacao_notas_proposta_funcionalidade_markdown_litellm_transcribrothers,
 )
 from transcribrothers_backend.modulo_verificacao_sustentacao_tutorial_markdown_litellm_transcribrothers import (
@@ -85,6 +109,18 @@ async def _executar_verificacao_sustentacao_notas_proposta_apos_geracao_markdown
     api_base_litellm: str | None,
     http_verify_litellm: bool | str,
 ) -> None:
+    if not handler_pipeline_custom_habilitado_no_job_transcribrothers(
+        steps, "auditor_sustentacao_notas"
+    ):
+        steps["verificacao_sustentacao_notas_proposta"] = (
+            blob_verificacao_sustentacao_omitida_por_configuracao_transcribrothers(
+                motivo="omitida_pipeline_custom_sem_passo"
+            )
+        )
+        steps["pipeline_fase"] = "verificacao_sustentacao_notas_proposta_concluida"
+        await _atualizar_job(session_factory, job_id, steps=dict(steps))
+        return
+
     async with session_factory() as session:
         from transcribrothers_backend.modulo_persistencia_runtime_config_verificacao_sustentacao_tutorial_sqlite_transcribrothers import (
             verificacao_sustentacao_tutorial_desativada_efetiva_e_flag_override_sqlite_transcribrothers,
@@ -113,12 +149,20 @@ async def _executar_verificacao_sustentacao_notas_proposta_apos_geracao_markdown
         markdown_notas=markdown_notas,
         transcricao_corta=transcricao_corta,
         rels=rels,
-        modelo_litellm=modelo_litellm,
+        modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
+            "auditor_sustentacao_notas", steps, modelo_litellm, configuracao
+        ),
         api_key_litellm=api_key_litellm,
         api_base_litellm=api_base_litellm,
         http_verify_litellm=http_verify_litellm,
         levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
         steps_para_log_decisoes_ia=steps,
+        system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+            "auditor_sustentacao_notas",
+            "system_verificacao_sustentacao_notas",
+            steps,
+            SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_VS_TRANSCRICAO_TRANSCRIBROTHERS,
+        ),
     )
     steps["verificacao_sustentacao_notas_proposta"] = ver
     steps["pipeline_fase"] = "verificacao_sustentacao_notas_proposta_concluida"
@@ -166,37 +210,79 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
         steps["destino_apos_transcricao"] = "notas_proposta_funcionalidade"
         steps["pipeline_fase"] = "notas_proposta_inicio"
         steps["tutorial_captura_frames_sob_demanda"] = True
+        steps["upload_ok"] = True
         await marcar(StatusJobTranscribrothers.downloading)
 
-        candidatos_video = sorted(work.glob("video_entrada_arquivo_local.*"))
-        video = next((p for p in candidatos_video if p.is_file()), None)
-        if video is None:
-            raise FileNotFoundError("Vídeo do job não encontrado (video_entrada_arquivo_local.*).")
+        from transcribrothers_backend.modulo_util_obter_wav_para_transcricao_a_partir_entrada_midia_job_transcribrothers import (
+            localizar_arquivo_entrada_midia_no_diretorio_job_transcribrothers,
+        )
+
+        entrada_midia, tipo_entrada_midia = localizar_arquivo_entrada_midia_no_diretorio_job_transcribrothers(
+            work
+        )
+        reprocessamento_pos_transcricao_apenas = bool(steps.get("reprocessamento_pos_transcricao_apenas"))
+        sem_midia_importada = entrada_midia is None and (
+            reprocessamento_pos_transcricao_apenas or bool(steps.get("transcricao_importada"))
+        )
+        if entrada_midia is None and not sem_midia_importada:
+            raise FileNotFoundError(
+                "Mídia de entrada do job não encontrada (vídeo ou áudio)."
+            )
+        if tipo_entrada_midia:
+            steps["tipo_entrada_midia"] = tipo_entrada_midia
+        video = entrada_midia if tipo_entrada_midia == "video" else None
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
-        tem_audio = await video_tem_faixa_audio_via_ffprobe_transcribrothers(video)
-        steps["video_tem_faixa_audio_ffprobe"] = tem_audio
+        if sem_midia_importada:
+            tem_audio = False
+            steps["entrada_somente_transcricao_importada"] = True
+            steps["video_tem_faixa_audio_ffprobe"] = False
+        elif video is not None:
+            tem_audio = await video_tem_faixa_audio_via_ffprobe_transcribrothers(video)
+            steps["video_tem_faixa_audio_ffprobe"] = tem_audio
+        else:
+            tem_audio = True
+            steps["video_tem_faixa_audio_ffprobe"] = True
+            steps["entrada_somente_audio"] = True
         transcricao = ResultadoTranscricaoComSegmentos(
             texto_completo="",
             segmentos=[],
             idioma_detectado=None,
         )
 
-        if tem_audio:
+        if reprocessamento_pos_transcricao_apenas:
+            from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+                carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers,
+            )
+
+            transcricao = carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers(
+                work, steps
+            )
+            steps["audio_ok"] = True
+            await _atualizar_job(session_factory, job_id, steps=steps)
+        elif tem_audio:
             await marcar(StatusJobTranscribrothers.extracting_audio)
-            steps["pipeline_fase"] = "ffmpeg_extrair_audio"
-            try:
-                await extrair_audio_wav_de_video_para_caminho(
-                    caminho_video=video,
-                    caminho_audio_wav=audio,
-                    forcar_mono=bool(configuracao_exec.transcricao_multimodal_audio_mono),
-                )
-            except ErroFfmpegTranscribrothers as e:
-                steps["audio_extracao_falhou"] = str(e)
-                tem_audio = False
-            else:
+            if deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers(audio, steps):
+                steps["pipeline_fase"] = "audio_wav_reutilizado_sem_reextrair"
                 steps["audio_ok"] = True
+                steps["audio_wav_reutilizado_retry"] = True
+            else:
+                steps["pipeline_fase"] = "ffmpeg_extrair_audio"
+                steps.pop("audio_wav_reutilizado_retry", None)
+                try:
+                    await extrair_audio_wav_de_video_para_caminho(
+                        caminho_video=video,
+                        caminho_audio_wav=audio,
+                        forcar_mono=bool(configuracao_exec.transcricao_multimodal_audio_mono),
+                    )
+                except ErroFfmpegTranscribrothers as e:
+                    steps["audio_extracao_falhou"] = str(e)
+                    tem_audio = False
+                else:
+                    steps["audio_ok"] = True
+
+            if tem_audio and steps.get("audio_ok"):
                 _levantar_se_cancelamento_pipeline_solicitado(job_id)
                 await marcar(StatusJobTranscribrothers.transcribing)
 
@@ -223,23 +309,43 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
             steps["pipeline_fase"] = "sem_faixa_audio_pulando_transcricao"
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
-        dur = await obter_duracao_video_segundos_via_ffprobe(video)
-        if dur > 0:
-            steps["duracao_video_segundos"] = round(float(dur), 3)
+        dur = 0.0
+        if entrada_midia is not None:
+            dur = await obter_duracao_video_segundos_via_ffprobe(entrada_midia)
+            if dur > 0:
+                steps["duracao_video_segundos"] = round(float(dur), 3)
 
         await marcar(StatusJobTranscribrothers.generating_tutorial)
-        steps["pipeline_fase"] = "gerando_rascunho_notas_proposta"
-        md_rascunho = await gerar_rascunho_notas_proposta_funcionalidade_com_litellm_transcribrothers(
-            transcricao=transcricao,
-            modelo=modelo_litellm,
-            api_key=api_key_litellm,
-            api_base=api_base_litellm,
-            httpx_verify=http_verify_litellm,
-            httpx_timeout_connect_segundos=float(configuracao.litellm_http_timeout_connect_segundos),
-            httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
-            steps_para_log_decisoes_ia=steps,
+        md_rascunho_salvo = tentar_carregar_rascunho_notas_proposta_para_retry_pipeline_transcribrothers(
+            work,
+            steps,
         )
-        steps["notas_proposta_rascunho_sem_imagens_ok"] = True
+        if md_rascunho_salvo is not None:
+            md_rascunho = md_rascunho_salvo
+            steps["pipeline_fase"] = "rascunho_notas_reutilizado_sem_regenerar_litellm"
+            steps["rascunho_notas_reutilizado_retry"] = True
+        else:
+            steps["pipeline_fase"] = "gerando_rascunho_notas_proposta"
+            md_rascunho = await gerar_rascunho_notas_proposta_funcionalidade_com_litellm_transcribrothers(
+                transcricao=transcricao,
+                modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                    "rascunho_notas_proposta", steps, modelo_litellm, configuracao
+                ),
+                api_key=api_key_litellm,
+                api_base=api_base_litellm,
+                httpx_verify=http_verify_litellm,
+                httpx_timeout_connect_segundos=float(configuracao.litellm_http_timeout_connect_segundos),
+                httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
+                steps_para_log_decisoes_ia=steps,
+                instrucao_prefixo_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                    "rascunho_notas_proposta",
+                    "instrucao_rascunho_notas_sem_imagens",
+                    steps,
+                    TEXTO_INSTRUCAO_GERACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_RASCUNHO_SEM_IMAGENS_TRANSCRIBROTHERS,
+                ),
+            )
+            gravar_rascunho_notas_proposta_sem_imagens_no_work_transcribrothers(work, md_rascunho)
+            steps["notas_proposta_rascunho_sem_imagens_ok"] = True
 
         margem_links = float(
             configuracao_exec.tutorial_margem_minima_segundos_entre_links_temporais_captura
@@ -267,13 +373,21 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
                 duracao_video_segundos=dur,
                 margem_minima_segundos_entre_links=margem_links,
                 max_capturas_apos_limites=max_capturas_teto,
-                modelo_litellm=modelo_litellm,
+                modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                    "plano_capturas_notas", steps, modelo_litellm, configuracao
+                ),
                 api_key=api_key_litellm,
                 api_base=api_base_litellm,
                 httpx_verify=http_verify_litellm,
                 configuracao=configuracao_exec,
                 steps_para_log_decisoes_ia=steps,
                 modo_notas_proposta_funcionalidade=True,
+                system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                    "plano_capturas_notas",
+                    "system_planejamento_instantes_notas",
+                    steps,
+                    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS,
+                ),
             )
             steps["planejamento_instantes_captura_notas_proposta"] = meta_planej
             timestamps_pre_planejados = escolhidos
@@ -290,7 +404,7 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
         steps["frames_planejados_captura_notas_proposta"] = len(timestamps_captura)
 
         rels: list[tuple[float, str]] = []
-        if timestamps_captura:
+        if timestamps_captura and video is not None:
             await marcar(StatusJobTranscribrothers.capturing_frames)
             steps["pipeline_fase"] = "capturando_frames_notas_proposta"
             largura_png = (
@@ -307,6 +421,13 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
                 prefixo_nome_arquivo="screenshot_notas_proposta_funcionalidade",
                 largura_maxima_saida_pixeis=largura_png,
             )
+        elif timestamps_captura and video is None:
+            steps["capturas_omitidas_entrada_somente_audio"] = True
+            if sem_midia_importada:
+                steps["capturas_omitidas_transcricao_importada"] = True
+                steps["pipeline_fase"] = "capturas_omitidas_transcricao_importada"
+            else:
+                steps["pipeline_fase"] = "capturas_omitidas_somente_audio"
         steps["notas_proposta_frames_capturados"] = len(rels)
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
@@ -314,7 +435,9 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
         md = await gerar_markdown_notas_proposta_funcionalidade_com_litellm_transcribrothers(
             transcricao=transcricao,
             caminhos_frames_rel_job=rels,
-            modelo=modelo_litellm,
+            modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                "gerador_notas_proposta", steps, modelo_litellm, configuracao
+            ),
             api_key=api_key_litellm,
             api_base=api_base_litellm,
             httpx_verify=http_verify_litellm,
@@ -323,6 +446,12 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
             diretorio_assets_absoluto=assets_dir,
             steps_para_log_decisoes_ia=steps,
             markdown_rascunho_para_contexto=md_rascunho,
+            instrucao_prefixo_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                "gerador_notas_proposta",
+                "instrucao_notas_com_imagens",
+                steps,
+                TEXTO_INSTRUCAO_GERACAO_NOTAS_PROPOSTA_FUNCIONALIDADE_COM_IMAGENS_TRANSCRIBROTHERS,
+            ),
         )
 
         steps["regeneracao_tutorial_snapshot"] = _montar_snapshot_regeneracao_tutorial_transcribrothers(
@@ -345,6 +474,7 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
         )
 
         steps["pipeline_fase"] = "notas_proposta_concluida"
+        era_reprocessamento_pos_transcricao = bool(steps.get("reprocessamento_pos_transcricao_apenas"))
         await _atualizar_job(
             session_factory,
             job_id,
@@ -352,6 +482,25 @@ async def executar_pipeline_job_notas_proposta_funcionalidade_em_background(
             markdown=md,
             steps=steps,
         )
+        if era_reprocessamento_pos_transcricao:
+            from transcribrothers_backend.modulo_constante_origem_historico_versao_tutorial_markdown_job_transcribrothers import (
+                ORIGEM_HISTORICO_NOTAS_PIPELINE_INICIAL_TRANSCRIBROTHERS,
+            )
+            from transcribrothers_backend.modulo_persistencia_historico_versoes_tutorial_markdown_job_sqlite_transcribrothers import (
+                inserir_versao_historico_tutorial_markdown_se_conteudo_novo_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+                finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers,
+            )
+
+            await inserir_versao_historico_tutorial_markdown_se_conteudo_novo_transcribrothers(
+                session_factory,
+                job_id=job_id,
+                conteudo_markdown=md,
+                origem=ORIGEM_HISTORICO_NOTAS_PIPELINE_INICIAL_TRANSCRIBROTHERS,
+            )
+            finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers(steps)
+            await _atualizar_job(session_factory, job_id, steps=steps)
     except PipelineCanceladoPeloUsuarioTranscribrothers:
         limpar_marcacao_cancelamento_pipeline_job_transcribrothers(job_id)
         await _atualizar_job(

@@ -16,11 +16,14 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
     StatusJobTranscribrothers,
 )
 from transcribrothers_backend.modulo_cliente_litellm_geracao_tutorial_markdown import (
+    INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+    INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
     INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
     INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS,
     gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames,
 )
 from transcribrothers_backend.modulo_cliente_litellm_planejamento_instantes_captura_frames_tutorial_transcribrothers import (
+    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
     planejar_instantes_captura_frames_tutorial_com_litellm_transcribrothers,
 )
 from transcribrothers_backend.modulo_pipeline_captura_frames_png_tutorial_sob_demanda_transcribrothers import (
@@ -45,6 +48,10 @@ from transcribrothers_backend.modulo_pipeline_transcrever_audio_wav_janelas_mult
 from transcribrothers_backend.modulo_persistencia_runtime_config_transcricao_multimodal_sqlite_transcribrothers import (
     aplicar_overrides_transcricao_multimodal_na_configuracao_transcribrothers,
     obter_overrides_transcricao_multimodal_runtime_do_sqlite_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
+    resolver_modelo_agente_pipeline_custom_transcribrothers,
+    resolver_prompt_agente_pipeline_custom_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     resolver_api_key_e_api_base_para_chamada_litellm,
@@ -75,6 +82,9 @@ from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat 
     ResultadoTranscricaoComSegmentos,
     SegmentoTranscricaoComTempo,
 )
+from transcribrothers_backend.modulo_util_handlers_pipeline_custom_habilitados_job_steps_transcribrothers import (
+    handler_pipeline_custom_habilitado_no_job_transcribrothers,
+)
 from transcribrothers_backend.modulo_util_reutilizar_artefatos_midia_pipeline_job_retry_transcribrothers import (
     deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers,
     deve_reutilizar_video_entrada_pipeline_sem_redownload_transcribrothers,
@@ -99,6 +109,31 @@ def _instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribro
     if isinstance(raw, str) and raw.strip():
         return raw.strip()
     return None
+
+
+def _resolver_instrucao_prefixo_gerador_tutorial_markdown_de_steps_transcribrothers(
+    steps: dict[str, Any],
+    *,
+    usar_visao: bool,
+) -> str | None:
+    """Prefixo do user message: UI do job > prompt custom do agente gerador > padrão interno."""
+    ui = _instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribrothers(steps)
+    if ui:
+        return ui
+    if not steps.get("pipeline_custom_agentes"):
+        return None
+    chave = "instrucao_tutorial_com_imagens" if usar_visao else "instrucao_tutorial_sem_imagens"
+    default = (
+        INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS
+        if usar_visao
+        else INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS
+    )
+    return resolver_prompt_agente_pipeline_custom_transcribrothers(
+        "gerador_tutorial_markdown",
+        chave,
+        steps,
+        default,
+    )
 
 
 def _montar_snapshot_regeneracao_tutorial_transcribrothers(
@@ -193,9 +228,22 @@ async def _executar_verificacao_sustentacao_tutorial_apos_geracao_markdown_se_at
 ) -> None:
     """Grava `steps_json.verificacao_sustentacao_tutorial` e fases de progresso; não altera o Markdown."""
     from transcribrothers_backend.modulo_verificacao_sustentacao_tutorial_markdown_litellm_transcribrothers import (
+        SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_TUTORIAL_MARKDOWN_VS_TRANSCRICAO_TRANSCRIBROTHERS,
         blob_verificacao_sustentacao_omitida_por_configuracao_transcribrothers,
         executar_verificacao_sustentacao_tutorial_markdown_litellm_transcribrothers,
     )
+
+    if not handler_pipeline_custom_habilitado_no_job_transcribrothers(
+        steps, "auditor_sustentacao_tutorial"
+    ):
+        steps["verificacao_sustentacao_tutorial"] = (
+            blob_verificacao_sustentacao_omitida_por_configuracao_transcribrothers(
+                motivo="omitida_pipeline_custom_sem_passo"
+            )
+        )
+        steps["pipeline_fase"] = "verificacao_sustentacao_tutorial_concluida"
+        await _atualizar_job(session_factory, job_id, steps=dict(steps))
+        return
 
     async with session_factory() as session:
         from transcribrothers_backend.modulo_persistencia_runtime_config_verificacao_sustentacao_tutorial_sqlite_transcribrothers import (
@@ -246,12 +294,20 @@ async def _executar_verificacao_sustentacao_tutorial_apos_geracao_markdown_se_at
         markdown_tutorial=markdown_tutorial,
         transcricao_corta=transcricao_corta,
         rels=rels,
-        modelo_litellm=modelo_litellm,
+        modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
+            "auditor_sustentacao_tutorial", steps, modelo_litellm, configuracao
+        ),
         api_key_litellm=api_key_litellm,
         api_base_litellm=api_base_litellm,
         http_verify_litellm=http_verify_litellm,
         levantar_se_cancelado=_levantar_cancelamento_verificacao_transcribrothers,
         steps_para_log_decisoes_ia=steps,
+        system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+            "auditor_sustentacao_tutorial",
+            "system_verificacao_sustentacao_tutorial",
+            steps,
+            SYSTEM_PROMPT_VERIFICACAO_SUSTENTACAO_TUTORIAL_MARKDOWN_VS_TRANSCRICAO_TRANSCRIBROTHERS,
+        ),
     )
     steps["verificacao_sustentacao_tutorial"] = ver
     steps["pipeline_fase"] = "verificacao_sustentacao_tutorial_concluida"
@@ -273,8 +329,22 @@ async def _executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_markdown_s
     http_verify_litellm: bool | str,
 ) -> str:
     from transcribrothers_backend.modulo_verificacao_imagens_duplicadas_tutorial_markdown_litellm_visao_lotes_transcribrothers import (
+        SYSTEM_PROMPT_VERIFICACAO_IMAGENS_DUPLICADAS_TUTORIAL_VISAO_TRANSCRIBROTHERS,
+        blob_verificacao_imagens_duplicadas_omitida_transcribrothers,
         executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_no_markdown_transcribrothers,
     )
+
+    if not handler_pipeline_custom_habilitado_no_job_transcribrothers(
+        steps, "verificacao_imagens_duplicadas"
+    ):
+        steps["verificacao_imagens_duplicadas_tutorial"] = (
+            blob_verificacao_imagens_duplicadas_omitida_transcribrothers(
+                motivo="omitida_pipeline_custom_sem_passo"
+            )
+        )
+        steps["pipeline_fase"] = "verificacao_imagens_duplicadas_tutorial_concluida"
+        await _atualizar_job(session_factory, job_id, steps=dict(steps))
+        return markdown_tutorial
 
     _levantar_se_cancelamento_pipeline_solicitado(job_id)
     steps["pipeline_fase"] = "verificacao_imagens_duplicadas_tutorial_litellm_visao"
@@ -284,12 +354,20 @@ async def _executar_verificacao_imagens_duplicadas_tutorial_e_aplicar_markdown_s
         configuracao=configuracao,
         markdown_tutorial=markdown_tutorial,
         diretorio_assets_absoluto=assets_dir,
-        modelo_litellm=modelo_litellm,
+        modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
+            "verificacao_imagens_duplicadas", steps, modelo_litellm, configuracao
+        ),
         api_key_litellm=api_key_litellm,
         api_base_litellm=api_base_litellm,
         http_verify_litellm=http_verify_litellm,
         levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
         steps_para_log_decisoes_ia=steps,
+        system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+            "verificacao_imagens_duplicadas",
+            "system_verificacao_imagens_duplicadas",
+            steps,
+            SYSTEM_PROMPT_VERIFICACAO_IMAGENS_DUPLICADAS_TUTORIAL_VISAO_TRANSCRIBROTHERS,
+        ),
     )
     steps["verificacao_imagens_duplicadas_tutorial"] = blob
     steps["pipeline_fase"] = "verificacao_imagens_duplicadas_tutorial_concluida"
@@ -365,6 +443,18 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         steps["pipeline_fase"] = "metadados_job_carregados"
 
         destino_pipeline = str(job_steps.get("destino_apos_transcricao") or "gerar_tutorial").strip()
+        if destino_pipeline == "so_transcricao":
+            from transcribrothers_backend.modulo_pipeline_job_so_transcricao_midia_entrada_transcribrothers import (
+                executar_pipeline_job_so_transcricao_em_background,
+            )
+
+            await executar_pipeline_job_so_transcricao_em_background(
+                job_id=job_id,
+                session_factory=session_factory,
+                configuracao=configuracao,
+            )
+            return
+
         if destino_pipeline == "reproducao_bug":
             from transcribrothers_backend.modulo_pipeline_job_reproducao_bug_recbrothers_transcribrothers import (
                 executar_pipeline_job_reproducao_bug_recbrothers_em_background,
@@ -437,39 +527,51 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
-        await marcar(StatusJobTranscribrothers.extracting_audio)
-        if deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers(audio, steps):
-            steps["pipeline_fase"] = "audio_wav_reutilizado_sem_reextrair"
-            steps["audio_ok"] = True
-            steps["audio_wav_reutilizado_retry"] = True
-        else:
-            steps["pipeline_fase"] = "ffmpeg_extrair_audio"
-            steps.pop("audio_wav_reutilizado_retry", None)
-            await extrair_audio_wav_de_video_para_caminho(
-                caminho_video=video,
-                caminho_audio_wav=audio,
-                forcar_mono=bool(configuracao_exec_transcricao_mm.transcricao_multimodal_audio_mono),
+        reprocessamento_pos_transcricao_apenas = bool(steps.get("reprocessamento_pos_transcricao_apenas"))
+        if reprocessamento_pos_transcricao_apenas:
+            from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+                carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers,
+            )
+
+            transcricao = carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers(
+                work, steps
             )
             steps["audio_ok"] = True
+            await _atualizar_job(session_factory, job_id, steps=steps)
+        else:
+            await marcar(StatusJobTranscribrothers.extracting_audio)
+            if deve_reutilizar_audio_wav_extraido_do_video_pipeline_retry_transcribrothers(audio, steps):
+                steps["pipeline_fase"] = "audio_wav_reutilizado_sem_reextrair"
+                steps["audio_ok"] = True
+                steps["audio_wav_reutilizado_retry"] = True
+            else:
+                steps["pipeline_fase"] = "ffmpeg_extrair_audio"
+                steps.pop("audio_wav_reutilizado_retry", None)
+                await extrair_audio_wav_de_video_para_caminho(
+                    caminho_video=video,
+                    caminho_audio_wav=audio,
+                    forcar_mono=bool(configuracao_exec_transcricao_mm.transcricao_multimodal_audio_mono),
+                )
+                steps["audio_ok"] = True
 
-        _levantar_se_cancelamento_pipeline_solicitado(job_id)
+            _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
-        await marcar(StatusJobTranscribrothers.transcribing)
+            await marcar(StatusJobTranscribrothers.transcribing)
 
-        async def ao_persistir_steps_transcricao_transcribrothers(st: dict[str, Any]) -> None:
-            await _atualizar_job(session_factory, job_id, steps=st)
+            async def ao_persistir_steps_transcricao_transcribrothers(st: dict[str, Any]) -> None:
+                await _atualizar_job(session_factory, job_id, steps=st)
 
-        transcricao = await transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers(
-            work=work,
-            audio=audio,
-            configuracao=configuracao,
-            configuracao_exec_transcricao_mm=configuracao_exec_transcricao_mm,
-            http_verify_litellm=http_verify_litellm,
-            steps=steps,
-            ao_persistir_steps=ao_persistir_steps_transcricao_transcribrothers,
-            levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
-            pipeline_fase_inicial="transcrevendo_audio",
-        )
+            transcricao = await transcrever_audio_wav_com_logica_janelas_multimodal_ou_whisper_pipeline_transcribrothers(
+                work=work,
+                audio=audio,
+                configuracao=configuracao,
+                configuracao_exec_transcricao_mm=configuracao_exec_transcricao_mm,
+                http_verify_litellm=http_verify_litellm,
+                steps=steps,
+                ao_persistir_steps=ao_persistir_steps_transcricao_transcribrothers,
+                levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
+                pipeline_fase_inicial="transcrevendo_audio",
+            )
 
         _levantar_se_cancelamento_pipeline_solicitado(job_id)
 
@@ -495,7 +597,9 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
             md_rascunho = await gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
                 transcricao=transcricao,
                 caminhos_frames_rel_job=[],
-                modelo=modelo_litellm,
+                modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                    "rascunho_tutorial_sob_demanda", steps, modelo_litellm, configuracao
+                ),
                 api_key=api_key_litellm,
                 api_base=api_base_litellm,
                 httpx_verify=http_verify_litellm,
@@ -504,7 +608,12 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                     configuracao.litellm_http_timeout_connect_segundos
                 ),
                 httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
-                instrucao_prefixo_litellm_custom=INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
+                instrucao_prefixo_litellm_custom=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                    "rascunho_tutorial_sob_demanda",
+                    "instrucao_rascunho_sem_imagens",
+                    steps,
+                    INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
+                ),
                 steps_para_log_decisoes_ia=steps,
                 log_etapa_geracao_tutorial="geracao_rascunho_tutorial_sem_imagens",
             )
@@ -537,12 +646,20 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                         duracao_video_segundos=dur,
                         margem_minima_segundos_entre_links=margem_links,
                         max_capturas_apos_limites=max_capturas_teto,
-                        modelo_litellm=modelo_litellm,
+                        modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                            "plano_capturas_tutorial", steps, modelo_litellm, configuracao
+                        ),
                         api_key=api_key_litellm,
                         api_base=api_base_litellm,
                         httpx_verify=http_verify_litellm,
                         configuracao=configuracao_exec_transcricao_mm,
                         steps_para_log_decisoes_ia=steps,
+                        system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
+                            "plano_capturas_tutorial",
+                            "system_planejamento_instantes_tutorial",
+                            steps,
+                            SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
+                        ),
                     )
                 )
                 steps["planejamento_instantes_captura_frames"] = meta_planej
@@ -650,19 +767,25 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         steps["geracao_tutorial_litellm_total_imagens"] = 0
         await marcar(StatusJobTranscribrothers.generating_tutorial)
 
-        instrucao_final = _instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribrothers(
-            steps
+        instrucao_final = _resolver_instrucao_prefixo_gerador_tutorial_markdown_de_steps_transcribrothers(
+            steps,
+            usar_visao=False,
         )
         instrucoes_revisao_final: str | None = None
         if captura_sob_demanda and md_rascunho:
-            instrucoes_revisao_final = (
-                INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS
+            instrucoes_revisao_final = resolver_prompt_agente_pipeline_custom_transcribrothers(
+                "gerador_tutorial_markdown",
+                "instrucao_incorporar_frames_sob_demanda",
+                steps,
+                INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS,
             )
 
         md = await gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
             transcricao=transcricao_para_tutorial,
             caminhos_frames_rel_job=rels,
-            modelo=modelo_litellm,
+            modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
+                "gerador_tutorial_markdown", steps, modelo_litellm, configuracao
+            ),
             api_key=api_key_litellm,
             api_base=api_base_litellm,
             httpx_verify=http_verify_litellm,
@@ -727,6 +850,12 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
             conteudo_markdown=md,
             origem=ORIGEM_HISTORICO_TUTORIAL_PIPELINE_INICIAL_TRANSCRIBROTHERS,
         )
+        from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_reprocessamento_pos_transcricao_transcribrothers import (
+            finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers,
+        )
+
+        finalizar_reprocessamento_pos_transcricao_nos_steps_transcribrothers(steps)
+        await _atualizar_job(session_factory, job_id, steps=steps)
     except PipelineCanceladoPeloUsuarioTranscribrothers:
         steps["pipeline_fase"] = "cancelado_pelo_usuario"
         await _atualizar_job(
@@ -917,8 +1046,9 @@ async def executar_regeneracao_apenas_tutorial_markdown_em_background(
                 markdown_para_decidir_quais_pngs_anexar=None,
                 rels_png_anexo_ja_resolvidos=rels_anexo_regeneracao if usar_visao_regeneracao else None,
                 bloco_markdown_tutorial_atual_para_contexto_em_revisao=md_atual if md_atual else None,
-                instrucao_prefixo_litellm_custom=_instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribrothers(
-                    steps
+                instrucao_prefixo_litellm_custom=_resolver_instrucao_prefixo_gerador_tutorial_markdown_de_steps_transcribrothers(
+                    steps,
+                    usar_visao=usar_visao_regeneracao,
                 ),
                 modo_regeneracao_projeto_em_branco_sem_video=eh_projeto_em_branco,
                 textos_contexto_anexos_fab=textos_anexos,

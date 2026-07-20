@@ -35,6 +35,7 @@ import {
   montarTextoHintExibicaoPainelPassoPipelineModalStatusTranscribrothers,
   obterContextoPipelineHorizontalModalStatusJobTranscribrothers,
 } from "./modulo_util_obter_passos_pipeline_horizontal_hint_modal_status_job_transcribrothers.ts";
+import { ComponenteBarraPassosPipelineHorizontalVisualComPainelDetalheTranscribrothers } from "./componente_barra_passos_pipeline_horizontal_visual_com_painel_detalhe_transcribrothers.tsx";
 import {
   extrairTopicosPlanoRevisaoProfundaParaVistaAmigavelDeStepsJsonTranscribrothers,
 } from "./modulo_util_extrair_plano_revisao_profunda_json_para_vista_amigavel_modal_status_transcribrothers.ts";
@@ -110,6 +111,8 @@ import {
   type DestinoAposTranscricaoTranscribrothers,
   type ImportacaoRecbrothersModalStepperTranscribrothers,
 } from "./componente_modal_stepper_iniciar_transcricao_escolher_video_e_destino_transcribrothers.tsx";
+import { ModalGerarOutroFormatoPosTranscricaoEscolherDestinoEPipelineCustomTranscribrothers } from "./componente_modal_gerar_outro_formato_pos_transcricao_escolher_destino_e_pipeline_custom_transcribrothers.tsx";
+import { gerarOutroFormatoPosTranscricaoJobApiTranscribrothers } from "./modulo_api_gerar_outro_formato_pos_transcricao_job_transcribrothers.ts";
 import {
   lerParametrosImportacaoRecbrothersDaUrl,
   limparParametrosImportacaoRecbrothersDaUrlBarraNavegador,
@@ -121,6 +124,8 @@ import {
 import { montarSubtituloVersaoEDataFrameDocumentoTutorialTranscribrothers } from "./modulo_util_subtitulo_versao_e_data_frame_documento_tutorial_transcribrothers.ts";
 import { obterNumeroVersaoHistoricoTutorialMarkdownPorIndiceNaListaDescTranscribrothers } from "./modulo_util_rotulo_numero_versao_historico_tutorial_markdown_por_projeto_transcribrothers.ts";
 import { criarProjetoEmBrancoJobApiTranscribrothers } from "./modulo_api_criar_projeto_em_branco_job_transcribrothers.ts";
+import { importarTranscricaoProntaJobApiTranscribrothers } from "./modulo_api_importar_transcricao_pronta_job_transcribrothers.ts";
+import type { DestinoImportarTranscricaoProntaTranscribrothers } from "./modulo_api_importar_transcricao_pronta_job_transcribrothers.ts";
 import {
   type AnexoContextoFabUiTranscribrothers,
   extrairTextoDocumentoAnexoContextoFabProjetoEmBrancoApiTranscribrothers,
@@ -214,6 +219,8 @@ type ConfigPublicaTranscribrothers = {
   gitlab_criar_wiki_habilitado: boolean;
   gitlab_wiki_project_path: string;
   gitlab_wiki_slug_prefixo_pasta: string;
+  gitlab_wiki_pastas_disponiveis: string[];
+  gitlab_wiki_pastas_preferencia_sqlite_definida: boolean;
 };
 
 /** Resposta de GET …/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial (somente leitura). */
@@ -326,6 +333,14 @@ function normalizarRespostaConfigPublicaTranscribrothersDaApi(
       raw.gitlab_wiki_project_path ?? "portal-da-defensoria/documentacao",
     ),
     gitlab_wiki_slug_prefixo_pasta: String(raw.gitlab_wiki_slug_prefixo_pasta ?? "workshop"),
+    gitlab_wiki_pastas_disponiveis: Array.isArray(raw.gitlab_wiki_pastas_disponiveis)
+      ? (raw.gitlab_wiki_pastas_disponiveis as unknown[])
+          .map((p) => String(p || "").trim())
+          .filter(Boolean)
+      : [String(raw.gitlab_wiki_slug_prefixo_pasta ?? "workshop")],
+    gitlab_wiki_pastas_preferencia_sqlite_definida: Boolean(
+      raw.gitlab_wiki_pastas_preferencia_sqlite_definida,
+    ),
   };
 }
 
@@ -346,6 +361,7 @@ async function criarJobUploadArquivoLocal(
   destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
   stagingIdRecbrothers?: string | null,
   cliquesJsonOpcional?: File | null,
+  pipelineCustomId?: string | null,
 ): Promise<JobStatus> {
   const fd = new FormData();
   const stagingId = (stagingIdRecbrothers || "").trim();
@@ -360,6 +376,10 @@ async function criarJobUploadArquivoLocal(
     fd.append("cliques_json", cliquesJsonOpcional, cliquesJsonOpcional.name);
   }
   fd.append("destino_apos_transcricao", destinoAposTranscricao);
+  const pipelineId = (pipelineCustomId || "").trim();
+  if (pipelineId) {
+    fd.append("pipeline_custom_id", pipelineId);
+  }
   if (litellmModel.trim()) {
     fd.append("litellm_model", litellmModel.trim());
   }
@@ -459,6 +479,11 @@ type ResumoVersaoHistoricoTutorialMarkdownApiTranscribrothers = {
 function obterRotuloPortuguesOrigemHistoricoVersaoTutorialMarkdownTranscribrothers(origem: string): string {
   const mapa: Record<string, string> = {
     pipeline_tutorial_inicial: "Pipeline inicial",
+    pipeline_notas_inicial: "Pipeline inicial (notas)",
+    pipeline_bug_inicial: "Pipeline inicial (reprodução de bug)",
+    backup_antes_outro_formato_tutorial: "Backup antes de trocar formato (tutorial)",
+    backup_antes_outro_formato_notas: "Backup antes de trocar formato (notas)",
+    backup_antes_outro_formato_reproducao_bug: "Backup antes de trocar formato (reprodução de bug)",
     regeneracao_tutorial_fab: "Regeneração",
     regeneracao_revisao_profunda: "Revisão profunda",
     regeneracao_secao_markdown: "Edição por seção (IA)",
@@ -749,7 +774,13 @@ function descreverMotivoAuditorOmitidoEmPtBrTranscribrothers(motivo: string | un
   }
 }
 
-export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() {
+export type PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorialProps = {
+  onAbrirCatalogoPipelines?: () => void;
+};
+
+export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
+  onAbrirCatalogoPipelines,
+}: PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorialProps = {}) {
   const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
   const [modalIniciarTranscricaoAberto, setModalIniciarTranscricaoAberto] = useState(false);
   const [importacaoRecbrothersModalStepper, setImportacaoRecbrothersModalStepper] =
@@ -813,6 +844,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
   const [erroCarregarPromptsFixosRevisaoEVerificacaoTutorial, setErroCarregarPromptsFixosRevisaoEVerificacaoTutorial] =
     useState<string | null>(null);
   const [modalProgressoJobAberto, setModalProgressoJobAberto] = useState(false);
+  const [modalGerarOutroFormatoAberto, setModalGerarOutroFormatoAberto] = useState(false);
+  const [carregandoGerarOutroFormato, setCarregandoGerarOutroFormato] = useState(false);
   const [passoPipelineModalStatusComPainelDescricaoAbertoId, setPassoPipelineModalStatusComPainelDescricaoAbertoId] =
     useState<string | null>(null);
   const [modalTranscricaoOriginalAberta, setModalTranscricaoOriginalAberta] = useState(false);
@@ -901,6 +934,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
   const [auditorVerificacaoHabilitadoForm, setAuditorVerificacaoHabilitadoForm] = useState(true);
   const [salvandoAuditorRuntimeSqlite, setSalvandoAuditorRuntimeSqlite] = useState(false);
   const [erroAuditorRuntimeSqlite, setErroAuditorRuntimeSqlite] = useState<string | null>(null);
+  const [pastasWikiForm, setPastasWikiForm] = useState<string[]>(["workshop"]);
+  const [pastaWikiPadraoForm, setPastaWikiPadraoForm] = useState("workshop");
+  const [novaPastaWikiForm, setNovaPastaWikiForm] = useState("");
+  const [salvandoPastasWikiRuntime, setSalvandoPastasWikiRuntime] = useState(false);
+  const [validandoPastaWikiNova, setValidandoPastaWikiNova] = useState(false);
+  const [erroPastasWikiRuntime, setErroPastasWikiRuntime] = useState<string | null>(null);
   const [auditorRedundanciaSecaoHabilitadoForm, setAuditorRedundanciaSecaoHabilitadoForm] = useState(true);
   const [correcaoAutomaticaRedundanciaSecaoHabilitadaForm, setCorrecaoAutomaticaRedundanciaSecaoHabilitadaForm] =
     useState(true);
@@ -1059,7 +1098,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     setCorrecaoAutomaticaRedundanciaSecaoIncluirAtencaoForm(
       configApi.verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao_efetiva,
     );
+    setPastasWikiForm(
+      configApi.gitlab_wiki_pastas_disponiveis.length > 0
+        ? [...configApi.gitlab_wiki_pastas_disponiveis]
+        : [configApi.gitlab_wiki_slug_prefixo_pasta || "workshop"],
+    );
+    setPastaWikiPadraoForm(configApi.gitlab_wiki_slug_prefixo_pasta || "workshop");
     setErroAuditorRuntimeSqlite(null);
+    setErroPastasWikiRuntime(null);
   }, [configApi]);
 
   useEffect(() => {
@@ -1712,6 +1758,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     arquivo: File,
     destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
     cliquesJsonOpcional?: File | null,
+    pipelineCustomId?: string | null,
   ) {
     setErro(null);
     setCarregando(true);
@@ -1726,6 +1773,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         destinoAposTranscricao,
         stagingId,
         cliquesJsonOpcional ?? null,
+        pipelineCustomId ?? null,
       );
       setJob(j);
       setModalIniciarTranscricaoAberto(false);
@@ -1735,6 +1783,61 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       setErro(e instanceof Error ? e.message : String(e));
     } finally {
       setCarregando(false);
+    }
+  }
+
+  async function iniciarJobComTranscricaoProntaImportadaTranscribrothers(
+    destino: DestinoImportarTranscricaoProntaTranscribrothers,
+    opcoes: { texto: string; arquivo: File | null; pipelineCustomId: string | null },
+  ) {
+    setErro(null);
+    setCarregando(true);
+    try {
+      const modeloParaEnviar = modeloLitellm.trim();
+      const j = await importarTranscricaoProntaJobApiTranscribrothers({
+        texto: opcoes.texto,
+        arquivo: opcoes.arquivo,
+        destino,
+        pipelineCustomId: opcoes.pipelineCustomId,
+        litellmModel: modeloParaEnviar || null,
+      });
+      setJob(j);
+      setModalIniciarTranscricaoAberto(false);
+      setImportacaoRecbrothersModalStepper(null);
+      if (destino === "notas_proposta_funcionalidade" || j.status === "pending" || j.status === "running") {
+        setModalProgressoJobAberto(true);
+      } else {
+        pushToast("Transcrição importada. Você pode editar o texto ou gerar notas.", "success");
+      }
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function confirmarGerarOutroFormatoPosTranscricaoTranscribrothers(
+    destinoAposTranscricao: Exclude<DestinoAposTranscricaoTranscribrothers, "projeto_em_branco">,
+    pipelineCustomId?: string | null,
+  ) {
+    if (!job) return;
+    setErro(null);
+    setCarregandoGerarOutroFormato(true);
+    try {
+      const modeloParaEnviar = modeloLitellm.trim();
+      const j = await gerarOutroFormatoPosTranscricaoJobApiTranscribrothers(job.id, {
+        destinoAposTranscricao,
+        pipelineCustomId,
+        litellmModel: modeloParaEnviar || null,
+      });
+      setJob(j);
+      setHistoricoVersaoTutorialSelecionadaId(null);
+      setModalGerarOutroFormatoAberto(false);
+      setModalProgressoJobAberto(true);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCarregandoGerarOutroFormato(false);
     }
   }
 
@@ -2252,6 +2355,15 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
   const jobEhReproducaoBugAtual = useMemo(() => jobEhReproducaoBugTranscribrothers(job), [job]);
 
   const jobEhNotasPropostaAtual = useMemo(() => jobEhNotasPropostaFuncionalidadeTranscribrothers(job), [job]);
+
+  const jobPodeGerarOutroFormatoPosTranscricao =
+    Boolean(job) &&
+    job.status === "completed" &&
+    !jobEhProjetoEmBrancoTranscribrothers(job) &&
+    job.steps_json?.pode_gerar_outro_formato === true;
+
+  const jobTemCliquesReproducaoBug =
+    Number(job?.steps_json?.reproducao_bug_total_cliques ?? 0) > 0;
 
   const destinoAposTranscricaoJobAtual = useMemo(
     () => normalizarDestinoAposTranscricaoDeStepsJsonJobTranscribrothers(job?.steps_json?.destino_apos_transcricao),
@@ -3073,6 +3185,107 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
     }
   }
 
+  async function salvarPastasWikiGitlabRuntimePersistidoSqliteTranscribrothers() {
+    setErroPastasWikiRuntime(null);
+    if (pastasWikiForm.length === 0) {
+      setErroPastasWikiRuntime("Informe ao menos uma pasta wiki.");
+      return;
+    }
+    if (!pastasWikiForm.includes(pastaWikiPadraoForm)) {
+      setErroPastasWikiRuntime("A pasta padrão precisa estar na lista.");
+      return;
+    }
+    setSalvandoPastasWikiRuntime(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/gitlab-wiki-pastas-runtime", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pastas: pastasWikiForm,
+          pasta_padrao: pastaWikiPadraoForm,
+        }),
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
+      pushToast("Pastas wiki gravadas no servidor.", "success");
+    } catch (e) {
+      setErroPastasWikiRuntime(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoPastasWikiRuntime(false);
+    }
+  }
+
+  async function restaurarPastasWikiGitlabRuntimeParaEnvTranscribrothers() {
+    setErroPastasWikiRuntime(null);
+    setSalvandoPastasWikiRuntime(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/gitlab-wiki-pastas-runtime", {
+        method: "DELETE",
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
+      pushToast("Pastas wiki restauradas para o padrão do .env.", "success");
+    } catch (e) {
+      setErroPastasWikiRuntime(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoPastasWikiRuntime(false);
+    }
+  }
+
+  async function adicionarNovaPastaWikiComValidacaoOpcionalTranscribrothers(verificarNoGitlab: boolean) {
+    const candidata = novaPastaWikiForm.trim().toLowerCase().replace(/\s+/g, "-");
+    setErroPastasWikiRuntime(null);
+    if (!candidata) {
+      setErroPastasWikiRuntime("Informe o nome da pasta (ex.: workshop).");
+      return;
+    }
+    if (pastasWikiForm.includes(candidata)) {
+      setErroPastasWikiRuntime(`A pasta ${candidata} já está na lista.`);
+      return;
+    }
+    if (verificarNoGitlab) {
+      if (!configApi?.gitlab_criar_wiki_habilitado) {
+        setErroPastasWikiRuntime("Wiki GitLab não está configurada no servidor para validar.");
+        return;
+      }
+      setValidandoPastaWikiNova(true);
+      try {
+        const r = await fetch(
+          `/api/gitlab/wikis/validar-pasta-indice?pasta=${encodeURIComponent(candidata)}`,
+        );
+        if (!r.ok) {
+          const texto = await r.text();
+          throw new Error(texto || `Erro HTTP ${r.status}`);
+        }
+        const resp = (await r.json()) as { pasta: string; existe_no_gitlab: boolean };
+        if (!resp.existe_no_gitlab) {
+          setErroPastasWikiRuntime(
+            `A página índice "${resp.pasta}" não existe no GitLab. Crie-a na wiki antes de cadastrar, ou adicione sem verificar.`,
+          );
+          return;
+        }
+        setPastasWikiForm((atual) => [...atual, resp.pasta]);
+        setNovaPastaWikiForm("");
+        pushToast(`Pasta ${resp.pasta} validada no GitLab e adicionada à lista.`, "success");
+      } catch (e) {
+        setErroPastasWikiRuntime(e instanceof Error ? e.message : String(e));
+      } finally {
+        setValidandoPastaWikiNova(false);
+      }
+      return;
+    }
+    setPastasWikiForm((atual) => [...atual, candidata]);
+    setNovaPastaWikiForm("");
+  }
+
   async function salvarVerificacaoSustentacaoTutorialRuntimePersistidoSqliteTranscribrothers() {
     setErroAuditorRuntimeSqlite(null);
     setSalvandoAuditorRuntimeSqlite(true);
@@ -3526,6 +3739,113 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
       </div>
       <hr className="tb-drawer-sep" />
       <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
+        <h3 className="tb-drawer-subtitulo">Wiki GitLab — pastas</h3>
+        <details className="tb-drawer-micro-ajuda">
+          <summary>Sobre</summary>
+          <div className="tb-drawer-micro-ajuda-corpo">
+            <p>
+              Lista de pastas (diretórios) usadas no export «Publicar na wiki». Sem override no SQLite, vale só{" "}
+              <code>GITLAB_WIKI_SLUG_PREFIXO_PASTA</code> do .env (em geral <code>workshop</code>). A modal de export
+              mostra um select — sem texto livre.
+            </p>
+          </div>
+        </details>
+      </div>
+      {configApi.gitlab_wiki_pastas_preferencia_sqlite_definida ? (
+        <p className="tb-drawer-badge-runtime-ativo">Lista de pastas salva na base (prevalece sobre o .env).</p>
+      ) : (
+        <p className="tb-muted tb-drawer-dica-inline">Sem override na base — em uso o padrão do .env.</p>
+      )}
+      <ul className="tb-drawer-lista-pastas-wiki">
+        {pastasWikiForm.map((pasta) => (
+          <li key={pasta} className="tb-drawer-lista-pastas-wiki-item">
+            <label className="tb-drawer-lista-pastas-wiki-rotulo">
+              <input
+                type="radio"
+                name="tb-pasta-wiki-padrao"
+                checked={pastaWikiPadraoForm === pasta}
+                disabled={salvandoPastasWikiRuntime}
+                onChange={() => setPastaWikiPadraoForm(pasta)}
+              />
+              <code>{pasta}</code>
+              {pastaWikiPadraoForm === pasta ? (
+                <span className="tb-muted"> padrão</span>
+              ) : null}
+            </label>
+            <button
+              type="button"
+              className="tb-linkbtn"
+              disabled={salvandoPastasWikiRuntime || pastasWikiForm.length <= 1}
+              onClick={() => {
+                setPastasWikiForm((atual) => {
+                  const prox = atual.filter((p) => p !== pasta);
+                  if (pastaWikiPadraoForm === pasta && prox[0]) setPastaWikiPadraoForm(prox[0]);
+                  return prox;
+                });
+              }}
+            >
+              Remover
+            </button>
+          </li>
+        ))}
+      </ul>
+      <label className="tb-label tb-label-spaced" htmlFor="tb-nova-pasta-wiki">
+        Nova pasta
+      </label>
+      <div className="tb-row tb-row-drawer-add">
+        <input
+          id="tb-nova-pasta-wiki"
+          className="tb-input tb-input-inline"
+          type="text"
+          value={novaPastaWikiForm}
+          disabled={salvandoPastasWikiRuntime || validandoPastaWikiNova}
+          placeholder="ex.: treinamentos"
+          onChange={(e) => setNovaPastaWikiForm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void adicionarNovaPastaWikiComValidacaoOpcionalTranscribrothers(false);
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="tb-linkbtn"
+          disabled={salvandoPastasWikiRuntime || validandoPastaWikiNova}
+          onClick={() => void adicionarNovaPastaWikiComValidacaoOpcionalTranscribrothers(false)}
+        >
+          Adicionar
+        </button>
+        <button
+          type="button"
+          className="tb-linkbtn"
+          disabled={salvandoPastasWikiRuntime || validandoPastaWikiNova}
+          onClick={() => void adicionarNovaPastaWikiComValidacaoOpcionalTranscribrothers(true)}
+        >
+          {validandoPastaWikiNova ? "Verificando…" : "Verificar no GitLab"}
+        </button>
+      </div>
+      {erroPastasWikiRuntime ? <p className="tb-drawer-erro-mm">{erroPastasWikiRuntime}</p> : null}
+      <div className="tb-drawer-row-salvar-mm">
+        <button
+          type="button"
+          className="tb-primary"
+          disabled={salvandoPastasWikiRuntime}
+          onClick={() => void salvarPastasWikiGitlabRuntimePersistidoSqliteTranscribrothers()}
+        >
+          {salvandoPastasWikiRuntime ? "Salvando…" : "Salvar pastas no servidor"}
+        </button>
+        <button
+          type="button"
+          className="tb-linkbtn"
+          disabled={salvandoPastasWikiRuntime || !configApi.gitlab_wiki_pastas_preferencia_sqlite_definida}
+          onClick={() => void restaurarPastasWikiGitlabRuntimeParaEnvTranscribrothers()}
+        >
+          Restaurar padrão do .env
+        </button>
+      </div>
+      <hr className="tb-drawer-sep" />
+      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
         <h3 className="tb-drawer-subtitulo">Prompts fixos</h3>
         <details className="tb-drawer-micro-ajuda">
           <summary>Sobre</summary>
@@ -3785,106 +4105,45 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
             </div>
           ) : null}
           {contextoPipelineHorizontalModalStatusJob ? (
-            <div
-              className="tb-pipeline-status-horizontal"
-              role="group"
-              aria-label={`${contextoPipelineHorizontalModalStatusJob.tituloFluxo}. Visão em passos da pipeline deste job.`}
-            >
-              <p className="tb-pipeline-status-fluxo-titulo">{contextoPipelineHorizontalModalStatusJob.tituloFluxo}</p>
-              <p className="tb-pipeline-status-fluxo-descricao tb-muted">
-                {contextoPipelineHorizontalModalStatusJob.descricaoFluxo}
-              </p>
-              {contextoPipelineHorizontalModalStatusJob.passos.length > 0 ? (
-                <>
-              <p className="tb-pipeline-status-horizontal-legenda tb-muted">
-                Clique em um passo para abrir a descrição abaixo. Tab e Enter também funcionam.
-              </p>
-              <div
-                className={`tb-pipeline-status-horizontal-linha${contextoPipelineHorizontalModalStatusJob.passos.length > 6 ? " tb-pipeline-status-horizontal-linha--compacta" : ""}`}
-              >
-                {contextoPipelineHorizontalModalStatusJob.passos.map((p, indice) => {
-                  const aberto = passoPipelineModalStatusComPainelDescricaoAbertoId === p.id;
-                  return (
-                    <div key={p.id} className="tb-pipeline-status-segmento">
-                      {indice > 0 ? <span className="tb-pipeline-status-connector" aria-hidden /> : null}
-                      <button
-                        type="button"
-                        className={`tb-pipeline-status-step tb-pipeline-status-step--${p.estado}`}
-                        aria-expanded={aberto}
-                        aria-controls={`tb-pipeline-hint-painel-${job.id}`}
-                        aria-label={
-                          aberto
-                            ? `${p.rotuloCurto}, descrição aberta abaixo`
-                            : `${p.rotuloCurto}, clique para ver a descrição completa`
-                        }
-                        onClick={() => {
-                          if (p.id === "preview_documento" && p.estado === "active") {
-                            setModalPreviewRegeneracaoTutorialAberto(true);
-                            setPassoPipelineModalStatusComPainelDescricaoAbertoId(null);
-                            return;
-                          }
-                          if (p.id === "preview_secao" && p.estado === "active") {
-                            setModalPreviewRegeneracaoSecaoAberto(true);
-                            setPassoPipelineModalStatusComPainelDescricaoAbertoId(null);
-                            return;
-                          }
-                          setPassoPipelineModalStatusComPainelDescricaoAbertoId((atual) =>
-                            atual === p.id ? null : p.id,
-                          );
-                        }}
-                      >
-                        {p.rotuloCurto}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              {passoPipelineModalStatusComPainelDescricaoAbertoId ? (
-                <div
-                  id={`tb-pipeline-hint-painel-${job.id}`}
-                  className="tb-pipeline-status-hint-painel"
-                  role="region"
-                  aria-live="polite"
-                >
-                  {(() => {
-                    const fasePipeline =
-                      typeof job.steps_json?.pipeline_fase === "string" ? job.steps_json.pipeline_fase : "";
-                    const passoSel = contextoPipelineHorizontalModalStatusJob.passos.find(
-                      (x) => x.id === passoPipelineModalStatusComPainelDescricaoAbertoId,
-                    );
-                    if (!passoSel) return null;
-                    const corpo = montarTextoHintExibicaoPainelPassoPipelineModalStatusTranscribrothers(
-                      passoSel,
-                      fasePipeline,
-                      linhaDetalheProgressoJob,
-                    );
-                    return (
-                      <>
-                        <div className="tb-pipeline-status-hint-painel-topo">
-                          <strong className="tb-pipeline-status-hint-painel-titulo">{passoSel.rotuloCurto}</strong>
-                          <button
-                            type="button"
-                            className="tb-pipeline-status-hint-painel-fechar"
-                            aria-label="Fechar descrição do passo"
-                            onClick={() => setPassoPipelineModalStatusComPainelDescricaoAbertoId(null)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <p className="tb-pipeline-status-hint-painel-corpo">{corpo}</p>
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : null}
-                </>
-              ) : (
-                <p className="tb-pipeline-status-sem-passos-horizontais tb-muted">
-                  Esta execução não usa a barra de passos horizontais; acompanhe o preview no editor do tutorial, se
-                  houver proposta pendente.
-                </p>
-              )}
-            </div>
+            <ComponenteBarraPassosPipelineHorizontalVisualComPainelDetalheTranscribrothers
+              tituloFluxo={contextoPipelineHorizontalModalStatusJob.tituloFluxo}
+              descricaoFluxo={contextoPipelineHorizontalModalStatusJob.descricaoFluxo}
+              passos={contextoPipelineHorizontalModalStatusJob.passos}
+              passoComPainelAbertoId={passoPipelineModalStatusComPainelDescricaoAbertoId}
+              onAlternarPainelPasso={(passoId) =>
+                setPassoPipelineModalStatusComPainelDescricaoAbertoId((atual) =>
+                  atual === passoId ? null : passoId,
+                )
+              }
+              onFecharPainelPasso={() => setPassoPipelineModalStatusComPainelDescricaoAbertoId(null)}
+              idPainelDescricao={`tb-pipeline-hint-painel-${job.id}`}
+              ariaLabelGrupo={`${contextoPipelineHorizontalModalStatusJob.tituloFluxo}. Visão em passos da pipeline deste job.`}
+              mensagemSemPassos="Esta execução não usa a barra de passos horizontais; acompanhe o preview no editor do tutorial, se houver proposta pendente."
+              onClickPasso={(p) => {
+                if (p.id === "preview_documento" && p.estado === "active") {
+                  setModalPreviewRegeneracaoTutorialAberto(true);
+                  setPassoPipelineModalStatusComPainelDescricaoAbertoId(null);
+                  return true;
+                }
+                if (p.id === "preview_secao" && p.estado === "active") {
+                  setModalPreviewRegeneracaoSecaoAberto(true);
+                  setPassoPipelineModalStatusComPainelDescricaoAbertoId(null);
+                  return true;
+                }
+                return false;
+              }}
+              renderPainelPasso={(passoId) => {
+                const fasePipeline =
+                  typeof job.steps_json?.pipeline_fase === "string" ? job.steps_json.pipeline_fase : "";
+                const passoSel = contextoPipelineHorizontalModalStatusJob.passos.find((x) => x.id === passoId);
+                if (!passoSel) return null;
+                return montarTextoHintExibicaoPainelPassoPipelineModalStatusTranscribrothers(
+                  passoSel,
+                  fasePipeline,
+                  linhaDetalheProgressoJob,
+                );
+              }}
+            />
           ) : null}
         </div>
         {mensagemRetomadaTranscricaoMultimodal ? (
@@ -4275,6 +4534,16 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                 <IconeJobsHeaderToolbarTranscribrothers />
                 <span>Abrir projeto</span>
               </button>
+              {onAbrirCatalogoPipelines ? (
+                <button
+                  type="button"
+                  className="tb-btn-header tb-btn-header-secundario"
+                  title="Ver pipelines disponíveis, passos e prompts fixos"
+                  onClick={onAbrirCatalogoPipelines}
+                >
+                  <span>Pipelines</span>
+                </button>
+              ) : null}
               <div className="tb-header-toolbar-separador" aria-hidden="true" />
               <div className="tb-header-btn-grupo" role="group" aria-label="Ferramentas do projeto ativo">
                 {jobId ? (
@@ -4352,12 +4621,34 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
           setModalIniciarTranscricaoAberto(false);
           setImportacaoRecbrothersModalStepper(null);
         }}
-        onIniciar={(arquivo, destino, cliquesJsonOpcional) => {
+        onIniciar={(arquivo, destino, cliquesJsonOpcional, pipelineCustomId) => {
           void iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(
             arquivo,
             destino,
             cliquesJsonOpcional,
+            pipelineCustomId,
           );
+        }}
+        onIniciarComTranscricaoPronta={(destino, opcoes) => {
+          void iniciarJobComTranscricaoProntaImportadaTranscribrothers(destino, opcoes);
+        }}
+      />
+
+      <ModalGerarOutroFormatoPosTranscricaoEscolherDestinoEPipelineCustomTranscribrothers
+        aberto={modalGerarOutroFormatoAberto}
+        carregando={carregandoGerarOutroFormato}
+        destinoAtual={destinoAposTranscricaoJobAtual}
+        jobTemCliquesReproducaoBug={jobTemCliquesReproducaoBug}
+        jobTipoEntradaMidia={
+          job?.steps_json?.tipo_entrada_midia === "audio" ||
+          job?.steps_json?.tipo_entrada_midia === "video"
+            ? (job.steps_json.tipo_entrada_midia as "audio" | "video")
+            : null
+        }
+        jobTranscricaoImportada={job?.steps_json?.transcricao_importada === true}
+        onFechar={() => setModalGerarOutroFormatoAberto(false)}
+        onConfirmar={(destino, pipelineCustomId) => {
+          void confirmarGerarOutroFormatoPosTranscricaoTranscribrothers(destino, pipelineCustomId);
         }}
       />
 
@@ -4796,6 +5087,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
         jobId={job?.id ?? ""}
         projetoGitlab={configApi?.gitlab_wiki_project_path ?? ""}
         prefixoPastaWikiPadrao={configApi?.gitlab_wiki_slug_prefixo_pasta ?? "workshop"}
+        pastasWikiDisponiveis={configApi?.gitlab_wiki_pastas_disponiveis ?? ["workshop"]}
         wikiHabilitadaNoServidor={gitlabCriarWikiHabilitadoNoServidorTranscribrothers}
         tamanhoConteudoCaracteres={(job?.result_markdown ?? "").length}
         quantidadeReferenciasImagensAssetsPng={quantidadeReferenciasImagensAssetsPngIssueGitlabTranscribrothers}
@@ -5231,6 +5523,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial() 
                     onClick={() => setModalTranscricaoOriginalAberta(true)}
                   >
                     <IconeVerTranscricaoTutorialMarkdownTranscribrothers />
+                  </button>
+                ) : null}
+                {jobPodeGerarOutroFormatoPosTranscricao ? (
+                  <button
+                    type="button"
+                    className="tb-btn-md-toolbar-icone"
+                    title="Gerar outro formato reutilizando a transcrição (tutorial, notas ou bug)"
+                    aria-label="Gerar outro formato"
+                    disabled={carregandoGerarOutroFormato}
+                    onClick={() => setModalGerarOutroFormatoAberto(true)}
+                  >
+                    <span aria-hidden="true" style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                      ⇄
+                    </span>
                   </button>
                 ) : null}
                 {jobPermiteEdicaoManualMarkdownTutorial && !modoEdicaoMarkdownTutorialAtivo ? (
