@@ -50,3 +50,8 @@ def test_config_publica_transcribrothers_retorna_modelos() -> None:
         assert isinstance(data["ffprobe_disponivel"], bool)
         assert "ffmpeg_disponivel" in data
         assert isinstance(data["ffmpeg_disponivel"], bool)
+        assert "voz_tts_narracao_efetiva" in data
+        assert isinstance(data["voz_tts_narracao_efetiva"], str)
+        assert "voz_tts_narracao_vozes_disponiveis" in data
+        assert isinstance(data["voz_tts_narracao_vozes_disponiveis"], list)
+        assert len(data["voz_tts_narracao_vozes_disponiveis"]) == 30

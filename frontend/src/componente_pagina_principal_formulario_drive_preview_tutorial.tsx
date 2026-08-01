@@ -3,6 +3,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { verificarModeloLitellmChatCompletionsProbeApiTranscribrothers } from "./modulo_api_verificar_modelo_litellm_chat_completions_probe_transcribrothers.ts";
+import {
+  escolherModeloChatDaListaDisponivelTranscribrothers,
+  escolherModeloTtsDaListaDisponivelTranscribrothers,
+  gerarNarracaoTtsMarkdownJobApiTranscribrothers,
+  gerarVideoComNarracaoTtsJobApiTranscribrothers,
+  obterUrlAssetNarracaoTtsDosStepsJsonJobTranscribrothers,
+  obterUrlDownloadVideoComNarracaoTtsDosStepsJsonJobTranscribrothers,
+} from "./modulo_api_gerar_narracao_tts_markdown_job_transcribrothers.ts";
+import {
+  agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscribrothers,
+  obterResumoPipelineVideoNarradoDocumentoDosStepsJsonTranscribrothers,
+  obterUrlAssetLegendasVttAlinhadasDosStepsJsonJobTranscribrothers,
+} from "./modulo_api_pipeline_video_narrado_a_partir_documento_markdown_job_transcribrothers.ts";
+import { agendarAtualizacaoNarracaoAPartirLegendasVttEditadasJobApiTranscribrothers } from "./modulo_api_atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers.ts";
+import { agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribrothers } from "./modulo_api_gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers.ts";
+import { baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers } from "./modulo_api_baixar_video_narrado_com_legendas_queimadas_job_transcribrothers.ts";
+import { agendarRemuxVideoNarradoAposEdicaoJanelasJobApiTranscribrothers } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
+import {
+  lerViewVideoNarradoAbertaNaUrlTranscribrothers,
+  sincronizarViewVideoNarradoNaUrlTranscribrothers,
+} from "./modulo_util_view_query_pagina_video_narrado_na_url_transcribrothers.ts";
 import {
   adicionarModeloLitellmExtraAoArmazenamentoLocalNavegadorTranscribrothers,
   carregarListaModelosLitellmExtrasSalvosNoNavegadorTranscribrothers,
@@ -44,13 +66,10 @@ import {
   montarEntradasLogDecisoesIaParaModalStatusJobTranscribrothers,
   rotuloEtapaLogDecisoesIaEmPtBrTranscribrothers,
 } from "./modulo_util_montar_entradas_log_decisoes_ia_modal_status_job_transcribrothers.ts";
+import { extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers } from "./modulo_util_extrair_alteracoes_limpeza_legendas_ia_do_steps_json_transcribrothers.ts";
 import { formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers } from "./modulo_util_parse_instante_iso_api_utc_para_date_e_formatar_data_hora_pt_br_transcribrothers.ts";
 import { listarCaminhosAssetsPngOrdemPrimeiraOcorrenciaMarkdownTutorialTranscribrothers } from "./modulo_util_listar_caminhos_assets_png_ordem_markdown_para_referencias_fab_regeneracao_transcribrothers.ts";
 import { montarTextoPlanoTranscricaoOriginalAPartirDeSnapshotJobTutorialTranscribrothers } from "./modulo_util_montar_texto_plano_transcricao_original_a_partir_de_snapshot_job_tutorial_transcribrothers.ts";
-import {
-  carregarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownDoNavegadorTranscribrothers,
-  gravarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownNoNavegadorTranscribrothers,
-} from "./modulo_armazenamento_local_rascunho_instrucao_prefixo_litellm_tutorial_markdown_navegador_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
 import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_documento_projeto_em_branco_transcribrothers.ts";
 import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_tutorial_sem_referencias_video_documento_autonomo_transcribrothers.ts";
@@ -71,6 +90,11 @@ import {
 import { ComponenteComparacaoMarkdownAntesDepoisVisualizacaoDiffELadoALadoTranscribrothers } from "./componente_comparacao_markdown_antes_depois_visualizacao_diff_e_lado_a_lado_transcribrothers.tsx";
 import { ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTranscribrothers } from "./componente_modal_editor_anotacao_imagem_tutorial_fabric_js_duas_versoes_transcribrothers.tsx";
 import { ComponenteModalGaleriaAssetsImagensTranscricaoTutorialTranscribrothers } from "./componente_modal_galeria_assets_imagens_transcricao_tutorial_transcribrothers.tsx";
+import { ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTranscribrothers } from "./componente_modal_assistir_video_narrado_com_legendas_vtt_e_downloads_transcribrothers.tsx";
+import {
+  ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoesTranscribrothers,
+  type ResultadoEscopoGeracaoVideoNarradoTranscribrothers,
+} from "./componente_modal_escolher_escopo_geracao_video_narrado_documento_ou_secoes_transcribrothers.tsx";
 import { ComponenteImagemMarkdownTutorialClicavelAbrirModalAnotacaoTranscribrothers } from "./componente_imagem_markdown_tutorial_clicavel_abrir_modal_anotacao_transcribrothers.tsx";
 import { ComponenteDialogoConfirmacaoAcaoDestrutivaOverlayTranscribrothers } from "./componente_dialogo_confirmacao_acao_destrutiva_overlay_transcribrothers.tsx";
 import { removerReferenciaImagemAssetDoMarkdownTutorialTranscribrothers } from "./modulo_util_remover_referencia_imagem_asset_markdown_tutorial_transcribrothers.ts";
@@ -221,7 +245,19 @@ type ConfigPublicaTranscribrothers = {
   gitlab_wiki_slug_prefixo_pasta: string;
   gitlab_wiki_pastas_disponiveis: string[];
   gitlab_wiki_pastas_preferencia_sqlite_definida: boolean;
+  encode_video_narrado_resolucao_efetiva: string;
+  encode_video_narrado_fps_efetivo: number;
+  encode_video_narrado_resolucao_padrao_app: string;
+  encode_video_narrado_fps_padrao_app: number;
+  encode_video_narrado_resolucoes_disponiveis: string[];
+  encode_video_narrado_preferencia_sqlite_definida: boolean;
+  voz_tts_narracao_efetiva: string;
+  voz_tts_narracao_padrao_app: string;
+  voz_tts_narracao_preferencia_sqlite_definida: boolean;
+  voz_tts_narracao_vozes_disponiveis: { id: string; estilo: string }[];
 };
+
+type ResolucaoEncodeVideoNarradoUiTranscribrothers = "original" | "1080p" | "720p" | "480p";
 
 /** Resposta de GET …/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial (somente leitura). */
 type RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialApiTranscribrothers = {
@@ -341,6 +377,40 @@ function normalizarRespostaConfigPublicaTranscribrothersDaApi(
     gitlab_wiki_pastas_preferencia_sqlite_definida: Boolean(
       raw.gitlab_wiki_pastas_preferencia_sqlite_definida,
     ),
+    encode_video_narrado_resolucao_efetiva: String(
+      raw.encode_video_narrado_resolucao_efetiva ?? "1080p",
+    ),
+    encode_video_narrado_fps_efetivo: Number(raw.encode_video_narrado_fps_efetivo ?? 30),
+    encode_video_narrado_resolucao_padrao_app: String(
+      raw.encode_video_narrado_resolucao_padrao_app ?? "1080p",
+    ),
+    encode_video_narrado_fps_padrao_app: Number(raw.encode_video_narrado_fps_padrao_app ?? 30),
+    encode_video_narrado_resolucoes_disponiveis: Array.isArray(
+      raw.encode_video_narrado_resolucoes_disponiveis,
+    )
+      ? (raw.encode_video_narrado_resolucoes_disponiveis as unknown[])
+          .map((p) => String(p || "").trim())
+          .filter(Boolean)
+      : ["original", "1080p", "720p", "480p"],
+    encode_video_narrado_preferencia_sqlite_definida: Boolean(
+      raw.encode_video_narrado_preferencia_sqlite_definida,
+    ),
+    voz_tts_narracao_efetiva: String(raw.voz_tts_narracao_efetiva ?? "Kore"),
+    voz_tts_narracao_padrao_app: String(raw.voz_tts_narracao_padrao_app ?? "Kore"),
+    voz_tts_narracao_preferencia_sqlite_definida: Boolean(
+      raw.voz_tts_narracao_preferencia_sqlite_definida,
+    ),
+    voz_tts_narracao_vozes_disponiveis: Array.isArray(raw.voz_tts_narracao_vozes_disponiveis)
+      ? (raw.voz_tts_narracao_vozes_disponiveis as unknown[])
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const o = item as { id?: unknown; estilo?: unknown };
+            const id = String(o.id ?? "").trim();
+            if (!id) return null;
+            return { id, estilo: String(o.estilo ?? "").trim() || id };
+          })
+          .filter((v): v is { id: string; estilo: string } => v != null)
+      : [],
   };
 }
 
@@ -357,7 +427,6 @@ function obterTituloSugeridoIssueGitlabDeMarkdownTutorialTranscribrothers(
 async function criarJobUploadArquivoLocal(
   video: File | null,
   litellmModel: string,
-  tutorialLitellmInstrucaoPrefixoOpcional: string | null,
   destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
   stagingIdRecbrothers?: string | null,
   cliquesJsonOpcional?: File | null,
@@ -382,10 +451,6 @@ async function criarJobUploadArquivoLocal(
   }
   if (litellmModel.trim()) {
     fd.append("litellm_model", litellmModel.trim());
-  }
-  const t = (tutorialLitellmInstrucaoPrefixoOpcional ?? "").trim();
-  if (t) {
-    fd.append("tutorial_litellm_instrucao_prefixo", t);
   }
   const r = await fetch("/api/jobs/upload", {
     method: "POST",
@@ -551,14 +616,19 @@ type ResumoJobListaApiTranscribrothers = {
   titulo_tutorial_markdown_h1: string | null;
   created_at: string | null;
   updated_at: string | null;
+  tamanho_bytes_disco?: number;
 };
 
-type InstrucoesPadraoTutorialLitellmApiTranscribrothers = {
-  instrucao_sem_imagens: string;
-  instrucao_com_imagens: string;
-  instrucao_sem_imagens_documento_autonomo_sem_video: string;
-  instrucao_com_imagens_documento_autonomo_sem_video: string;
-};
+function formatarTamanhoBytesDiscoProjetoTranscribrothers(bytes: number): string {
+  const n = Math.max(0, Number(bytes) || 0);
+  if (n < 1024) return `${n} B`;
+  const kb = n / 1024;
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+  const gb = mb / 1024;
+  return `${gb < 10 ? gb.toFixed(2) : gb.toFixed(1)} GB`;
+}
 
 async function listarJobsRecentesApiTranscribrothers(limit = 80): Promise<ResumoJobListaApiTranscribrothers[]> {
   const r = await fetch(`/api/jobs?limit=${encodeURIComponent(String(limit))}`);
@@ -687,21 +757,6 @@ function IconeJobsHeaderToolbarTranscribrothers() {
   );
 }
 
-function IconePromptHeaderToolbarTranscribrothers() {
-  return (
-    <IconeSvgHeaderToolbarTranscribrothers>
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-      />
-    </IconeSvgHeaderToolbarTranscribrothers>
-  );
-}
-
 function IconeAssetsImagensHeaderToolbarTranscribrothers() {
   return (
     <IconeSvgHeaderToolbarTranscribrothers>
@@ -727,6 +782,29 @@ function IconeVerTranscricaoTutorialMarkdownTranscribrothers() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </IconeSvgHeaderToolbarTranscribrothers>
+  );
+}
+
+function IconeAssistirVideoNarradoTutorialMarkdownTranscribrothers() {
+  return (
+    <IconeSvgHeaderToolbarTranscribrothers>
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+      />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </IconeSvgHeaderToolbarTranscribrothers>
   );
@@ -776,12 +854,16 @@ function descreverMotivoAuditorOmitidoEmPtBrTranscribrothers(motivo: string | un
 
 export type PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorialProps = {
   onAbrirCatalogoPipelines?: () => void;
+  /** False quando o catálogo de pipelines está na frente (projeto fica montado porém oculto). */
+  projetoVisivel?: boolean;
 };
 
 export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   onAbrirCatalogoPipelines,
+  projetoVisivel = true,
 }: PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorialProps = {}) {
-  const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
+  const { pushToast, pushToastProgresso, atualizarToastProgresso, removerToast } =
+    usarToastFeedbackAcoesUiTranscribrothers();
   const [modalIniciarTranscricaoAberto, setModalIniciarTranscricaoAberto] = useState(false);
   const [importacaoRecbrothersModalStepper, setImportacaoRecbrothersModalStepper] =
     useState<ImportacaoRecbrothersModalStepperTranscribrothers | null>(null);
@@ -789,6 +871,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [modeloLitellm, setModeloLitellm] = useState("");
   const [modelosExtrasNavegador, setModelosExtrasNavegador] = useState<string[]>([]);
   const [novoSlugModeloLitellm, setNovoSlugModeloLitellm] = useState("");
+  const [verificandoModeloLitellmProbe, setVerificandoModeloLitellmProbe] = useState(false);
+  const [resultadoProbeModeloLitellm, setResultadoProbeModeloLitellm] = useState<
+    null | "ok" | "erro"
+  >(null);
+  const [gerandoNarracaoTtsDocumento, setGerandoNarracaoTtsDocumento] = useState(false);
+  const [gerandoVideoComNarracaoTts, setGerandoVideoComNarracaoTts] = useState(false);
   const [job, setJob] = useState<JobStatus | null>(null);
   const [nomeArquivoImagemAnotacaoModalAberto, setNomeArquivoImagemAnotacaoModalAberto] = useState<
     string | null
@@ -845,6 +933,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     useState<string | null>(null);
   const [modalProgressoJobAberto, setModalProgressoJobAberto] = useState(false);
   const [modalGerarOutroFormatoAberto, setModalGerarOutroFormatoAberto] = useState(false);
+  const [modalEscopoVideoNarradoAberto, setModalEscopoVideoNarradoAberto] = useState(false);
   const [carregandoGerarOutroFormato, setCarregandoGerarOutroFormato] = useState(false);
   const [passoPipelineModalStatusComPainelDescricaoAbertoId, setPassoPipelineModalStatusComPainelDescricaoAbertoId] =
     useState<string | null>(null);
@@ -853,11 +942,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [modalEscolherVersaoHistoricoTutorialAberta, setModalEscolherVersaoHistoricoTutorialAberta] =
     useState(false);
   const [modalGaleriaAssetsImagensAberta, setModalGaleriaAssetsImagensAberta] = useState(false);
-  const [modalPromptTutorialLitellmAberta, setModalPromptTutorialLitellmAberta] = useState(false);
-  const [padroesInstrucaoTutorialLitellm, setPadroesInstrucaoTutorialLitellm] =
-    useState<InstrucoesPadraoTutorialLitellmApiTranscribrothers | null>(null);
-  const [textoInstrucaoPrefixoLitellmTutorialUsuario, setTextoInstrucaoPrefixoLitellmTutorialUsuario] =
-    useState("");
+  const [paginaVideoNarradoAberta, setPaginaVideoNarradoAberta] = useState(() =>
+    lerViewVideoNarradoAbertaNaUrlTranscribrothers(),
+  );
   const [modoEdicaoMarkdownTutorialAtivo, setModoEdicaoMarkdownTutorialAtivo] = useState(false);
   const [markdownTutorialRascunhoEdicao, setMarkdownTutorialRascunhoEdicao] = useState("");
   const [salvandoMarkdownTutorialEdicaoManual, setSalvandoMarkdownTutorialEdicaoManual] = useState(false);
@@ -933,6 +1020,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [erroMmRuntime, setErroMmRuntime] = useState<string | null>(null);
   const [auditorVerificacaoHabilitadoForm, setAuditorVerificacaoHabilitadoForm] = useState(true);
   const [salvandoAuditorRuntimeSqlite, setSalvandoAuditorRuntimeSqlite] = useState(false);
+  const [encodeResolucaoForm, setEncodeResolucaoForm] =
+    useState<ResolucaoEncodeVideoNarradoUiTranscribrothers>("1080p");
+  const [salvandoEncodeRuntimeSqlite, setSalvandoEncodeRuntimeSqlite] = useState(false);
+  const [erroEncodeRuntimeSqlite, setErroEncodeRuntimeSqlite] = useState<string | null>(null);
+  const [vozTtsNarracaoForm, setVozTtsNarracaoForm] = useState("Kore");
+  const [salvandoVozTtsRuntimeSqlite, setSalvandoVozTtsRuntimeSqlite] = useState(false);
+  const [erroVozTtsRuntimeSqlite, setErroVozTtsRuntimeSqlite] = useState<string | null>(null);
   const [erroAuditorRuntimeSqlite, setErroAuditorRuntimeSqlite] = useState<string | null>(null);
   const [pastasWikiForm, setPastasWikiForm] = useState<string[]>(["workshop"]);
   const [pastaWikiPadraoForm, setPastaWikiPadraoForm] = useState("workshop");
@@ -960,11 +1054,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     useRef<PontoInsercaoImagemMarkdownPreviewTutorialTranscribrothers | null>(null);
 
   const jobId = job?.id;
-
-  const tutorialLitellmPrefixoCustomPersistidoNoJob = useMemo(() => {
-    const v = job?.steps_json?.tutorial_litellm_instrucao_prefixo_custom;
-    return typeof v === "string" && v.trim() ? v : null;
-  }, [job?.steps_json?.tutorial_litellm_instrucao_prefixo_custom]);
 
   const carregarListaJobsNoServidorTranscribrothers = useCallback(async () => {
     setCarregandoListaJobsServidor(true);
@@ -1091,6 +1180,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       configApi.tutorial_planejamento_instantes_captura_frames_litellm_habilitado,
     );
     setAuditorVerificacaoHabilitadoForm(configApi.verificacao_sustentacao_tutorial_habilitada_efetiva);
+    const resEnc = String(configApi.encode_video_narrado_resolucao_efetiva || "1080p");
+    setEncodeResolucaoForm(
+      (["original", "1080p", "720p", "480p"].includes(resEnc)
+        ? resEnc
+        : "1080p") as ResolucaoEncodeVideoNarradoUiTranscribrothers,
+    );
+    setVozTtsNarracaoForm(String(configApi.voz_tts_narracao_efetiva || "Kore"));
     setAuditorRedundanciaSecaoHabilitadoForm(configApi.verificacao_redundancia_secao_markdown_habilitada_efetiva);
     setCorrecaoAutomaticaRedundanciaSecaoHabilitadaForm(
       configApi.verificacao_redundancia_secao_correcao_automatica_habilitada_efetiva,
@@ -1107,66 +1203,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setErroAuditorRuntimeSqlite(null);
     setErroPastasWikiRuntime(null);
   }, [configApi]);
-
-  useEffect(() => {
-    let cancelado = false;
-    void fetch("/api/config/transcribrothers/tutorial-litellm-instrucoes-padrao")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((raw: InstrucoesPadraoTutorialLitellmApiTranscribrothers) => {
-        if (cancelado) return;
-        setPadroesInstrucaoTutorialLitellm(raw);
-      })
-      .catch(() => {
-        if (cancelado) return;
-        setPadroesInstrucaoTutorialLitellm(null);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!modalPromptTutorialLitellmAberta || padroesInstrucaoTutorialLitellm) return;
-    let cancelado = false;
-    void fetch("/api/config/transcribrothers/tutorial-litellm-instrucoes-padrao")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((raw: InstrucoesPadraoTutorialLitellmApiTranscribrothers) => {
-        if (cancelado) return;
-        setPadroesInstrucaoTutorialLitellm(raw);
-      })
-      .catch(() => {
-        if (cancelado) return;
-        setPadroesInstrucaoTutorialLitellm(null);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [modalPromptTutorialLitellmAberta, padroesInstrucaoTutorialLitellm]);
-
-  useEffect(() => {
-    if (!padroesInstrucaoTutorialLitellm) return;
-    if (modalPromptTutorialLitellmAberta) return;
-    if (tutorialLitellmPrefixoCustomPersistidoNoJob) {
-      setTextoInstrucaoPrefixoLitellmTutorialUsuario(tutorialLitellmPrefixoCustomPersistidoNoJob);
-      return;
-    }
-    const rascunho = carregarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownDoNavegadorTranscribrothers();
-    setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-      rascunho ?? padroesInstrucaoTutorialLitellm.instrucao_sem_imagens,
-    );
-  }, [padroesInstrucaoTutorialLitellm, tutorialLitellmPrefixoCustomPersistidoNoJob, job?.id]);
-
-  useEffect(() => {
-    if (!modalPromptTutorialLitellmAberta || !padroesInstrucaoTutorialLitellm) return;
-    if (tutorialLitellmPrefixoCustomPersistidoNoJob) {
-      setTextoInstrucaoPrefixoLitellmTutorialUsuario(tutorialLitellmPrefixoCustomPersistidoNoJob);
-      return;
-    }
-    const rascunho = carregarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownDoNavegadorTranscribrothers();
-    setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-      rascunho ?? padroesInstrucaoTutorialLitellm.instrucao_sem_imagens,
-    );
-  }, [modalPromptTutorialLitellmAberta, padroesInstrucaoTutorialLitellm, tutorialLitellmPrefixoCustomPersistidoNoJob]);
 
   const seekSegundos = useCallback((segundos: number) => {
     const v = videoRef.current;
@@ -1554,6 +1590,441 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }
   }, [job?.id, job?.result_markdown, pushToast, resolverNomeAssetPngParaDownloadComDuasVersoesTranscribrothers]);
 
+  const urlAssetNarracaoTtsDocumento = useMemo(
+    () => obterUrlAssetNarracaoTtsDosStepsJsonJobTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+
+  const urlDownloadVideoComNarracaoTts = useMemo(
+    () => obterUrlDownloadVideoComNarracaoTtsDosStepsJsonJobTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+
+  const abrirPaginaVideoNarradoTranscribrothers = useCallback(() => {
+    setPaginaVideoNarradoAberta(true);
+    sincronizarViewVideoNarradoNaUrlTranscribrothers(true, { push: true });
+  }, []);
+
+  const fecharPaginaVideoNarradoTranscribrothers = useCallback(() => {
+    setPaginaVideoNarradoAberta(false);
+    sincronizarViewVideoNarradoNaUrlTranscribrothers(false, { push: false });
+  }, []);
+
+  // Abre a página se a URL pedir e o MP4 narrado já existir.
+  useEffect(() => {
+    if (!urlDownloadVideoComNarracaoTts) return;
+    if (lerViewVideoNarradoAbertaNaUrlTranscribrothers()) {
+      setPaginaVideoNarradoAberta(true);
+    }
+  }, [urlDownloadVideoComNarracaoTts]);
+
+  // Sem vídeo narrado no job: fecha a página e limpa a query (só depois do job conhecido).
+  useEffect(() => {
+    if (urlDownloadVideoComNarracaoTts || !job) return;
+    if (!paginaVideoNarradoAberta && !lerViewVideoNarradoAbertaNaUrlTranscribrothers()) return;
+    setPaginaVideoNarradoAberta(false);
+    sincronizarViewVideoNarradoNaUrlTranscribrothers(false, { push: false });
+  }, [urlDownloadVideoComNarracaoTts, job, paginaVideoNarradoAberta]);
+
+  useEffect(() => {
+    const aoPopState = () => {
+      const querAberta =
+        lerViewVideoNarradoAbertaNaUrlTranscribrothers() && Boolean(urlDownloadVideoComNarracaoTts);
+      setPaginaVideoNarradoAberta(querAberta);
+    };
+    window.addEventListener("popstate", aoPopState);
+    return () => window.removeEventListener("popstate", aoPopState);
+  }, [urlDownloadVideoComNarracaoTts]);
+
+  // Voltou do catálogo de pipelines com a página de vídeo ainda “aberta” em memória:
+  // restaura `?view=video-narrado` (o shell limpa a query ao sair de pipelines).
+  useEffect(() => {
+    if (!projetoVisivel || !paginaVideoNarradoAberta || !urlDownloadVideoComNarracaoTts) return;
+    if (lerViewVideoNarradoAbertaNaUrlTranscribrothers()) return;
+    sincronizarViewVideoNarradoNaUrlTranscribrothers(true, { push: false });
+  }, [projetoVisivel, paginaVideoNarradoAberta, urlDownloadVideoComNarracaoTts]);
+
+  const urlAssetLegendasVttAlinhadas = useMemo(
+    () => obterUrlAssetLegendasVttAlinhadasDosStepsJsonJobTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+
+  const jobTemVideoEntradaParaMuxNarracao = useMemo(() => {
+    if (!job || jobEhProjetoEmBrancoTranscribrothers(job)) return false;
+    if (job.steps_json?.tipo_entrada_midia === "audio") return false;
+    return true;
+  }, [job]);
+
+  const pedidoPipelineVideoNarradoEmAndamentoRef = useRef(false);
+
+  const gerarNarracaoTtsDoDocumentoMarkdownAtual = useCallback(async () => {
+    if (!job?.id || !job.result_markdown?.trim()) {
+      pushToast("Não há documento Markdown para narrar.", "error");
+      return;
+    }
+    const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
+      modelosParaSelectLiteLLM,
+      modeloLitellm,
+    );
+    if (!modeloTts) {
+      pushToast(
+        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+        "error",
+      );
+      return;
+    }
+    setGerandoNarracaoTtsDocumento(true);
+    setErro(null);
+    try {
+      const r = await gerarNarracaoTtsMarkdownJobApiTranscribrothers(job.id, modeloTts);
+      const j = await buscarJob(job.id);
+      setJob(j);
+      pushToast(r.mensagem, "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErro(msg);
+      pushToast(msg, "error");
+    } finally {
+      setGerandoNarracaoTtsDocumento(false);
+    }
+  }, [job?.id, job?.result_markdown, modeloLitellm, modelosParaSelectLiteLLM, pushToast]);
+
+  const ouvirOuBaixarNarracaoTtsDocumento = useCallback(() => {
+    const url = urlAssetNarracaoTtsDocumento;
+    if (!url) {
+      pushToast("Ainda não há narração gerada para este documento.", "info");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [pushToast, urlAssetNarracaoTtsDocumento]);
+
+  const gerarVideoComNarracaoTtsSubstituindoAudio = useCallback(async () => {
+    if (!job?.id) return;
+    if (!urlAssetNarracaoTtsDocumento) {
+      pushToast("Gere a narração de áudio antes de montar o vídeo.", "error");
+      return;
+    }
+    setGerandoVideoComNarracaoTts(true);
+    setErro(null);
+    try {
+      const r = await gerarVideoComNarracaoTtsJobApiTranscribrothers(job.id);
+      const j = await buscarJob(job.id);
+      setJob(j);
+      pushToast(r.mensagem, "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErro(msg);
+      pushToast(msg, "error");
+    } finally {
+      setGerandoVideoComNarracaoTts(false);
+    }
+  }, [job?.id, pushToast, urlAssetNarracaoTtsDocumento]);
+
+  const baixarVideoComNarracaoTtsDocumento = useCallback(() => {
+    const url = urlDownloadVideoComNarracaoTts || (job?.id ? `/api/jobs/${job.id}/video-com-narracao-tts` : null);
+    if (!url) {
+      pushToast("Ainda não há vídeo com narração gerado.", "info");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [job?.id, pushToast, urlDownloadVideoComNarracaoTts]);
+
+  const [baixandoVideoComLegendasQueimadas, setBaixandoVideoComLegendasQueimadas] = useState(false);
+
+  const baixarVideoComLegendasQueimadasDocumento = useCallback(async () => {
+    if (!job?.id || baixandoVideoComLegendasQueimadas) return;
+    if (!urlDownloadVideoComNarracaoTts) {
+      pushToast("Ainda não há vídeo com narração gerado.", "info");
+      return;
+    }
+    if (!urlAssetLegendasVttAlinhadas) {
+      pushToast("Ainda não há legendas VTT para embutir no vídeo.", "info");
+      return;
+    }
+    setBaixandoVideoComLegendasQueimadas(true);
+    let idToastProgresso: string | null = null;
+    try {
+      const resultado = await baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers(
+        job.id,
+        {
+          onStatus: (s) => {
+            if (s.status !== "gerando" && s.status !== "pendente") return;
+            const pct =
+              typeof s.progresso_percentual === "number" && Number.isFinite(s.progresso_percentual)
+                ? s.progresso_percentual
+                : null;
+            const decorrido =
+              typeof s.tempo_decorrido_segundos === "number" && Number.isFinite(s.tempo_decorrido_segundos)
+                ? Math.round(s.tempo_decorrido_segundos)
+                : null;
+            const msgBase =
+              pct != null
+                ? `Gerando vídeo com legendas embutidas… ${Math.round(pct)}%`
+                : "Gerando vídeo com legendas embutidas… Em alta resolução pode levar alguns minutos na 1ª vez.";
+            const msg =
+              decorrido != null && decorrido >= 5 ? `${msgBase} (${decorrido}s)` : msgBase;
+            if (!idToastProgresso) {
+              idToastProgresso = pushToastProgresso({
+                message: msg,
+                percentual: pct,
+                indeterminado: pct == null,
+              });
+            } else {
+              atualizarToastProgresso(idToastProgresso, {
+                message: msg,
+                percentual: pct,
+                indeterminado: pct == null,
+              });
+            }
+          },
+        },
+      );
+      if (idToastProgresso) removerToast(idToastProgresso);
+      pushToast(
+        resultado.precisouGerar
+          ? "Vídeo com legendas embutidas pronto — download iniciado."
+          : "Download do vídeo com legendas embutidas iniciado.",
+        "success",
+      );
+    } catch (e: unknown) {
+      if (idToastProgresso) removerToast(idToastProgresso);
+      pushToast(
+        e instanceof Error ? e.message : "Falha ao gerar o vídeo com legendas embutidas.",
+        "error",
+      );
+    } finally {
+      setBaixandoVideoComLegendasQueimadas(false);
+    }
+  }, [
+    atualizarToastProgresso,
+    baixandoVideoComLegendasQueimadas,
+    job?.id,
+    pushToast,
+    pushToastProgresso,
+    removerToast,
+    urlAssetLegendasVttAlinhadas,
+    urlDownloadVideoComNarracaoTts,
+  ]);
+
+  const baixarLegendasVttAlinhadasDocumento = useCallback(() => {
+    const url = urlAssetLegendasVttAlinhadas;
+    if (!url) {
+      pushToast(
+        "Ainda não há legendas VTT geradas. Use «Gerar vídeo narrado» na barra do documento.",
+        "info",
+      );
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [pushToast, urlAssetLegendasVttAlinhadas]);
+
+  const solicitarPipelineVideoNarradoAPartirDocumentoTranscribrothers = useCallback(
+    async (escopo?: ResultadoEscopoGeracaoVideoNarradoTranscribrothers) => {
+      if (!job?.id) return;
+      if (!job.result_markdown?.trim()) {
+        pushToast("Não há documento Markdown para o vídeo narrado.", "error");
+        return;
+      }
+      if (escopo?.modo === "secoes") {
+        const md = (escopo.markdownNarracao || "").trim();
+        if (!md) {
+          pushToast("Selecione ao menos um tópico com conteúdo para narrar.", "error");
+          return;
+        }
+      }
+      const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
+        modelosParaSelectLiteLLM,
+        modeloLitellm,
+      );
+      const modeloChat = escolherModeloChatDaListaDisponivelTranscribrothers(
+        modelosParaSelectLiteLLM,
+        modeloLitellm,
+      );
+      if (!modeloTts) {
+        pushToast(
+          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+          "error",
+        );
+        return;
+      }
+      if (!modeloChat) {
+        pushToast(
+          "Nenhum modelo de chat na lista para a limpeza IA. Selecione um modelo sem -tts em Configurações.",
+          "error",
+        );
+        return;
+      }
+      setErro(null);
+      setRegenerandoTutorialMarkdown(true);
+      try {
+        const vozEscolhida = (escopo?.voz || configApi?.voz_tts_narracao_efetiva || "Kore").trim() || "Kore";
+        const rVoz = await fetch("/api/config/transcribrothers/voz-tts-narracao-runtime", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voz: vozEscolhida }),
+        });
+        if (!rVoz.ok) {
+          const texto = await rVoz.text();
+          throw new Error(texto || `Erro ao gravar voz TTS (HTTP ${rVoz.status})`);
+        }
+        const rawVoz = (await rVoz.json()) as Partial<ConfigPublicaTranscribrothers> &
+          Record<string, unknown>;
+        const cfgVoz = normalizarRespostaConfigPublicaTranscribrothersDaApi(rawVoz);
+        setConfigApi(cfgVoz);
+        setVozTtsNarracaoForm(String(cfgVoz.voz_tts_narracao_efetiva || vozEscolhida));
+
+        const j = await agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscribrothers(
+          job.id,
+          modeloTts,
+          modeloChat,
+          {
+            markdownNarracao: escopo?.modo === "secoes" ? escopo.markdownNarracao : null,
+            titulosSecoesEscopo: escopo?.modo === "secoes" ? escopo.titulosSecoes : null,
+          },
+        );
+        pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
+        setJob(j);
+        setPainelRegeneracaoFabAberto(false);
+        setModalEscopoVideoNarradoAberto(false);
+        setModalProgressoJobAberto(true);
+        const escopoMsg =
+          escopo?.modo === "secoes" && escopo.titulosSecoes.length
+            ? ` Escopo: ${escopo.titulosSecoes.length} tópico(s).`
+            : "";
+        pushToast(
+          `Vídeo narrado na fila (${cfgVoz.voz_tts_narracao_efetiva}): limpeza IA (${modeloChat}) → narração TTS → MP4.${escopoMsg}`,
+          "success",
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setRegenerandoTutorialMarkdown(false);
+      }
+    },
+    [
+      configApi?.voz_tts_narracao_efetiva,
+      job?.id,
+      job?.result_markdown,
+      modeloLitellm,
+      modelosParaSelectLiteLLM,
+      pushToast,
+    ],
+  );
+
+  const solicitarAtualizacaoNarracaoAPartirLegendasVttEditadasTranscribrothers = useCallback(async () => {
+    if (!job?.id) return;
+    const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
+      modelosParaSelectLiteLLM,
+      modeloLitellm,
+    );
+    if (!modeloTts) {
+      pushToast(
+        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+        "error",
+      );
+      return;
+    }
+    setErro(null);
+    setRegenerandoTutorialMarkdown(true);
+    try {
+      const j = await agendarAtualizacaoNarracaoAPartirLegendasVttEditadasJobApiTranscribrothers(
+        job.id,
+        modeloTts,
+      );
+      pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
+      setJob(j);
+      fecharPaginaVideoNarradoTranscribrothers();
+      setModalProgressoJobAberto(true);
+      pushToast(
+        "Atualizando narração: só as legendas alteradas passam pelo TTS; depois o vídeo é remontado.",
+        "success",
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErro(msg);
+      pushToast(msg, "error");
+    } finally {
+      setRegenerandoTutorialMarkdown(false);
+    }
+  }, [job?.id, modeloLitellm, modelosParaSelectLiteLLM, pushToast, fecharPaginaVideoNarradoTranscribrothers]);
+
+  const solicitarRemuxVideoNarradoAposEdicaoJanelasTranscribrothers = useCallback(async () => {
+    if (!job?.id) return;
+    setErro(null);
+    setRegenerandoTutorialMarkdown(true);
+    try {
+      const j = await agendarRemuxVideoNarradoAposEdicaoJanelasJobApiTranscribrothers(job.id);
+      pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
+      setJob(j);
+      fecharPaginaVideoNarradoTranscribrothers();
+      setModalProgressoJobAberto(true);
+      pushToast(
+        "Remontando vídeo com os tempos de tela salvos (áudio TTS reutilizado).",
+        "success",
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErro(msg);
+      pushToast(msg, "error");
+    } finally {
+      setRegenerandoTutorialMarkdown(false);
+    }
+  }, [job?.id, pushToast, fecharPaginaVideoNarradoTranscribrothers]);
+
+  const solicitarGerarVideoComEdicoesDoModalNarradoTranscribrothers = useCallback(
+    async (payload: {
+      cues: Array<{
+        inicio_segundos: number;
+        fim_segundos: number;
+        texto: string;
+        sem_narracao?: boolean;
+        voz_tts?: string;
+        texto_tts?: string;
+        forcar_regenerar_tts?: boolean;
+      }>;
+      janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
+    }) => {
+      if (!job?.id) return;
+      const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
+        modelosParaSelectLiteLLM,
+        modeloLitellm,
+      );
+      if (!modeloTts) {
+        pushToast(
+          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+          "error",
+        );
+        return;
+      }
+      setErro(null);
+      setRegenerandoTutorialMarkdown(true);
+      try {
+        const j = await agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribrothers(job.id, {
+          litellmModel: modeloTts,
+          cues: payload.cues,
+          janelas: payload.janelas,
+        });
+        pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
+        setJob(j);
+        fecharPaginaVideoNarradoTranscribrothers();
+        setModalProgressoJobAberto(true);
+        pushToast(
+          "Gerando vídeo: prévias validadas (texto+voz) são reaproveitadas; só o restante passa pelo TTS.",
+          "success",
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setRegenerandoTutorialMarkdown(false);
+      }
+    },
+    [job?.id, modeloLitellm, modelosParaSelectLiteLLM, pushToast, fecharPaginaVideoNarradoTranscribrothers],
+  );
+
   useEffect(() => {
     if (!jobId) return;
     if (
@@ -1573,6 +2044,35 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }, 2000);
     return () => window.clearInterval(id);
   }, [jobId, job?.status]);
+
+  useEffect(() => {
+    if (!pedidoPipelineVideoNarradoEmAndamentoRef.current || !job) return;
+    const resumo = obterResumoPipelineVideoNarradoDocumentoDosStepsJsonTranscribrothers(job.steps_json);
+    if (!resumo) return;
+    if (job.status === "completed" && resumo.ok) {
+      pedidoPipelineVideoNarradoEmAndamentoRef.current = false;
+      pushToast(
+        typeof resumo.mensagem === "string" && resumo.mensagem.trim()
+          ? resumo.mensagem.trim()
+          : "Vídeo narrado pronto.",
+        "success",
+      );
+      setModalProgressoJobAberto(false);
+      if (obterUrlDownloadVideoComNarracaoTtsDosStepsJsonJobTranscribrothers(job.steps_json)) {
+        abrirPaginaVideoNarradoTranscribrothers();
+      }
+      return;
+    }
+    if (job.status === "failed" && resumo.ok === false) {
+      pedidoPipelineVideoNarradoEmAndamentoRef.current = false;
+      pushToast(
+        typeof resumo.mensagem === "string" && resumo.mensagem.trim()
+          ? resumo.mensagem.trim()
+          : "Falha no pipeline de vídeo narrado.",
+        "error",
+      );
+    }
+  }, [job, pushToast, abrirPaginaVideoNarradoTranscribrothers]);
 
   useEffect(() => {
     if (!modalProgressoJobAberto) return;
@@ -1765,11 +2265,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const stagingId = importacaoRecbrothersModalStepper?.stagingId ?? null;
     try {
       const modeloParaEnviar = modeloLitellm.trim();
-      const prefixo = textoInstrucaoPrefixoLitellmTutorialUsuario.trim();
       const j = await criarJobUploadArquivoLocal(
         stagingId ? null : arquivo,
         modeloParaEnviar,
-        prefixo ? prefixo : null,
         destinoAposTranscricao,
         stagingId,
         cliquesJsonOpcional ?? null,
@@ -1860,6 +2358,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const registrosTempoInferenciaTranscricaoPorTrecho = useMemo(
     () =>
       extrairRegistrosTempoInferenciaTranscricaoJanelasDoStepsJsonTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+
+  const resumoLimpezaLegendasIaModalStatusJob = useMemo(
+    () => extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers(job?.steps_json),
     [job?.steps_json],
   );
 
@@ -3108,9 +3611,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 
   const resumoErroModal = useMemo(() => {
     if (!job?.error_message) return "";
-    const t = job.error_message.trim();
-    if (t.length <= 400) return t;
-    return `${t.slice(0, 400)}…`;
+    return job.error_message.trim();
   }, [job?.error_message]);
 
   function adicionarNovoModeloLitellmNaConfiguracao() {
@@ -3120,6 +3621,32 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setModelosExtrasNavegador(lista);
     setModeloLitellm(t);
     setNovoSlugModeloLitellm("");
+    setResultadoProbeModeloLitellm(null);
+  }
+
+  async function verificarModeloLitellmSelecionadoNaGavetaTranscribrothers() {
+    const modelo =
+      novoSlugModeloLitellm.trim() ||
+      (modelosParaSelectLiteLLM.includes(modeloLitellm)
+        ? modeloLitellm
+        : modelosParaSelectLiteLLM[0] || ""
+      ).trim();
+    if (!modelo) {
+      pushToast("Informe ou selecione um modelo para testar.", "error");
+      return;
+    }
+    setVerificandoModeloLitellmProbe(true);
+    setResultadoProbeModeloLitellm(null);
+    try {
+      const r = await verificarModeloLitellmChatCompletionsProbeApiTranscribrothers(modelo);
+      setResultadoProbeModeloLitellm(r.ok ? "ok" : "erro");
+      pushToast(r.mensagem, r.ok ? "success" : "error");
+    } catch (e) {
+      setResultadoProbeModeloLitellm("erro");
+      pushToast(e instanceof Error ? e.message : String(e), "error");
+    } finally {
+      setVerificandoModeloLitellmProbe(false);
+    }
   }
 
   const copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers = useCallback(
@@ -3286,6 +3813,111 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setNovaPastaWikiForm("");
   }
 
+  async function salvarEncodeVideoNarradoRuntimePersistidoSqliteTranscribrothers() {
+    setErroEncodeRuntimeSqlite(null);
+    setSalvandoEncodeRuntimeSqlite(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/encode-video-narrado-runtime", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resolucao: encodeResolucaoForm,
+          fps: configApi?.encode_video_narrado_fps_padrao_app ?? 30,
+        }),
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
+      pushToast("Preferência de encode do vídeo narrado gravada no servidor.", "success");
+    } catch (e) {
+      setErroEncodeRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoEncodeRuntimeSqlite(false);
+    }
+  }
+
+  async function limparPreferenciaEncodeVideoNarradoRuntimeSqliteTranscribrothers() {
+    setErroEncodeRuntimeSqlite(null);
+    setSalvandoEncodeRuntimeSqlite(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/encode-video-narrado-runtime", {
+        method: "DELETE",
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      const cfg = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+      setConfigApi(cfg);
+      const resEnc = String(cfg.encode_video_narrado_resolucao_efetiva || "1080p");
+      setEncodeResolucaoForm(
+        (["original", "1080p", "720p", "480p"].includes(resEnc)
+          ? resEnc
+          : "1080p") as ResolucaoEncodeVideoNarradoUiTranscribrothers,
+      );
+      pushToast("Encode do vídeo narrado voltou ao padrão do app (1080p @ 30 fps).", "success");
+    } catch (e) {
+      setErroEncodeRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoEncodeRuntimeSqlite(false);
+    }
+  }
+
+  async function salvarVozTtsNarracaoRuntimePersistidoSqliteTranscribrothers() {
+    setErroVozTtsRuntimeSqlite(null);
+    setSalvandoVozTtsRuntimeSqlite(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/voz-tts-narracao-runtime", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voz: vozTtsNarracaoForm }),
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      const cfg = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+      setConfigApi(cfg);
+      setVozTtsNarracaoForm(String(cfg.voz_tts_narracao_efetiva || "Kore"));
+      pushToast(`Voz TTS da narração gravada: ${cfg.voz_tts_narracao_efetiva}.`, "success");
+    } catch (e) {
+      setErroVozTtsRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoVozTtsRuntimeSqlite(false);
+    }
+  }
+
+  async function limparPreferenciaVozTtsNarracaoRuntimeSqliteTranscribrothers() {
+    setErroVozTtsRuntimeSqlite(null);
+    setSalvandoVozTtsRuntimeSqlite(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/voz-tts-narracao-runtime", {
+        method: "DELETE",
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      const cfg = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+      setConfigApi(cfg);
+      setVozTtsNarracaoForm(String(cfg.voz_tts_narracao_efetiva || "Kore"));
+      pushToast(
+        `Voz TTS voltou ao padrão do app (${cfg.voz_tts_narracao_padrao_app}).`,
+        "success",
+      );
+    } catch (e) {
+      setErroVozTtsRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoVozTtsRuntimeSqlite(false);
+    }
+  }
+
   async function salvarVerificacaoSustentacaoTutorialRuntimePersistidoSqliteTranscribrothers() {
     setErroAuditorRuntimeSqlite(null);
     setSalvandoAuditorRuntimeSqlite(true);
@@ -3408,18 +4040,47 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       <label className="tb-label tb-label-spaced" htmlFor="tb-drawer-modelo">
         Modelo (LiteLLM)
       </label>
-      <select
-        id="tb-drawer-modelo"
-        className="tb-select"
-        value={modelosParaSelectLiteLLM.includes(modeloLitellm) ? modeloLitellm : modelosParaSelectLiteLLM[0]}
-        onChange={(e) => setModeloLitellm(e.target.value)}
-      >
-        {modelosParaSelectLiteLLM.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </select>
+      <div className="tb-row tb-row-drawer-modelo-probe">
+        <select
+          id="tb-drawer-modelo"
+          className="tb-select tb-select-drawer-modelo"
+          value={modelosParaSelectLiteLLM.includes(modeloLitellm) ? modeloLitellm : modelosParaSelectLiteLLM[0]}
+          onChange={(e) => {
+            setModeloLitellm(e.target.value);
+            setResultadoProbeModeloLitellm(null);
+          }}
+          disabled={verificandoModeloLitellmProbe}
+        >
+          {modelosParaSelectLiteLLM.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={`tb-btn-probe-modelo${
+            resultadoProbeModeloLitellm === "ok"
+              ? " tb-btn-probe-modelo--ok"
+              : resultadoProbeModeloLitellm === "erro"
+                ? " tb-btn-probe-modelo--erro"
+                : ""
+          }`}
+          title="Testar no proxy: chat (texto) ou TTS (áudio), conforme o slug do modelo"
+          aria-label="Testar modelo LiteLLM no proxy"
+          disabled={verificandoModeloLitellmProbe}
+          onClick={() => void verificarModeloLitellmSelecionadoNaGavetaTranscribrothers()}
+        >
+          {verificandoModeloLitellmProbe ? (
+            <span className="tb-btn-probe-modelo-spinner" aria-hidden="true" />
+          ) : (
+            <span aria-hidden="true">✓</span>
+          )}
+        </button>
+      </div>
+      <p className="tb-muted tb-drawer-dica-inline">
+        O ✓ testa no proxy: chat de texto, ou TTS (slug com -tts) pedindo áudio. Não valida STT do pipeline.
+      </p>
 
       <label className="tb-label tb-label-spaced" htmlFor="tb-drawer-novo-modelo">
         Adicionar modelo (salvo neste navegador)
@@ -3430,8 +4091,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           className="tb-input tb-input-inline"
           type="text"
           value={novoSlugModeloLitellm}
-          onChange={(e) => setNovoSlugModeloLitellm(e.target.value)}
+          onChange={(e) => {
+            setNovoSlugModeloLitellm(e.target.value);
+            setResultadoProbeModeloLitellm(null);
+          }}
           placeholder="ex.: gemini/gemini-2.0-flash"
+          disabled={verificandoModeloLitellmProbe}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -3439,7 +4104,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             }
           }}
         />
-        <button type="button" className="tb-linkbtn" onClick={adicionarNovoModeloLitellmNaConfiguracao}>
+        <button
+          type="button"
+          className="tb-linkbtn"
+          disabled={verificandoModeloLitellmProbe}
+          onClick={adicionarNovoModeloLitellmNaConfiguracao}
+        >
           Adicionar
         </button>
       </div>
@@ -3602,6 +4272,146 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       </div>
 
       <div className="tb-drawer-secao-head">
+        <h3 className="tb-drawer-subtitulo">Encode do vídeo narrado</h3>
+        <details className="tb-drawer-micro-ajuda">
+          <summary>Sobre</summary>
+          <div className="tb-drawer-micro-ajuda-corpo">
+            <p>
+              Resolução e taxa de frames aplicadas na montagem do MP4 com narração (e na queima de legendas). Padrão do
+              app: <strong>1080p @ 30 fps</strong>. «Original» mantém a resolução da captura (pode ficar bem mais lento
+              em 3K/60 fps).
+            </p>
+          </div>
+        </details>
+      </div>
+      {configApi.encode_video_narrado_preferencia_sqlite_definida ? (
+        <p className="tb-drawer-badge-runtime-ativo">Preferência de encode na base ativa.</p>
+      ) : (
+        <p className="tb-muted tb-drawer-dica-inline">
+          Sem override na base — padrão do app (
+          {configApi.encode_video_narrado_resolucao_padrao_app} @ {configApi.encode_video_narrado_fps_padrao_app}{" "}
+          fps).
+        </p>
+      )}
+      <label className="tb-label tb-label-spaced" htmlFor="tb-encode-resolucao">
+        Resolução máxima
+      </label>
+      <select
+        id="tb-encode-resolucao"
+        className="tb-select"
+        value={encodeResolucaoForm}
+        onChange={(e) =>
+          setEncodeResolucaoForm(e.target.value as ResolucaoEncodeVideoNarradoUiTranscribrothers)
+        }
+        disabled={salvandoEncodeRuntimeSqlite}
+      >
+        {(configApi.encode_video_narrado_resolucoes_disponiveis.length > 0
+          ? configApi.encode_video_narrado_resolucoes_disponiveis
+          : ["original", "1080p", "720p", "480p"]
+        ).map((op) => (
+          <option key={op} value={op}>
+            {op === "original" ? "Original (sem reduzir)" : op}
+          </option>
+        ))}
+      </select>
+      <p className="tb-muted tb-drawer-dica-inline">
+        FPS fixo: <strong>{configApi.encode_video_narrado_fps_efetivo} fps</strong>. Efetivo agora:{" "}
+        <strong>
+          {configApi.encode_video_narrado_resolucao_efetiva} @ {configApi.encode_video_narrado_fps_efetivo}{" "}
+          fps
+        </strong>
+        .
+      </p>
+      {erroEncodeRuntimeSqlite ? <p className="tb-drawer-erro-mm">{erroEncodeRuntimeSqlite}</p> : null}
+      <div className="tb-drawer-row-salvar-mm">
+        <button
+          type="button"
+          className="tb-btn-drawer-primario"
+          disabled={salvandoEncodeRuntimeSqlite}
+          onClick={() => void salvarEncodeVideoNarradoRuntimePersistidoSqliteTranscribrothers()}
+        >
+          {salvandoEncodeRuntimeSqlite ? "Salvando…" : "Salvar encode no servidor"}
+        </button>
+        <button
+          type="button"
+          className="tb-btn-drawer-secundario"
+          disabled={
+            salvandoEncodeRuntimeSqlite || !configApi.encode_video_narrado_preferencia_sqlite_definida
+          }
+          onClick={() => void limparPreferenciaEncodeVideoNarradoRuntimeSqliteTranscribrothers()}
+          title="Volta ao padrão do app (1080p @ 30 fps)"
+        >
+          Voltar ao padrão
+        </button>
+      </div>
+
+      <div className="tb-drawer-secao-head">
+        <h3 className="tb-drawer-subtitulo">Voz da narração (TTS)</h3>
+        <details className="tb-drawer-micro-ajuda">
+          <summary>Sobre</summary>
+          <div className="tb-drawer-micro-ajuda-corpo">
+            <p>
+              Padrão persistido da voz Gemini TTS 2.5. O lugar principal para escolher (e ouvir amostra) é a modal{" "}
+              <strong>Gerar vídeo narrado</strong>. Aqui você só ajusta o padrão sem disparar a pipeline. Padrão do
+              app: <strong>Kore</strong>.
+            </p>
+          </div>
+        </details>
+      </div>
+      {configApi.voz_tts_narracao_preferencia_sqlite_definida ? (
+        <p className="tb-drawer-badge-runtime-ativo">Preferência de voz TTS na base ativa.</p>
+      ) : (
+        <p className="tb-muted tb-drawer-dica-inline">
+          Sem override na base — padrão do app ({configApi.voz_tts_narracao_padrao_app}).
+        </p>
+      )}
+      <label className="tb-label tb-label-spaced" htmlFor="tb-voz-tts-narracao">
+        Voz Gemini (padrão)
+      </label>
+      <select
+        id="tb-voz-tts-narracao"
+        className="tb-select"
+        value={vozTtsNarracaoForm}
+        onChange={(e) => setVozTtsNarracaoForm(e.target.value)}
+        disabled={salvandoVozTtsRuntimeSqlite}
+      >
+        {(configApi.voz_tts_narracao_vozes_disponiveis.length > 0
+          ? configApi.voz_tts_narracao_vozes_disponiveis
+          : [{ id: "Kore", estilo: "Firme" }]
+        ).map((op) => (
+          <option key={op.id} value={op.id}>
+            {op.id} — {op.estilo}
+          </option>
+        ))}
+      </select>
+      <p className="tb-muted tb-drawer-dica-inline">
+        Efetiva agora: <strong>{configApi.voz_tts_narracao_efetiva}</strong>.
+      </p>
+      {erroVozTtsRuntimeSqlite ? <p className="tb-drawer-erro-mm">{erroVozTtsRuntimeSqlite}</p> : null}
+      <div className="tb-drawer-row-salvar-mm">
+        <button
+          type="button"
+          className="tb-btn-drawer-primario"
+          disabled={salvandoVozTtsRuntimeSqlite}
+          onClick={() => void salvarVozTtsNarracaoRuntimePersistidoSqliteTranscribrothers()}
+        >
+          {salvandoVozTtsRuntimeSqlite ? "Salvando…" : "Salvar voz no servidor"}
+        </button>
+        <button
+          type="button"
+          className="tb-btn-drawer-secundario"
+          disabled={
+            salvandoVozTtsRuntimeSqlite || !configApi.voz_tts_narracao_preferencia_sqlite_definida
+          }
+          onClick={() => void limparPreferenciaVozTtsNarracaoRuntimeSqliteTranscribrothers()}
+          title={`Volta ao padrão do app (${configApi.voz_tts_narracao_padrao_app})`}
+        >
+          Voltar ao padrão
+        </button>
+      </div>
+
+      <hr className="tb-drawer-sep" />
+      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
         <h3 className="tb-drawer-subtitulo">Auditor</h3>
         <details className="tb-drawer-micro-ajuda">
           <summary>Sobre</summary>
@@ -3856,7 +4666,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
               Auditor. <strong>Regeneração</strong>: Gerador → Imagens → Auditor. <strong>Revisão profunda</strong>:
               Planejador → Editores → Consolidador → Imagens → Auditor. Só entradas com texto fixo no código mostram{" "}
               <strong>Copiar</strong>
-              ; as outras descrevem onde configurar (modelos, .env, instrução na página).
+              ; as outras descrevem onde configurar (modelos, .env, catálogo de pipelines).
             </p>
           </div>
         </details>
@@ -3882,11 +4692,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             </p>
           </details>
           <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Gerador — instrução opcional na UI (não listada como fixo)</summary>
+            <summary className="tb-drawer-prompt-fixo-summary">Gerador — prompts no catálogo / pedido no FAB</summary>
             <p className="tb-muted tb-drawer-texto-compacto tb-drawer-prompt-fixo-somente-texto">
-              O passe único que gera o Markdown (ou a regeneração simples) usa o prefixo opcional que você pode editar no
-              formulário («instrução / prefixo» para o tutorial). Isso não é o mesmo que os blocos fixos de revisão
-              profunda abaixo; na pipeline aparece como segundo passo quando aplicável.
+              A geração inicial usa os prompts do agente no catálogo de pipelines (sistema ou custom). Ajustes pontuais
+              no documento já gerado ficam no painel de regeneração (FAB), não nesta lista de blocos fixos de revisão
+              profunda.
             </p>
           </details>
           <details className="tb-drawer-prompt-fixo-details">
@@ -4156,6 +4966,62 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             refaz os trechos de transcrição que faltam (checkpoint), desde que janela/modelo/formato de áudio
             continuem compatíveis.
           </p>
+        ) : null}
+        {resumoLimpezaLegendasIaModalStatusJob ? (
+          <details
+            className="tb-modal-limpeza-legendas-ia tb-modal-limpeza-legendas-ia-details"
+            defaultOpen={
+              resumoLimpezaLegendasIaModalStatusJob.usouFallbackOriginais ||
+              resumoLimpezaLegendasIaModalStatusJob.quantidadeAlteradas > 0 ||
+              job.steps_json?.pipeline_fase === "video_narrado_limpando_legendas_ia"
+            }
+          >
+            <summary className="tb-modal-limpeza-legendas-ia-summary">
+              Limpeza IA das legendas
+              <span className="tb-modal-limpeza-legendas-ia-summary-meta">
+                {" "}
+                (
+                {resumoLimpezaLegendasIaModalStatusJob.usouFallbackOriginais
+                  ? "falhou — textos originais mantidos"
+                  : `${resumoLimpezaLegendasIaModalStatusJob.quantidadeAlteradas} cue(s) alterada(s)`}
+                )
+              </span>
+            </summary>
+            {resumoLimpezaLegendasIaModalStatusJob.mensagem ? (
+              <p className="tb-muted tb-modal-limpeza-legendas-ia-mensagem">
+                {resumoLimpezaLegendasIaModalStatusJob.mensagem}
+              </p>
+            ) : null}
+            {resumoLimpezaLegendasIaModalStatusJob.modelo ? (
+              <p className="tb-muted">
+                Modelo: <code>{resumoLimpezaLegendasIaModalStatusJob.modelo}</code>
+                {resumoLimpezaLegendasIaModalStatusJob.modelosTentados.length > 1
+                  ? ` · tentados: ${resumoLimpezaLegendasIaModalStatusJob.modelosTentados.join(", ")}`
+                  : null}
+              </p>
+            ) : null}
+            {resumoLimpezaLegendasIaModalStatusJob.alteracoes.length > 0 ? (
+              <ul className="tb-modal-limpeza-legendas-ia-lista">
+                {resumoLimpezaLegendasIaModalStatusJob.alteracoes.map((a) => (
+                  <li key={a.indice} className="tb-modal-limpeza-legendas-ia-item">
+                    <strong>Cue {a.indice + 1}</strong>
+                    <div className="tb-modal-limpeza-legendas-ia-antes">
+                      <span className="tb-muted">Antes:</span> {a.antes}
+                    </div>
+                    <div className="tb-modal-limpeza-legendas-ia-depois">
+                      <span className="tb-muted">Depois:</span> {a.depois}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="tb-muted">
+                {resumoLimpezaLegendasIaModalStatusJob.usouFallbackOriginais
+                  ? "Nenhuma alteração aplicada (a IA falhou e os textos originais foram mantidos)."
+                  : "A IA não alterou nenhuma cue (já estavam limpas ou a guarda rejeitou mudanças)."}
+              </p>
+            )}
+          </details>
         ) : null}
         {registrosTempoInferenciaTranscricaoPorTrecho.length > 0 ? (
           <details
@@ -4578,15 +5444,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                     <span>Status</span>
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  className="tb-btn-header tb-btn-header-secundario"
-                  title="Ver ou editar o prefixo de instruções enviado ao modelo na geração do tutorial"
-                  onClick={() => setModalPromptTutorialLitellmAberta(true)}
-                >
-                  <IconePromptHeaderToolbarTranscribrothers />
-                  <span>Prompt</span>
-                </button>
               </div>
               {jobEmExecucao && !modalProgressoJobAberto ? (
                 <button
@@ -4649,6 +5506,22 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         onFechar={() => setModalGerarOutroFormatoAberto(false)}
         onConfirmar={(destino, pipelineCustomId) => {
           void confirmarGerarOutroFormatoPosTranscricaoTranscribrothers(destino, pipelineCustomId);
+        }}
+      />
+
+      <ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoesTranscribrothers
+        aberto={modalEscopoVideoNarradoAberto}
+        markdown={job?.result_markdown ?? ""}
+        carregando={regenerandoTutorialMarkdown}
+        vozInicial={configApi?.voz_tts_narracao_efetiva || vozTtsNarracaoForm || "Kore"}
+        vozesDisponiveis={configApi?.voz_tts_narracao_vozes_disponiveis ?? []}
+        litellmModelTts={escolherModeloTtsDaListaDisponivelTranscribrothers(
+          modelosParaSelectLiteLLM,
+          modeloLitellm,
+        )}
+        onFechar={() => setModalEscopoVideoNarradoAberto(false)}
+        onConfirmar={(escopo) => {
+          void solicitarPipelineVideoNarradoAPartirDocumentoTranscribrothers(escopo);
         }}
       />
 
@@ -5168,6 +6041,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                             <th>ID (prefixo)</th>
                             <th>Título (H1)</th>
                             <th>Atualizado</th>
+                            <th>Tamanho</th>
                             <th>Estado</th>
                             <th>Tutorial .md</th>
                             <th>Origem</th>
@@ -5194,6 +6068,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                                 {row.updated_at
                                   ? formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers(row.updated_at)
                                   : "—"}
+                              </td>
+                              <td
+                                className="tb-jobs-servidor-tamanho"
+                                title={`${Math.max(0, Number(row.tamanho_bytes_disco) || 0)} bytes`}
+                              >
+                                {formatarTamanhoBytesDiscoProjetoTranscribrothers(
+                                  Number(row.tamanho_bytes_disco) || 0,
+                                )}
                               </td>
                               <td>
                                 <code className="tb-code-inline">{row.status}</code>
@@ -5300,140 +6182,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           )
         : null}
 
-      {modalPromptTutorialLitellmAberta
-        ? createPortal(
-            <div className="tb-modal-job-root" role="presentation">
-              <button
-                type="button"
-                className="tb-modal-job-backdrop"
-                aria-label="Fechar prompt do tutorial"
-                onClick={() => setModalPromptTutorialLitellmAberta(false)}
-              />
-              <div className="tb-modal-job-shell tb-modal-job-shell-prompt-litellm-tutorial">
-                <div
-                  className="tb-modal-job tb-modal-prompt-litellm-tutorial"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="tb-modal-prompt-litellm-tutorial-titulo"
-                >
-                  <h2 id="tb-modal-prompt-litellm-tutorial-titulo" className="tb-modal-job-titulo">
-                    Prompt do tutorial (LiteLLM)
-                  </h2>
-                  <p className="tb-muted tb-modal-prompt-litellm-tutorial-intro">
-                    Este bloco é enviado como prefixo da mensagem de utilizador ao gerar o Markdown do tutorial. Se
-                    estiver só com espaços ao clicar em <strong>Gerar tutorial</strong>, o servidor usa apenas as
-                    instruções padrão internas (estilo “acompanhar o vídeo”). Com conteúdo, o texto é guardado no job
-                    e reutilizado na regeneração. Use os atalhos abaixo para colar variantes — incluindo documento
-                    autónomo para quem não vai abrir o vídeo.
-                  </p>
-                  <label className="tb-modal-prompt-litellm-tutorial-label" htmlFor="tb-prompt-litellm-tutorial-textarea">
-                    Prefixo editável
-                  </label>
-                  <textarea
-                    id="tb-prompt-litellm-tutorial-textarea"
-                    className="tb-input tb-modal-prompt-litellm-tutorial-textarea"
-                    spellCheck={false}
-                    rows={16}
-                    value={textoInstrucaoPrefixoLitellmTutorialUsuario}
-                    onChange={(e) => setTextoInstrucaoPrefixoLitellmTutorialUsuario(e.target.value)}
-                  />
-                  <div className="tb-modal-prompt-litellm-tutorial-botoes-padrao">
-                    <button
-                      type="button"
-                      className="tb-linkbtn"
-                      disabled={!padroesInstrucaoTutorialLitellm}
-                      onClick={() => {
-                        if (!padroesInstrucaoTutorialLitellm) {
-                          pushToast("Instruções padrão ainda não carregaram.", "error");
-                          return;
-                        }
-                        setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-                          padroesInstrucaoTutorialLitellm.instrucao_sem_imagens,
-                        );
-                      }}
-                    >
-                      Colar padrão (sem imagens)
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-linkbtn"
-                      disabled={!padroesInstrucaoTutorialLitellm}
-                      onClick={() => {
-                        if (!padroesInstrucaoTutorialLitellm) {
-                          pushToast("Instruções padrão ainda não carregaram.", "error");
-                          return;
-                        }
-                        setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-                          padroesInstrucaoTutorialLitellm.instrucao_com_imagens,
-                        );
-                      }}
-                    >
-                      Colar padrão (com imagens / visão)
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-linkbtn"
-                      disabled={!padroesInstrucaoTutorialLitellm}
-                      onClick={() => {
-                        if (!padroesInstrucaoTutorialLitellm) {
-                          pushToast("Instruções padrão ainda não carregaram.", "error");
-                          return;
-                        }
-                        setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-                          padroesInstrucaoTutorialLitellm.instrucao_sem_imagens_documento_autonomo_sem_video,
-                        );
-                      }}
-                    >
-                      Colar padrão (autónomo — sem depender do vídeo, só texto+frames)
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-linkbtn"
-                      disabled={!padroesInstrucaoTutorialLitellm}
-                      onClick={() => {
-                        if (!padroesInstrucaoTutorialLitellm) {
-                          pushToast("Instruções padrão ainda não carregaram.", "error");
-                          return;
-                        }
-                        setTextoInstrucaoPrefixoLitellmTutorialUsuario(
-                          padroesInstrucaoTutorialLitellm.instrucao_com_imagens_documento_autonomo_sem_video,
-                        );
-                      }}
-                    >
-                      Colar padrão (autónomo + visão na regeneração)
-                    </button>
-                    <button
-                      type="button"
-                      className="tb-linkbtn"
-                      onClick={() => setTextoInstrucaoPrefixoLitellmTutorialUsuario("")}
-                    >
-                      Limpar (só padrão interno no envio)
-                    </button>
-                  </div>
-                  <div className="tb-modal-job-acoes-finais tb-modal-prompt-litellm-tutorial-acoes-finais">
-                    <button
-                      type="button"
-                      className="tb-btn-outline"
-                      onClick={() => {
-                        gravarRascunhoInstrucaoPrefixoLitellmTutorialMarkdownNoNavegadorTranscribrothers(
-                          textoInstrucaoPrefixoLitellmTutorialUsuario,
-                        );
-                        pushToast("Rascunho do prompt guardado neste navegador.", "success");
-                      }}
-                    >
-                      Guardar no navegador
-                    </button>
-                    <button type="button" className="tb-primary" onClick={() => setModalPromptTutorialLitellmAberta(false)}>
-                      Fechar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
-
       {jobId ? (
         <section
           className={`tb-grid tb-grid-preview${jobEhProjetoEmBrancoAtual ? " tb-grid-preview--sem-video" : ""}`}
@@ -5525,6 +6273,34 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                     <IconeVerTranscricaoTutorialMarkdownTranscribrothers />
                   </button>
                 ) : null}
+                {urlDownloadVideoComNarracaoTts ? (
+                  <button
+                    type="button"
+                    className="tb-btn-md-toolbar-icone"
+                    title="Editar vídeo narrado"
+                    aria-label="Editar vídeo narrado"
+                    onClick={() => abrirPaginaVideoNarradoTranscribrothers()}
+                  >
+                    <IconeAssistirVideoNarradoTutorialMarkdownTranscribrothers />
+                  </button>
+                ) : null}
+                {jobTemVideoEntradaParaMuxNarracao && job?.result_markdown?.trim() ? (
+                  <button
+                    type="button"
+                    className="tb-btn-md-toolbar-icone"
+                    title="Gerar vídeo narrado (documento inteiro ou tópicos ##)"
+                    aria-label="Gerar vídeo narrado"
+                    disabled={
+                      regenerandoTutorialMarkdown ||
+                      regeneracaoTutorialEmAndamento ||
+                      jobEmExecucao ||
+                      !(job.status === "completed" || job.status === "failed")
+                    }
+                    onClick={() => setModalEscopoVideoNarradoAberto(true)}
+                  >
+                    <IconeVideoHeaderToolbarTranscribrothers />
+                  </button>
+                ) : null}
                 {jobPodeGerarOutroFormatoPosTranscricao ? (
                   <button
                     type="button"
@@ -5589,6 +6365,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                     criandoPaginaWikiGitlab={criandoPaginaWikiGitlab}
                     baixandoMarkdown={baixandoMarkdownComImagens}
                     baixandoPdf={baixandoPdfTutorial}
+                    gerandoNarracaoTts={gerandoNarracaoTtsDocumento}
+                    urlAssetNarracaoTts={urlAssetNarracaoTtsDocumento}
+                    gerandoVideoComNarracaoTts={gerandoVideoComNarracaoTts}
+                    urlDownloadVideoComNarracaoTts={urlDownloadVideoComNarracaoTts}
+                    jobTemVideoEntrada={jobTemVideoEntradaParaMuxNarracao}
                     gitlabCriarIssueHabilitadoNoServidor={gitlabCriarIssueHabilitadoNoServidorTranscribrothers}
                     gitlabCriarWikiHabilitadoNoServidor={gitlabCriarWikiHabilitadoNoServidorTranscribrothers}
                     onAbrirTutorialMarkdownEmNovaAba={() => void abrirTutorialMarkdownEmNovaAbaNavegador()}
@@ -5610,6 +6391,16 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                     }
                     onBaixarMarkdown={() => void baixarTutorialMarkdownComoArquivoComImagensEmbutidas()}
                     onBaixarPdf={() => void baixarTutorialPdfComImagensEmbutidas()}
+                    onGerarNarracaoTts={() => void gerarNarracaoTtsDoDocumentoMarkdownAtual()}
+                    onOuvirNarracaoTts={() => ouvirOuBaixarNarracaoTtsDocumento()}
+                    onGerarVideoComNarracaoTts={() => void gerarVideoComNarracaoTtsSubstituindoAudio()}
+                    onBaixarVideoComNarracaoTts={() => baixarVideoComNarracaoTtsDocumento()}
+                    onBaixarVideoComLegendasQueimadas={() =>
+                      void baixarVideoComLegendasQueimadasDocumento()
+                    }
+                    baixandoVideoComLegendasQueimadas={baixandoVideoComLegendasQueimadas}
+                    urlAssetLegendasVttAlinhadas={urlAssetLegendasVttAlinhadas}
+                    onBaixarLegendasVttAlinhadas={() => baixarLegendasVttAlinhadasDocumento()}
                   />
                 ) : null}
                 </div>
@@ -5922,10 +6713,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       {fabRegeneracaoTutorialVisivel &&
       !modalProgressoJobAberto &&
       !modalTranscricaoOriginalAberta &&
+      !paginaVideoNarradoAberta &&
       !modalListaJobsServidorAberta &&
       !modalEscolherVersaoHistoricoTutorialAberta &&
       !modalGaleriaAssetsImagensAberta &&
-      !modalPromptTutorialLitellmAberta &&
       !modalPreviewRegeneracaoSecaoAberto &&
       !modalPreviewRegeneracaoTutorialAberto &&
       !modoEdicaoMarkdownTutorialAtivo &&
@@ -6456,10 +7247,61 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             }
           }}
           aoNotificarToast={pushToast}
+          aoAbrirEdicaoVideoNarrado={() => abrirPaginaVideoNarradoTranscribrothers()}
           aoAssetExcluido={(nome) => {
             if (nomeArquivoImagemAnotacaoModalAberto === nome) {
               setNomeArquivoImagemAnotacaoModalAberto(null);
             }
+          }}
+        />
+      ) : null}
+
+      {urlDownloadVideoComNarracaoTts ? (
+        <ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTranscribrothers
+          aberto={paginaVideoNarradoAberta}
+          jobId={job?.id ?? null}
+          urlVideoMp4={urlDownloadVideoComNarracaoTts}
+          urlLegendasVtt={urlAssetLegendasVttAlinhadas}
+          urlNarracaoWav={urlAssetNarracaoTtsDocumento}
+          litellmModelTts={escolherModeloTtsDaListaDisponivelTranscribrothers(
+            modelosParaSelectLiteLLM,
+            modeloLitellm,
+          )}
+          regenerando={regenerandoTutorialMarkdown}
+          jobTemVideoEntrada={jobTemVideoEntradaParaMuxNarracao}
+          vozPadraoJob={
+            String(
+              (job?.steps_json as { pipeline_video_narrado_voz_tts?: string } | null | undefined)
+                ?.pipeline_video_narrado_voz_tts ||
+                configApi?.voz_tts_narracao_efetiva ||
+                "Kore",
+            )
+          }
+          vozesDisponiveis={configApi?.voz_tts_narracao_vozes_disponiveis ?? []}
+          onFechar={() => fecharPaginaVideoNarradoTranscribrothers()}
+          onBaixarVideoMp4={() => baixarVideoComNarracaoTtsDocumento()}
+          onBaixarLegendasVtt={() => baixarLegendasVttAlinhadasDocumento()}
+          onBaixarNarracaoWav={() => ouvirOuBaixarNarracaoTtsDocumento()}
+          onAtualizarNarracaoDasLegendas={() => {
+            void solicitarAtualizacaoNarracaoAPartirLegendasVttEditadasTranscribrothers();
+          }}
+          onAplicarTemposJanelasAoVideo={() => {
+            void solicitarRemuxVideoNarradoAposEdicaoJanelasTranscribrothers();
+          }}
+          onGerarNovaNarracao={() => {
+            fecharPaginaVideoNarradoTranscribrothers();
+            setModalEscopoVideoNarradoAberto(true);
+          }}
+          onGerarVideoComEstasEdicoes={(payload) => {
+            void solicitarGerarVideoComEdicoesDoModalNarradoTranscribrothers(payload);
+          }}
+          onLegendasSalvas={async () => {
+            if (!job?.id) return;
+            const j = await buscarJob(job.id);
+            setJob(j);
+          }}
+          onJobAtualizado={(j) => {
+            setJob(j);
           }}
         />
       ) : null}

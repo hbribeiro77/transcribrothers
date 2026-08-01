@@ -115,6 +115,25 @@ from transcribrothers_backend.modulo_persistencia_runtime_config_verificacao_sus
     gravar_verificacao_sustentacao_tutorial_desativada_runtime_sqlite_transcribrothers,
     verificacao_sustentacao_tutorial_desativada_efetiva_e_flag_override_sqlite_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_runtime_config_encode_video_narrado_sqlite_transcribrothers import (
+    apagar_override_encode_video_narrado_runtime_sqlite_transcribrothers,
+    gravar_preferencias_encode_video_narrado_runtime_sqlite_transcribrothers,
+    resolver_preferencias_encode_video_narrado_efetivas_transcribrothers,
+)
+from transcribrothers_backend.modulo_persistencia_runtime_config_voz_tts_narracao_sqlite_transcribrothers import (
+    apagar_override_voz_tts_narracao_runtime_sqlite_transcribrothers,
+    gravar_preferencias_voz_tts_narracao_runtime_sqlite_transcribrothers,
+    resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers,
+)
+from transcribrothers_backend.modulo_preferencias_voz_tts_gemini_narracao_transcribrothers import (
+    VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
+    listar_vozes_tts_gemini_disponiveis_transcribrothers,
+)
+from transcribrothers_backend.modulo_preferencias_encode_video_narrado_transcribrothers import (
+    FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS,
+    RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS,
+    RESOLUCOES_ENCODE_VIDEO_NARRADO_VALIDAS_TRANSCRIBROTHERS,
+)
 from transcribrothers_backend.modulo_persistencia_runtime_config_pastas_wiki_gitlab_sqlite_transcribrothers import (
     apagar_override_pastas_wiki_gitlab_runtime_sqlite_transcribrothers,
     gravar_pastas_wiki_gitlab_runtime_sqlite_transcribrothers,
@@ -170,6 +189,94 @@ from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_trans
     tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy,
     tem_credencial_para_transcricao_no_pipeline,
     validar_e_resolver_modelo_litellm_solicitado_pelo_cliente,
+)
+from transcribrothers_backend.modulo_verificar_modelo_litellm_chat_completions_probe_transcribrothers import (
+    verificar_modelo_litellm_via_chat_completions_probe_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_extrair_texto_plano_para_narracao_tts_a_partir_markdown_tutorial_transcribrothers import (
+    extrair_texto_plano_para_narracao_tts_a_partir_markdown_tutorial_transcribrothers,
+)
+from transcribrothers_backend.modulo_gerar_narracao_tts_markdown_job_via_litellm_transcribrothers import (
+    CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS,
+    NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS,
+    gerar_narracao_tts_wav_a_partir_texto_plano_via_litellm_transcribrothers,
+    resolver_modelo_tts_para_narracao_documento_transcribrothers,
+)
+from transcribrothers_backend.modulo_ffmpeg_substituir_audio_video_por_narracao_tts_wav_transcribrothers import (
+    CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS,
+    NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
+    substituir_audio_do_video_pela_narracao_tts_wav_via_ffmpeg_transcribrothers,
+)
+from transcribrothers_backend.modulo_persistencia_versoes_video_narrado_job_transcribrothers import (
+    ErroVersaoVideoNarradoTranscribrothers,
+    NOME_ARQUIVO_THUMBNAIL_VERSAO_VIDEO_NARRADO_TRANSCRIBROTHERS,
+    apagar_versao_video_narrado_transcribrothers,
+    listar_versoes_video_narrado_do_work_transcribrothers,
+    resolver_arquivo_versao_video_narrado_transcribrothers,
+    tornar_versao_video_narrado_atual_transcribrothers,
+)
+from transcribrothers_backend.modulo_inventario_midia_fonte_e_cache_job_transcribrothers import (
+    ErroMidiaFonteJobTranscribrothers,
+    inventariar_midia_fonte_e_cache_do_work_transcribrothers,
+    limpar_cache_regeneravel_job_transcribrothers,
+    resolver_arquivo_midia_fonte_permitido_transcribrothers,
+)
+from transcribrothers_backend.modulo_limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers import (
+    resolver_modelo_chat_para_limpeza_legendas_ia_transcribrothers,
+)
+from transcribrothers_backend.modulo_pipeline_video_narrado_a_partir_documento_markdown_job_transcribrothers import (
+    FASE_VIDEO_NARRADO_AGENDADO,
+    agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona,
+    validar_pre_requisitos_pipeline_video_narrado_no_disco_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_resolver_markdown_escopo_pipeline_video_narrado_transcribrothers import (
+    CHAVE_STEPS_MARKDOWN_ESCOPO_VIDEO_NARRADO_TRANSCRIBROTHERS,
+)
+from transcribrothers_backend.modulo_pipeline_atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers import (
+    FASE_VIDEO_NARRADO_ATUALIZANDO_LEGENDAS_EDITADAS,
+    agendar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_task_assincrona,
+    validar_pre_requisitos_atualizar_narracao_a_partir_vtt_editadas_transcribrothers,
+)
+from transcribrothers_backend.modulo_pipeline_gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers import (
+    FASE_VIDEO_NARRADO_GERANDO_COM_EDICOES_MODAL,
+    agendar_gerar_video_com_edicoes_do_modal_narrado_em_task_assincrona,
+)
+from transcribrothers_backend.modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers import (
+    montar_resumo_janelas_video_e_wavs_do_job_transcribrothers,
+    obter_caminho_wav_narracao_por_cue_se_existir_transcribrothers,
+    salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers,
+)
+from transcribrothers_backend.modulo_validar_e_ajustar_janelas_video_cues_sem_sobreposicao_transcribrothers import (
+    ErroValidacaoJanelasVideoCuesTranscribrothers,
+)
+from transcribrothers_backend.modulo_pipeline_remux_video_narrado_apos_edicao_janelas_video_job_transcribrothers import (
+    FASE_VIDEO_NARRADO_REMUX_JANELAS_EDITADAS,
+    agendar_remux_video_narrado_apos_edicao_janelas_em_task_assincrona,
+    validar_pre_requisitos_remux_janelas_editadas_transcribrothers,
+)
+from transcribrothers_backend.modulo_api_preview_tts_amostra_voz_narracao_transcribrothers import (
+    gerar_arquivo_preview_tts_amostra_voz_narracao_transcribrothers,
+)
+from transcribrothers_backend.modulo_api_preview_tts_cue_narracao_texto_atual_job_transcribrothers import (
+    gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_api_salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers import (
+    ErroValidacaoLegendasDocumentoAlinhadasEditadasTranscribrothers,
+    salvar_legendas_documento_alinhadas_vtt_editadas_no_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_ffmpeg_extrair_audio_e_capturar_frames_por_timestamps import (
+    ErroFfmpegTranscribrothers,
+)
+from transcribrothers_backend.modulo_ffmpeg_queimar_legendas_vtt_no_video_mp4_narrado_transcribrothers import (
+    NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS,
+    video_narrado_com_legendas_queimadas_esta_atualizado_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_gerar_arquivo_vtt_a_partir_cues_legendas_transcribrothers import (
+    NOME_ARQUIVO_LEGENDAS_DOCUMENTO_ALINHADAS_VTT_TRANSCRIBROTHERS,
+)
+from transcribrothers_backend.modulo_tarefa_gerar_video_narrado_com_legendas_queimadas_em_background_transcribrothers import (
+    agendar_geracao_video_narrado_com_legendas_queimadas_transcribrothers,
+    consultar_status_video_narrado_com_legendas_queimadas_transcribrothers,
 )
 from transcribrothers_backend.modulo_cliente_litellm_geracao_tutorial_markdown import (
     INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_DOCUMENTO_AUTONOMO_SEM_VIDEO_PADRAO_TRANSCRIBROTHERS,
@@ -404,9 +511,14 @@ class ResumoJobListaPipelineTranscribrothers(BaseModel):
     titulo_tutorial_markdown_h1: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    tamanho_bytes_disco: int = 0
 
 
-def _resumo_job_para_lista(row: JobPipelineTranscribrothers) -> ResumoJobListaPipelineTranscribrothers:
+def _resumo_job_para_lista(
+    row: JobPipelineTranscribrothers,
+    *,
+    tamanho_bytes_disco: int = 0,
+) -> ResumoJobListaPipelineTranscribrothers:
     md = row.result_markdown
     tem_md = isinstance(md, str) and bool(md.strip())
     titulo_h1 = extrair_titulo_h1_markdown_para_listagem_jobs_pipeline_transcribrothers(md) if tem_md else None
@@ -420,6 +532,7 @@ def _resumo_job_para_lista(row: JobPipelineTranscribrothers) -> ResumoJobListaPi
         titulo_tutorial_markdown_h1=titulo_h1,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        tamanho_bytes_disco=max(0, int(tamanho_bytes_disco or 0)),
     )
 
 
@@ -483,6 +596,27 @@ class RespostaConfigPublicaTranscribrothers(BaseModel):
     gitlab_wiki_pastas_preferencia_sqlite_definida: bool = False
     ffmpeg_disponivel: bool = False
     ffprobe_disponivel: bool = False
+    encode_video_narrado_resolucao_efetiva: str = RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS
+    encode_video_narrado_fps_efetivo: int = FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS
+    encode_video_narrado_resolucao_padrao_app: str = RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS
+    encode_video_narrado_fps_padrao_app: int = FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS
+    encode_video_narrado_resolucoes_disponiveis: list[str] = Field(
+        default_factory=lambda: list(RESOLUCOES_ENCODE_VIDEO_NARRADO_VALIDAS_TRANSCRIBROTHERS)
+    )
+    encode_video_narrado_preferencia_sqlite_definida: bool = False
+    voz_tts_narracao_efetiva: str = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    voz_tts_narracao_padrao_app: str = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    voz_tts_narracao_preferencia_sqlite_definida: bool = False
+    voz_tts_narracao_vozes_disponiveis: list[dict[str, str]] = Field(default_factory=list)
+
+
+class CorpoPatchEncodeVideoNarradoRuntimeTranscribrothers(BaseModel):
+    resolucao: str = Field(default=RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS)
+    fps: int = Field(default=FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS, ge=1, le=120)
+
+
+class CorpoPatchVozTtsNarracaoRuntimeTranscribrothers(BaseModel):
+    voz: str = Field(default=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS, min_length=1, max_length=64)
 
 
 class CorpoPatchPastasWikiGitlabRuntimeTranscribrothers(BaseModel):
@@ -643,6 +777,138 @@ class RespostaInstrucoesPadraoTutorialLitellmTextoUsuarioTranscribrothers(BaseMo
     instrucao_com_imagens: str
     instrucao_sem_imagens_documento_autonomo_sem_video: str
     instrucao_com_imagens_documento_autonomo_sem_video: str
+
+
+class CorpoVerificarModeloLitellmChatProbeTranscribrothers(BaseModel):
+    """Identificador do modelo no proxy (mesmo slug usado no select da UI)."""
+
+    model: str = Field(min_length=1)
+
+    @field_validator("model")
+    @classmethod
+    def _modelo_nao_pode_ser_so_espacos(cls, v: str) -> str:
+        s = (v or "").strip()
+        if not s:
+            raise ValueError("Informe o identificador do modelo LiteLLM.")
+        return s
+
+
+class RespostaVerificarModeloLitellmChatProbeTranscribrothers(BaseModel):
+    """Resultado do probe barato de chat (não valida STT nem visão)."""
+
+    ok: bool
+    modelo: str
+    mensagem: str
+
+
+class CorpoGerarNarracaoTtsMarkdownJobTranscribrothers(BaseModel):
+    """Modelo TTS opcional; se omitido, usa o primeiro provisionado com -tts."""
+
+    litellm_model: str | None = None
+
+
+class RespostaGerarNarracaoTtsMarkdownJobTranscribrothers(BaseModel):
+    ok: bool
+    mensagem: str
+    nome_arquivo: str
+    url_asset: str
+    modelo: str
+    texto_caracteres: int = 0
+    texto_truncado: bool = False
+
+
+class RespostaGerarVideoComNarracaoTtsJobTranscribrothers(BaseModel):
+    ok: bool
+    mensagem: str
+    nome_arquivo: str
+    url_download: str
+
+
+class CorpoPipelineVideoNarradoAPartirDocumentoTranscribrothers(BaseModel):
+    """`litellm_model` = TTS; `litellm_model_chat` = chat da UI para limpeza IA das legendas."""
+
+    litellm_model: str | None = None
+    litellm_model_chat: str | None = None
+    # Markdown opcional (escopo parcial). Não altera result_markdown do job.
+    markdown_narracao: str | None = None
+    titulos_secoes_escopo: list[str] | None = None
+
+
+class CorpoAtualizarNarracaoAPartirLegendasVttEditadasTranscribrothers(BaseModel):
+    """Regenera TTS só nas cues cujo texto no VTT mudou; remonta WAV+MP4."""
+
+    litellm_model: str | None = None
+
+
+class CorpoPreviewTtsCueNarracaoTextoAtualTranscribrothers(BaseModel):
+    indice: int = Field(ge=0, le=50_000)
+    texto: str = Field(min_length=1, max_length=16_000)
+    litellm_model: str | None = None
+    voz: str | None = None
+
+
+class CorpoPreviewTtsAmostraVozNarracaoTranscribrothers(BaseModel):
+    voz: str = Field(default=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS, min_length=1, max_length=64)
+    litellm_model: str | None = None
+
+
+class JanelaVideoCueEditadaApiTranscribrothers(BaseModel):
+    inicio_video_segundos: float
+    fim_video_segundos: float
+
+
+class CorpoSalvarJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
+    janelas: list[JanelaVideoCueEditadaApiTranscribrothers]
+
+
+class ResumoJanelaVideoCueApiRespostaTranscribrothers(BaseModel):
+    indice: int
+    texto: str
+    inicio_video_segundos: float
+    fim_video_segundos: float
+    tem_wav: bool
+    url_wav: str | None = None
+    sem_narracao: bool = False
+    voz_tts: str = ""
+    # Pronúncia usada (ou a usar) no TTS; vazio = igual a `texto`.
+    texto_tts: str = ""
+
+
+class RespostaJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
+    ok: bool = True
+    quantidade_cues: int
+    cues: list[ResumoJanelaVideoCueApiRespostaTranscribrothers]
+    voz_tts_padrao_job: str = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+
+
+class CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers(BaseModel):
+    inicio_segundos: float
+    fim_segundos: float
+    texto: str
+    sem_narracao: bool = False
+    voz_tts: str | None = None
+    # Pronúncia para TTS; vazio/omitido = narrar `texto`. Não entra no VTT.
+    texto_tts: str | None = None
+    forcar_regenerar_tts: bool = False
+
+
+class CorpoSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers(BaseModel):
+    cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
+
+
+class CorpoGerarVideoComEdicoesDoModalNarradoTranscribrothers(BaseModel):
+    """Salva edições do modal, regenera TTS se preciso e remonta o MP4 na timeline VTT."""
+
+    litellm_model: str | None = None
+    cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
+    janelas: list[JanelaVideoCueEditadaApiTranscribrothers] | None = None
+
+
+class RespostaSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers(BaseModel):
+    ok: bool = True
+    nome_arquivo: str
+    url_asset: str
+    quantidade_cues: int
 
 
 class RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialTranscribrothers(BaseModel):
@@ -821,6 +1087,12 @@ async def _montar_resposta_config_publica_transcribrothers(
         pastas_wiki, pasta_wiki_padrao, pastas_wiki_sqlite = (
             await resolver_pastas_wiki_gitlab_efetivas_transcribrothers(session, obter_configuracao())
         )
+        prefs_encode, encode_sqlite = (
+            await resolver_preferencias_encode_video_narrado_efetivas_transcribrothers(session)
+        )
+        prefs_voz_tts, voz_tts_sqlite = (
+            await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
+        )
     janela_ef, paralelas_ef, formato_ef, bitrate_ef, mono_ef = (
         resolver_janela_paralelas_formato_bitrate_mono_efetivos_com_overrides_sqlite_transcribrothers(
             int(cfg.transcricao_multimodal_janela_segundos),
@@ -898,6 +1170,18 @@ async def _montar_resposta_config_publica_transcribrothers(
         gitlab_wiki_pastas_preferencia_sqlite_definida=bool(pastas_wiki_sqlite),
         ffmpeg_disponivel=ffmpeg_disponivel_transcribrothers(cfg),
         ffprobe_disponivel=ffprobe_disponivel_transcribrothers(cfg),
+        encode_video_narrado_resolucao_efetiva=prefs_encode.resolucao,
+        encode_video_narrado_fps_efetivo=int(prefs_encode.fps),
+        encode_video_narrado_resolucao_padrao_app=RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS,
+        encode_video_narrado_fps_padrao_app=FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS,
+        encode_video_narrado_resolucoes_disponiveis=list(
+            RESOLUCOES_ENCODE_VIDEO_NARRADO_VALIDAS_TRANSCRIBROTHERS
+        ),
+        encode_video_narrado_preferencia_sqlite_definida=bool(encode_sqlite),
+        voz_tts_narracao_efetiva=prefs_voz_tts.voz,
+        voz_tts_narracao_padrao_app=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
+        voz_tts_narracao_preferencia_sqlite_definida=bool(voz_tts_sqlite),
+        voz_tts_narracao_vozes_disponiveis=listar_vozes_tts_gemini_disponiveis_transcribrothers(),
     )
 
 
@@ -1396,6 +1680,27 @@ async def obter_textos_padrao_instrucao_prefixo_litellm_tutorial_markdown_transc
     )
 
 
+@app.post(
+    "/api/config/transcribrothers/verificar-modelo-litellm",
+    response_model=RespostaVerificarModeloLitellmChatProbeTranscribrothers,
+)
+async def verificar_modelo_litellm_chat_completions_probe_na_configuracao_transcribrothers(
+    request: Request,
+    body: CorpoVerificarModeloLitellmChatProbeTranscribrothers,
+) -> RespostaVerificarModeloLitellmChatProbeTranscribrothers:
+    """Probe barato no proxy: confirma se o modelo aceita chat e devolve texto."""
+    cfg = obter_cfg(request)
+    resultado = await verificar_modelo_litellm_via_chat_completions_probe_transcribrothers(
+        modelo=body.model,
+        configuracao=cfg,
+    )
+    return RespostaVerificarModeloLitellmChatProbeTranscribrothers(
+        ok=resultado.ok,
+        modelo=resultado.modelo,
+        mensagem=resultado.mensagem,
+    )
+
+
 @app.get(
     "/api/config/transcribrothers/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial",
     response_model=RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialTranscribrothers,
@@ -1727,6 +2032,73 @@ async def apagar_preferencia_runtime_verificacao_redundancia_secao_markdown_volt
 ) -> RespostaConfigPublicaTranscribrothers:
     async with session_factory() as session:
         await apagar_override_verificacao_redundancia_secao_markdown_runtime_sqlite_transcribrothers(session)
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.patch(
+    "/api/config/transcribrothers/encode-video-narrado-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def atualizar_preferencia_runtime_encode_video_narrado_via_sqlite_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchEncodeVideoNarradoRuntimeTranscribrothers,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await gravar_preferencias_encode_video_narrado_runtime_sqlite_transcribrothers(
+                session,
+                resolucao=body.resolucao,
+                fps=int(body.fps),
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.delete(
+    "/api/config/transcribrothers/encode-video-narrado-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def apagar_preferencia_runtime_encode_video_narrado_volta_ao_padrao_app_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        await apagar_override_encode_video_narrado_runtime_sqlite_transcribrothers(session)
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.patch(
+    "/api/config/transcribrothers/voz-tts-narracao-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def atualizar_preferencia_runtime_voz_tts_narracao_via_sqlite_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchVozTtsNarracaoRuntimeTranscribrothers,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await gravar_preferencias_voz_tts_narracao_runtime_sqlite_transcribrothers(
+                session,
+                voz=body.voz,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.delete(
+    "/api/config/transcribrothers/voz-tts-narracao-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def apagar_preferencia_runtime_voz_tts_narracao_volta_ao_padrao_app_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        await apagar_override_voz_tts_narracao_runtime_sqlite_transcribrothers(session)
     return await _montar_resposta_config_publica_transcribrothers(request)
 
 
@@ -2309,8 +2681,13 @@ async def importar_transcricao_pronta_criar_job_sem_stt_transcribrothers(
 @app.get("/api/jobs", response_model=list[ResumoJobListaPipelineTranscribrothers])
 async def listar_jobs_recentes_do_pipeline_transcribrothers(
     session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
     limit: Annotated[int, Query(ge=1, le=200)] = 40,
 ) -> list[ResumoJobListaPipelineTranscribrothers]:
+    from transcribrothers_backend.modulo_calcular_tamanho_bytes_diretorio_job_pipeline_transcribrothers import (
+        calcular_tamanho_bytes_diretorio_recursivo_transcribrothers,
+    )
+
     async with session_factory() as session:
         stmt = (
             select(JobPipelineTranscribrothers)
@@ -2318,7 +2695,12 @@ async def listar_jobs_recentes_do_pipeline_transcribrothers(
             .limit(int(limit))
         )
         rows = (await session.scalars(stmt)).all()
-    return [_resumo_job_para_lista(r) for r in rows]
+    saida: list[ResumoJobListaPipelineTranscribrothers] = []
+    for r in rows:
+        work = _diretorio_trabalho_job(data_dir, r.id)
+        tamanho = calcular_tamanho_bytes_diretorio_recursivo_transcribrothers(work)
+        saida.append(_resumo_job_para_lista(r, tamanho_bytes_disco=tamanho))
+    return saida
 
 
 @app.delete("/api/jobs/{job_id}")
@@ -4195,6 +4577,1027 @@ async def excluir_asset_png_original_e_anotado_do_tutorial_do_job(
         return _job_para_resposta(row)
 
 
+@app.post(
+    "/api/jobs/{job_id}/gerar-narracao-tts-markdown",
+    response_model=RespostaGerarNarracaoTtsMarkdownJobTranscribrothers,
+)
+async def gerar_narracao_tts_markdown_do_documento_job_transcribrothers(
+    job_id: str,
+    body: CorpoGerarNarracaoTtsMarkdownJobTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaGerarNarracaoTtsMarkdownJobTranscribrothers:
+    """Narração TTS do Markdown atual do job (ação pós-documento; grava WAV em assets/)."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Só é possível gerar narração quando o job está concluído ou falhou.",
+            )
+        markdown = (row.result_markdown or "").strip()
+        if not markdown:
+            raise HTTPException(status_code=400, detail="Documento sem Markdown para narrar.")
+
+    try:
+        modelo = resolver_modelo_tts_para_narracao_documento_transcribrothers(
+            cfg,
+            body.litellm_model,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    texto = extrair_texto_plano_para_narracao_tts_a_partir_markdown_tutorial_transcribrothers(markdown)
+    assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+    assets.mkdir(parents=True, exist_ok=True)
+    caminho_wav = assets / NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS
+
+    resultado = await gerar_narracao_tts_wav_a_partir_texto_plano_via_litellm_transcribrothers(
+        texto_plano=texto,
+        modelo=modelo,
+        configuracao=cfg,
+        caminho_wav_saida=caminho_wav,
+    )
+    if not resultado.ok:
+        raise HTTPException(status_code=502, detail=resultado.mensagem)
+
+    url_asset = f"/api/jobs/{job_id}/assets/{resultado.nome_arquivo}"
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {})
+        steps[CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS] = {
+            "nome_arquivo": resultado.nome_arquivo,
+            "url_asset": url_asset,
+            "modelo": resultado.modelo,
+            "texto_caracteres": resultado.texto_caracteres,
+            "texto_truncado": resultado.texto_truncado,
+            "gerado_em": datetime.now(timezone.utc).isoformat(),
+        }
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    return RespostaGerarNarracaoTtsMarkdownJobTranscribrothers(
+        ok=True,
+        mensagem=resultado.mensagem,
+        nome_arquivo=resultado.nome_arquivo,
+        url_asset=url_asset,
+        modelo=resultado.modelo,
+        texto_caracteres=resultado.texto_caracteres,
+        texto_truncado=resultado.texto_truncado,
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/gerar-video-com-narracao-tts",
+    response_model=RespostaGerarVideoComNarracaoTtsJobTranscribrothers,
+)
+async def gerar_video_com_narracao_tts_substituindo_audio_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaGerarVideoComNarracaoTtsJobTranscribrothers:
+    """Copia o vídeo do job trocando o áudio original pela narração TTS já gerada."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Só é possível gerar o vídeo com narração quando o job está concluído ou falhou.",
+            )
+
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    video = _localizar_arquivo_video_entrada_no_diretorio_job(work)
+    if video is None or not video.is_file():
+        raise HTTPException(
+            status_code=400,
+            detail="Este job não tem vídeo de entrada para montar a cópia com narração.",
+        )
+
+    assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+    wav = assets / NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS
+    if not wav.is_file():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Gere a narração TTS do documento antes "
+                f"(arquivo {NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS} não encontrado)."
+            ),
+        )
+
+    try:
+        caminho_saida = await substituir_audio_do_video_pela_narracao_tts_wav_via_ffmpeg_transcribrothers(
+            caminho_video=video,
+            caminho_narracao_wav=wav,
+            diretorio_saida=work,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ErroFfmpegTranscribrothers as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    url_download = f"/api/jobs/{job_id}/video-com-narracao-tts"
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {})
+        steps[CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS] = {
+            "nome_arquivo": caminho_saida.name,
+            "url_download": url_download,
+            "gerado_em": datetime.now(timezone.utc).isoformat(),
+        }
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    return RespostaGerarVideoComNarracaoTtsJobTranscribrothers(
+        ok=True,
+        mensagem=(
+            "Vídeo com narração gerado (áudio original substituído pela TTS). "
+            "A duração segue o fluxo mais curto entre vídeo e narração."
+        ),
+        nome_arquivo=caminho_saida.name,
+        url_download=url_download,
+    )
+
+
+@app.get("/api/jobs/{job_id}/video-com-narracao-tts")
+async def baixar_video_com_narracao_tts_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    caminho = work / NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS
+    if not caminho.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Vídeo com narração ainda não foi gerado. Use «Gerar vídeo com narração».",
+        )
+    return FileResponse(
+        str(caminho),
+        media_type="video/mp4",
+        filename=NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
+    )
+
+
+@app.get("/api/jobs/{job_id}/midia-fonte")
+async def listar_midia_fonte_e_cache_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    return inventariar_midia_fonte_e_cache_do_work_transcribrothers(work, job_id=job_id)
+
+
+@app.get("/api/jobs/{job_id}/midia-fonte/arquivo/{nome_arquivo}")
+async def servir_arquivo_midia_fonte_do_job_transcribrothers(
+    job_id: str,
+    nome_arquivo: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        caminho = resolver_arquivo_midia_fonte_permitido_transcribrothers(work, nome_arquivo)
+    except ErroMidiaFonteJobTranscribrothers as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    nome = caminho.name.lower()
+    media = "application/octet-stream"
+    if nome.endswith(".mp4") or nome.endswith(".webm") or nome.endswith(".mkv"):
+        media = "video/mp4" if nome.endswith(".mp4") else "application/octet-stream"
+    elif nome.endswith(".wav"):
+        media = "audio/wav"
+    elif nome.endswith(".m4a"):
+        media = "audio/mp4"
+    elif nome.endswith(".mp3"):
+        media = "audio/mpeg"
+    elif nome.endswith(".opus"):
+        media = "audio/opus"
+    return FileResponse(str(caminho), media_type=media, filename=caminho.name)
+
+
+@app.post("/api/jobs/{job_id}/midia-fonte/limpar-cache")
+async def limpar_cache_midia_fonte_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    cache_bytes = limpar_cache_regeneravel_job_transcribrothers(work)
+    return {"ok": True, "cache_bytes": cache_bytes}
+
+
+@app.get("/api/jobs/{job_id}/videos-narrados")
+async def listar_versoes_video_narrado_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    versao_atual_id, versoes = listar_versoes_video_narrado_do_work_transcribrothers(work)
+    return {
+        "versao_atual_id": versao_atual_id,
+        "versoes": [
+            {
+                **v.para_dict(),
+                "url_thumbnail": (
+                    f"/api/jobs/{job_id}/videos-narrados/{v.id}/arquivo/"
+                    f"{NOME_ARQUIVO_THUMBNAIL_VERSAO_VIDEO_NARRADO_TRANSCRIBROTHERS}"
+                    if v.tem_thumbnail
+                    else None
+                ),
+                "url_download_mp4": (
+                    f"/api/jobs/{job_id}/videos-narrados/{v.id}/arquivo/"
+                    f"{NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS}"
+                ),
+            }
+            for v in versoes
+        ],
+    }
+
+
+@app.get("/api/jobs/{job_id}/videos-narrados/{versao_id}/arquivo/{nome_arquivo}")
+async def servir_arquivo_versao_video_narrado_do_job_transcribrothers(
+    job_id: str,
+    versao_id: str,
+    nome_arquivo: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        caminho = resolver_arquivo_versao_video_narrado_transcribrothers(work, versao_id, nome_arquivo)
+    except ErroVersaoVideoNarradoTranscribrothers as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    nome = Path(nome_arquivo).name
+    media = "application/octet-stream"
+    if nome.endswith(".mp4"):
+        media = "video/mp4"
+    elif nome.endswith(".vtt"):
+        media = "text/vtt; charset=utf-8"
+    elif nome.endswith(".wav"):
+        media = "audio/wav"
+    elif nome.endswith(".jpg") or nome.endswith(".jpeg"):
+        media = "image/jpeg"
+    elif nome.endswith(".json"):
+        media = "application/json"
+    return FileResponse(str(caminho), media_type=media, filename=nome)
+
+
+@app.post("/api/jobs/{job_id}/videos-narrados/{versao_id}/tornar-atual")
+async def tornar_versao_video_narrado_atual_do_job_transcribrothers(
+    job_id: str,
+    versao_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJobTranscribrothers:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        try:
+            steps_novo = tornar_versao_video_narrado_atual_transcribrothers(
+                work=work,
+                assets=assets,
+                job_id=job_id,
+                versao_id=versao_id,
+                steps=dict(row.steps_json or {}),
+            )
+        except ErroVersaoVideoNarradoTranscribrothers as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        row.steps_json = steps_novo
+        flag_modified(row, "steps_json")
+        await session.commit()
+        await session.refresh(row)
+        return _job_para_resposta(row)
+
+
+@app.delete("/api/jobs/{job_id}/videos-narrados/{versao_id}")
+async def apagar_versao_video_narrado_do_job_transcribrothers(
+    job_id: str,
+    versao_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        try:
+            resultado = apagar_versao_video_narrado_transcribrothers(
+                work=work,
+                assets=assets,
+                job_id=job_id,
+                versao_id=versao_id,
+                steps=dict(row.steps_json or {}),
+            )
+        except ErroVersaoVideoNarradoTranscribrothers as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if resultado.steps_alterados:
+            row.steps_json = resultado.steps
+            flag_modified(row, "steps_json")
+            await session.commit()
+            await session.refresh(row)
+        job_resp = _job_para_resposta(row)
+    versao_atual_id, versoes = listar_versoes_video_narrado_do_work_transcribrothers(work)
+    return {
+        "ok": True,
+        "versao_atual_id": versao_atual_id,
+        "versoes": [v.para_dict() for v in versoes],
+        "job": job_resp.model_dump(mode="json"),
+    }
+
+
+@app.get("/api/jobs/{job_id}/video-com-narracao-tts-com-legendas-queimadas/status")
+async def status_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    """Consulta se o MP4 com legendas queimadas está pronto, gerando ou pendente."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+    return consultar_status_video_narrado_com_legendas_queimadas_transcribrothers(
+        job_id=job_id,
+        diretorio_trabalho_job=work,
+        diretorio_assets=assets,
+    )
+
+
+@app.post("/api/jobs/{job_id}/gerar-video-com-narracao-tts-com-legendas-queimadas")
+async def gerar_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+    forcar: bool = False,
+) -> dict[str, object]:
+    """
+    Agenda a queima de legendas em background (não bloqueia).
+    Vídeos em alta resolução (ex.: 3K 60 fps) podem levar alguns minutos na 1ª vez.
+    """
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+    async with session_factory() as session:
+        prefs_encode, _ = await resolver_preferencias_encode_video_narrado_efetivas_transcribrothers(
+            session
+        )
+    return agendar_geracao_video_narrado_com_legendas_queimadas_transcribrothers(
+        job_id=job_id,
+        diretorio_trabalho_job=work,
+        diretorio_assets=assets,
+        forcar_regenerar=forcar,
+        preferencias_encode=prefs_encode,
+    )
+
+
+@app.get("/api/jobs/{job_id}/video-com-narracao-tts-com-legendas-queimadas")
+async def baixar_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    """
+    Serve o MP4 com legendas queimadas se o cache estiver pronto.
+    Não gera no request — use POST .../gerar-video-com-narracao-tts-com-legendas-queimadas.
+    """
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+    caminho_video = work / NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS
+    caminho_vtt = assets / NOME_ARQUIVO_LEGENDAS_DOCUMENTO_ALINHADAS_VTT_TRANSCRIBROTHERS
+    caminho = work / NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS
+    if not video_narrado_com_legendas_queimadas_esta_atualizado_transcribrothers(
+        caminho_video_mp4=caminho_video,
+        caminho_vtt=caminho_vtt,
+        caminho_saida=caminho,
+    ):
+        status = consultar_status_video_narrado_com_legendas_queimadas_transcribrothers(
+            job_id=job_id,
+            diretorio_trabalho_job=work,
+            diretorio_assets=assets,
+        )
+        if status.get("status") == "gerando":
+            raise HTTPException(
+                status_code=409,
+                detail="Ainda gerando o vídeo com legendas embutidas. Aguarde e tente de novo.",
+            )
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Vídeo com legendas embutidas ainda não está pronto. "
+                "Use «Baixar → Vídeo com legendas embutidas» para gerar."
+            ),
+        )
+    return FileResponse(
+        str(caminho),
+        media_type="video/mp4",
+        filename=NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS,
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/pipeline-video-narrado-a-partir-documento",
+    response_model=RespostaJobTranscribrothers,
+)
+async def pipeline_video_narrado_a_partir_documento_markdown_job_transcribrothers(
+    job_id: str,
+    body: CorpoPipelineVideoNarradoAPartirDocumentoTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJobTranscribrothers:
+    """Agenda: VTT alinhada + TTS em chunks + MP4 com narração (não altera o Markdown)."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
+                detail=(
+                    "Já há uma geração em andamento; aguarde concluir."
+                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
+                    else "Só é possível iniciar o vídeo narrado quando o job está concluído ou falhou."
+                ),
+            )
+        markdown_completo = (row.result_markdown or "").strip()
+        markdown_escopo = (body.markdown_narracao or "").strip() or None
+        markdown_para_validar = markdown_escopo or markdown_completo
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        try:
+            validar_pre_requisitos_pipeline_video_narrado_no_disco_transcribrothers(
+                work=work,
+                markdown=markdown_para_validar,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            modelo_tts = resolver_modelo_tts_para_narracao_documento_transcribrothers(
+                cfg,
+                body.litellm_model,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            modelo_chat_limpeza = resolver_modelo_chat_para_limpeza_legendas_ia_transcribrothers(
+                cfg,
+                body.litellm_model_chat,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        steps = dict(row.steps_json or {})
+        steps["pipeline_fase"] = FASE_VIDEO_NARRADO_AGENDADO
+        steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
+        steps["pipeline_video_narrado_modelo_chat_limpeza"] = modelo_chat_limpeza
+        if markdown_escopo:
+            titulos = [
+                t.strip()
+                for t in (body.titulos_secoes_escopo or [])
+                if isinstance(t, str) and t.strip()
+            ]
+            steps[CHAVE_STEPS_MARKDOWN_ESCOPO_VIDEO_NARRADO_TRANSCRIBROTHERS] = {
+                "markdown": markdown_escopo,
+                "modo": "secoes",
+                "titulos": titulos[:40],
+            }
+        else:
+            steps.pop(CHAVE_STEPS_MARKDOWN_ESCOPO_VIDEO_NARRADO_TRANSCRIBROTHERS, None)
+        row.status = StatusJobTranscribrothers.generating_tutorial.value
+        row.error_message = None
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+        modelo_tts=modelo_tts,
+        modelo_chat_limpeza=modelo_chat_limpeza,
+    )
+
+    async with session_factory() as session:
+        atual = await session.get(JobPipelineTranscribrothers, job_id)
+        assert atual is not None
+        return _job_para_resposta(atual)
+
+
+@app.post(
+    "/api/jobs/{job_id}/atualizar-narracao-a-partir-legendas-vtt-editadas",
+    response_model=RespostaJobTranscribrothers,
+)
+async def atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers(
+    job_id: str,
+    body: CorpoAtualizarNarracaoAPartirLegendasVttEditadasTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJobTranscribrothers:
+    """Agenda regeneração parcial: TTS só nas cues alteradas no VTT + remux."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
+                detail=(
+                    "Já há uma geração em andamento; aguarde concluir."
+                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
+                    else "Só é possível atualizar a narração quando o job está concluído ou falhou."
+                ),
+            )
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        try:
+            validar_pre_requisitos_atualizar_narracao_a_partir_vtt_editadas_transcribrothers(
+                work=work,
+                assets=assets,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            modelo_tts = resolver_modelo_tts_para_narracao_documento_transcribrothers(
+                cfg,
+                body.litellm_model,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        steps = dict(row.steps_json or {})
+        steps["pipeline_fase"] = FASE_VIDEO_NARRADO_ATUALIZANDO_LEGENDAS_EDITADAS
+        steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
+        row.status = StatusJobTranscribrothers.generating_tutorial.value
+        row.error_message = None
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    agendar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+        modelo_tts=modelo_tts,
+    )
+
+    async with session_factory() as session:
+        atual = await session.get(JobPipelineTranscribrothers, job_id)
+        assert atual is not None
+        return _job_para_resposta(atual)
+
+
+@app.post(
+    "/api/jobs/{job_id}/gerar-video-com-edicoes-do-modal-narrado",
+    response_model=RespostaJobTranscribrothers,
+)
+async def gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers(
+    job_id: str,
+    body: CorpoGerarVideoComEdicoesDoModalNarradoTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJobTranscribrothers:
+    """Agenda: grava VTT/janelas do modal, TTS parcial se preciso, remux na timeline VTT."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400
+                if row.status != StatusJobTranscribrothers.generating_tutorial.value
+                else 409,
+                detail=(
+                    "Já há uma geração em andamento; aguarde concluir."
+                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
+                    else "Só é possível gerar o vídeo quando o job está concluído ou falhou."
+                ),
+            )
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        try:
+            validar_pre_requisitos_atualizar_narracao_a_partir_vtt_editadas_transcribrothers(
+                work=work,
+                assets=assets,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            modelo_tts = resolver_modelo_tts_para_narracao_documento_transcribrothers(
+                cfg,
+                body.litellm_model,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        if not body.cues:
+            raise HTTPException(status_code=400, detail="Informe ao menos uma cue de legenda.")
+
+        cues_brutas = [c.model_dump() for c in body.cues]
+        janelas_brutas = (
+            [j.model_dump() for j in body.janelas] if body.janelas is not None else None
+        )
+
+        steps = dict(row.steps_json or {})
+        steps["pipeline_fase"] = FASE_VIDEO_NARRADO_GERANDO_COM_EDICOES_MODAL
+        steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
+        row.status = StatusJobTranscribrothers.generating_tutorial.value
+        row.error_message = None
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    agendar_gerar_video_com_edicoes_do_modal_narrado_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+        modelo_tts=modelo_tts,
+        cues_brutas=cues_brutas,
+        janelas_brutas=janelas_brutas,
+    )
+
+    async with session_factory() as session:
+        atual = await session.get(JobPipelineTranscribrothers, job_id)
+        assert atual is not None
+        return _job_para_resposta(atual)
+
+
+@app.get(
+    "/api/jobs/{job_id}/janelas-video-cues-narracao",
+    response_model=RespostaJanelasVideoCuesNarracaoJobTranscribrothers,
+)
+async def listar_janelas_video_cues_narracao_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJanelasVideoCuesNarracaoJobTranscribrothers:
+    """Janelas de tela por cue (manifesto) + se existe WAV para ouvir o trecho."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {})
+        prefs_voz, _ = await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    resumos = montar_resumo_janelas_video_e_wavs_do_job_transcribrothers(job_id=job_id, work=work)
+    voz_padrao_job = (
+        str(steps.get("pipeline_video_narrado_voz_tts") or "").strip()
+        or prefs_voz.voz
+        or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    )
+    return RespostaJanelasVideoCuesNarracaoJobTranscribrothers(
+        ok=True,
+        quantidade_cues=len(resumos),
+        voz_tts_padrao_job=voz_padrao_job,
+        cues=[
+            ResumoJanelaVideoCueApiRespostaTranscribrothers(
+                indice=r.indice,
+                texto=r.texto,
+                inicio_video_segundos=r.inicio_video_segundos,
+                fim_video_segundos=r.fim_video_segundos,
+                tem_wav=r.tem_wav,
+                url_wav=r.url_wav,
+                sem_narracao=bool(getattr(r, "sem_narracao", False)),
+                voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
+                texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
+            )
+            for r in resumos
+        ],
+    )
+
+
+@app.put(
+    "/api/jobs/{job_id}/janelas-video-cues-narracao",
+    response_model=RespostaJanelasVideoCuesNarracaoJobTranscribrothers,
+)
+async def salvar_janelas_video_cues_narracao_job_transcribrothers(
+    job_id: str,
+    body: CorpoSalvarJanelasVideoCuesNarracaoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJanelasVideoCuesNarracaoJobTranscribrothers:
+    """Persiste tempos de janela de tela no manifesto (impede sobreposição)."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    video = None
+    for pattern in ("video_entrada_arquivo_local.*", "video_entrada_google_drive.*"):
+        for p in sorted(work.glob(pattern)):
+            if p.is_file():
+                video = p
+                break
+        if video is not None:
+            break
+    duracao: float | None = None
+    if video is not None:
+        try:
+            duracao = await obter_duracao_video_segundos_via_ffprobe(video)
+        except Exception:
+            duracao = None
+    try:
+        salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
+            work=work,
+            janelas_brutas=[j.model_dump() for j in body.janelas],
+            duracao_video_segundos=duracao,
+        )
+    except ErroValidacaoJanelasVideoCuesTranscribrothers as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    resumos = montar_resumo_janelas_video_e_wavs_do_job_transcribrothers(job_id=job_id, work=work)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        steps = dict(row.steps_json or {}) if row is not None else {}
+        prefs_voz, _ = await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
+    voz_padrao_job = (
+        str(steps.get("pipeline_video_narrado_voz_tts") or "").strip()
+        or prefs_voz.voz
+        or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    )
+    return RespostaJanelasVideoCuesNarracaoJobTranscribrothers(
+        ok=True,
+        quantidade_cues=len(resumos),
+        voz_tts_padrao_job=voz_padrao_job,
+        cues=[
+            ResumoJanelaVideoCueApiRespostaTranscribrothers(
+                indice=r.indice,
+                texto=r.texto,
+                inicio_video_segundos=r.inicio_video_segundos,
+                fim_video_segundos=r.fim_video_segundos,
+                tem_wav=r.tem_wav,
+                url_wav=r.url_wav,
+                sem_narracao=bool(getattr(r, "sem_narracao", False)),
+                voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
+                texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
+            )
+            for r in resumos
+        ],
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/remux-video-narrado-apos-edicao-janelas",
+    response_model=RespostaJobTranscribrothers,
+)
+async def remux_video_narrado_apos_edicao_janelas_job_transcribrothers(
+    job_id: str,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaJobTranscribrothers:
+    """Agenda remux do MP4 com as janelas do manifesto (reutiliza WAVs; sem TTS)."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+        ):
+            raise HTTPException(
+                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
+                detail=(
+                    "Já há uma geração em andamento; aguarde concluir."
+                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
+                    else "Só é possível aplicar tempos quando o job está concluído ou falhou."
+                ),
+            )
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        try:
+            validar_pre_requisitos_remux_janelas_editadas_transcribrothers(work=work)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        steps = dict(row.steps_json or {})
+        steps["pipeline_fase"] = FASE_VIDEO_NARRADO_REMUX_JANELAS_EDITADAS
+        row.status = StatusJobTranscribrothers.generating_tutorial.value
+        row.error_message = None
+        row.steps_json = steps
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    agendar_remux_video_narrado_apos_edicao_janelas_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+    )
+    async with session_factory() as session:
+        atual = await session.get(JobPipelineTranscribrothers, job_id)
+        assert atual is not None
+        return _job_para_resposta(atual)
+
+
+@app.get("/api/jobs/{job_id}/wavs-narracao-por-cue/{indice}")
+async def servir_wav_narracao_por_cue_do_job_transcribrothers(
+    job_id: str,
+    indice: int,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    """Serve o WAV TTS de uma cue (para prévia na UI)."""
+    if indice < 0 or indice > 50_000:
+        raise HTTPException(status_code=400, detail="Índice de cue inválido.")
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    caminho = obter_caminho_wav_narracao_por_cue_se_existir_transcribrothers(work, indice)
+    if caminho is None:
+        raise HTTPException(status_code=404, detail="Áudio desta cue não encontrado.")
+    return FileResponse(
+        str(caminho),
+        media_type="audio/wav",
+        filename=caminho.name,
+    )
+
+
+@app.post("/api/preview-tts-amostra-voz-narracao")
+async def preview_tts_amostra_voz_narracao_transcribrothers(
+    body: CorpoPreviewTtsAmostraVozNarracaoTranscribrothers,
+    request: Request,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    """Gera e devolve WAV de amostra da voz Gemini (frase fixa; não exige job)."""
+    cfg = obter_cfg(request)
+    try:
+        resultado = await gerar_arquivo_preview_tts_amostra_voz_narracao_transcribrothers(
+            data_dir=data_dir,
+            voz=body.voz,
+            configuracao=cfg,
+            litellm_model=body.litellm_model,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return FileResponse(
+        str(resultado.caminho_wav),
+        media_type="audio/wav",
+        filename=resultado.caminho_wav.name,
+    )
+
+
+@app.post("/api/jobs/{job_id}/preview-tts-cue-narracao")
+async def preview_tts_cue_narracao_texto_atual_job_transcribrothers(
+    job_id: str,
+    body: CorpoPreviewTtsCueNarracaoTextoAtualTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    """Gera e devolve WAV de prévia do texto atual da cue (não altera a narração definitiva)."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        prefs_voz, _ = await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        resultado = await gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
+            work=work,
+            indice=body.indice,
+            texto=body.texto,
+            configuracao=cfg,
+            litellm_model=body.litellm_model,
+            voz=body.voz or prefs_voz.voz,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return FileResponse(
+        str(resultado.caminho_wav),
+        media_type="audio/wav",
+        filename=resultado.caminho_wav.name,
+    )
+
+
+@app.put(
+    "/api/jobs/{job_id}/legendas-documento-alinhadas",
+    response_model=RespostaSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers,
+)
+async def salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers(
+    job_id: str,
+    body: CorpoSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers:
+    """Grava o VTT com o texto das cues editado na UI (tempos e áudio/vídeo inalterados)."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        cues_brutas = [c.model_dump() for c in body.cues]
+        try:
+            resultado = salvar_legendas_documento_alinhadas_vtt_editadas_no_job_transcribrothers(
+                job_id=job_id,
+                diretorio_assets=assets,
+                steps_json=dict(row.steps_json or {}),
+                cues_brutas=cues_brutas,
+            )
+        except ErroValidacaoLegendasDocumentoAlinhadasEditadasTranscribrothers as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except OSError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Não foi possível gravar o arquivo VTT no disco: {e}",
+            ) from e
+        row.steps_json = resultado.steps_json_atualizado
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+    return RespostaSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers(
+        ok=True,
+        nome_arquivo=resultado.nome_arquivo,
+        url_asset=resultado.url_asset,
+        quantidade_cues=resultado.quantidade_cues,
+    )
+
+
 @app.get("/api/jobs/{job_id}/assets/{nome_arquivo}")
 async def servir_asset_png_do_tutorial_do_job(
     job_id: str,
@@ -4212,7 +5615,18 @@ async def servir_asset_png_do_tutorial_do_job(
     path = assets / nome_arquivo
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Asset não encontrado.")
-    return FileResponse(str(path), media_type="image/png")
+    nome_lower = nome_arquivo.lower()
+    if nome_lower.endswith(".wav"):
+        media = "audio/wav"
+    elif nome_lower.endswith(".vtt"):
+        media = "text/vtt"
+    elif nome_lower.endswith(".png"):
+        media = "image/png"
+    elif nome_lower.endswith(".jpg") or nome_lower.endswith(".jpeg"):
+        media = "image/jpeg"
+    else:
+        media = "application/octet-stream"
+    return FileResponse(str(path), media_type=media)
 
 
 @app.get("/api/jobs/{job_id}/export.zip")

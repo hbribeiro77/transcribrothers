@@ -24,6 +24,8 @@ def test_get_api_jobs_retorna_lista() -> None:
             assert "id" in item and "status" in item
             assert "tem_resultado_markdown" in item
             assert "titulo_tutorial_markdown_h1" in item
+            assert "tamanho_bytes_disco" in item
+            assert isinstance(item["tamanho_bytes_disco"], int)
 
 
 def test_get_api_jobs_inclui_titulo_h1_quando_markdown_tem_h1() -> None:

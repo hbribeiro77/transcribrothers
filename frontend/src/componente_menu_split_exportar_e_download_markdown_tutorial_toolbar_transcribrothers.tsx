@@ -106,6 +106,12 @@ export type PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTran
   criandoPaginaWikiGitlab: boolean;
   baixandoMarkdown: boolean;
   baixandoPdf: boolean;
+  gerandoNarracaoTts: boolean;
+  urlAssetNarracaoTts: string | null;
+  gerandoVideoComNarracaoTts: boolean;
+  urlDownloadVideoComNarracaoTts: string | null;
+  urlAssetLegendasVttAlinhadas: string | null;
+  jobTemVideoEntrada: boolean;
   gitlabCriarIssueHabilitadoNoServidor: boolean;
   gitlabCriarWikiHabilitadoNoServidor: boolean;
   onAbrirTutorialMarkdownEmNovaAba: () => void;
@@ -117,6 +123,13 @@ export type PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTran
   onAvisoGitlabWikiNaoConfigurado: () => void;
   onBaixarMarkdown: () => void;
   onBaixarPdf: () => void;
+  onGerarNarracaoTts: () => void;
+  onOuvirNarracaoTts: () => void;
+  onGerarVideoComNarracaoTts: () => void;
+  onBaixarVideoComNarracaoTts: () => void;
+  onBaixarVideoComLegendasQueimadas?: () => void;
+  baixandoVideoComLegendasQueimadas?: boolean;
+  onBaixarLegendasVttAlinhadas: () => void;
 };
 
 export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTranscribrothers({
@@ -128,6 +141,12 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   criandoPaginaWikiGitlab,
   baixandoMarkdown,
   baixandoPdf,
+  gerandoNarracaoTts,
+  urlAssetNarracaoTts,
+  gerandoVideoComNarracaoTts,
+  urlDownloadVideoComNarracaoTts,
+  urlAssetLegendasVttAlinhadas,
+  jobTemVideoEntrada,
   gitlabCriarIssueHabilitadoNoServidor,
   gitlabCriarWikiHabilitadoNoServidor,
   onAbrirTutorialMarkdownEmNovaAba,
@@ -139,6 +158,13 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   onAvisoGitlabWikiNaoConfigurado,
   onBaixarMarkdown,
   onBaixarPdf,
+  onGerarNarracaoTts,
+  onOuvirNarracaoTts,
+  onGerarVideoComNarracaoTts,
+  onBaixarVideoComNarracaoTts,
+  onBaixarVideoComLegendasQueimadas,
+  baixandoVideoComLegendasQueimadas = false,
+  onBaixarLegendasVttAlinhadas,
 }: PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTranscribrothers) {
   const menuExportarId = useId();
   const menuDownloadId = useId();
@@ -153,7 +179,12 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
     comentandoIssueGitlab ||
     anexandoDescricaoIssueGitlab ||
     criandoPaginaWikiGitlab;
-  const downloadOcupado = baixandoMarkdown || baixandoPdf;
+  const downloadOcupado =
+    baixandoMarkdown ||
+    baixandoPdf ||
+    gerandoNarracaoTts ||
+    gerandoVideoComNarracaoTts ||
+    baixandoVideoComLegendasQueimadas;
   const exportarDesabilitado = bloqueadoPorHistoricoVersao || exportarOcupado;
   const downloadDesabilitado = bloqueadoPorHistoricoVersao || downloadOcupado;
 
@@ -254,6 +285,36 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
     onBaixarPdf();
   }
 
+  function executarGerarNarracaoTts() {
+    setMenuDownloadAberto(false);
+    onGerarNarracaoTts();
+  }
+
+  function executarOuvirNarracaoTts() {
+    setMenuDownloadAberto(false);
+    onOuvirNarracaoTts();
+  }
+
+  function executarGerarVideoComNarracaoTts() {
+    setMenuDownloadAberto(false);
+    onGerarVideoComNarracaoTts();
+  }
+
+  function executarBaixarVideoComNarracaoTts() {
+    setMenuDownloadAberto(false);
+    onBaixarVideoComNarracaoTts();
+  }
+
+  function executarBaixarVideoComLegendasQueimadas() {
+    setMenuDownloadAberto(false);
+    onBaixarVideoComLegendasQueimadas?.();
+  }
+
+  function executarBaixarLegendasVttAlinhadas() {
+    setMenuDownloadAberto(false);
+    onBaixarLegendasVttAlinhadas();
+  }
+
   return (
     <>
       <div
@@ -322,6 +383,119 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
                 <span className="tb-muted tb-toolbar-split-menu-item-detalhe">imagens incluídas</span>
               </button>
             </li>
+            <li role="none">
+              <button
+                type="button"
+                className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                role="menuitem"
+                disabled={downloadDesabilitado}
+                aria-busy={gerandoNarracaoTts}
+                onClick={() => void executarGerarNarracaoTts()}
+              >
+                <span className="tb-toolbar-split-menu-item-rotulo-principal">
+                  {urlAssetNarracaoTts ? "Regenerar narração (áudio)" : "Gerar narração (áudio)"}
+                </span>
+                <span className="tb-muted tb-toolbar-split-menu-item-detalhe">
+                  TTS do Markdown · modelo com -tts
+                </span>
+              </button>
+            </li>
+            {urlAssetNarracaoTts ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={bloqueadoPorHistoricoVersao || gerandoNarracaoTts}
+                  onClick={() => void executarOuvirNarracaoTts()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">Ouvir / baixar narração</span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">WAV gerado no servidor</span>
+                </button>
+              </li>
+            ) : null}
+            {jobTemVideoEntrada ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={downloadDesabilitado || !urlAssetNarracaoTts}
+                  aria-busy={gerandoVideoComNarracaoTts}
+                  title={
+                    urlAssetNarracaoTts
+                      ? "Cria uma cópia do vídeo com a narração TTS no lugar do áudio original"
+                      : "Gere a narração de áudio antes"
+                  }
+                  onClick={() => void executarGerarVideoComNarracaoTts()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">
+                    {urlDownloadVideoComNarracaoTts
+                      ? "Regenerar vídeo com narração"
+                      : "Gerar vídeo com narração"}
+                  </span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">
+                    troca o áudio do vídeo pelo TTS
+                  </span>
+                </button>
+              </li>
+            ) : null}
+            {urlDownloadVideoComNarracaoTts ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={bloqueadoPorHistoricoVersao || gerandoVideoComNarracaoTts}
+                  onClick={() => void executarBaixarVideoComNarracaoTts()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">Baixar vídeo com narração</span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">MP4 gerado no servidor</span>
+                </button>
+              </li>
+            ) : null}
+            {urlDownloadVideoComNarracaoTts && urlAssetLegendasVttAlinhadas && onBaixarVideoComLegendasQueimadas ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={
+                    bloqueadoPorHistoricoVersao ||
+                    gerandoVideoComNarracaoTts ||
+                    baixandoVideoComLegendasQueimadas
+                  }
+                  aria-busy={baixandoVideoComLegendasQueimadas}
+                  title="Reencode sob demanda: legendas desenhadas no vídeo (aparecem em qualquer player)"
+                  onClick={() => void executarBaixarVideoComLegendasQueimadas()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">
+                    {baixandoVideoComLegendasQueimadas
+                      ? "Gerando vídeo com legendas…"
+                      : "Baixar vídeo com legendas embutidas"}
+                  </span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">
+                    MP4 com legendas queimadas na imagem
+                  </span>
+                </button>
+              </li>
+            ) : null}
+            {urlAssetLegendasVttAlinhadas ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={bloqueadoPorHistoricoVersao}
+                  onClick={() => void executarBaixarLegendasVttAlinhadas()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">Baixar legendas (VTT)</span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">
+                    alinhadas ao documento e à transcrição
+                  </span>
+                </button>
+              </li>
+            ) : null}
           </ul>
         ) : null}
       </div>

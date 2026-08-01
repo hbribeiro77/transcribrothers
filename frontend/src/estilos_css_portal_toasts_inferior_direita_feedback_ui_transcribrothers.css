@@ -43,3 +43,45 @@ body[data-tb-modal-md-edit-aberto] .tb-toast-stack {
   color: #1e40af;
   border: 1px solid #bfdbfe;
 }
+
+.tb-toast-mensagem {
+  display: block;
+}
+
+.tb-toast-barra-progresso {
+  margin-top: 0.55rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.15);
+  overflow: hidden;
+}
+
+.tb-toast-barra-progresso-preenchimento {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: #2563eb;
+  transition: width 0.35s ease;
+}
+
+.tb-toast-barra-progresso--indeterminada .tb-toast-barra-progresso-preenchimento {
+  width: 40%;
+  animation: tb-toast-barra-indeterminada 1.2s ease-in-out infinite;
+}
+
+@keyframes tb-toast-barra-indeterminada {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb-toast-barra-progresso--indeterminada .tb-toast-barra-progresso-preenchimento {
+    animation: none;
+    width: 100%;
+    opacity: 0.55;
+  }
+}

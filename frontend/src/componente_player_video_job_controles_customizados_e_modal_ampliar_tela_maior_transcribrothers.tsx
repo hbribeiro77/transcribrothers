@@ -1,6 +1,7 @@
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { calcularRetanguloObjectFitContainVideoNoElementoUiTranscribrothers } from "./modulo_util_calcular_retangulo_object_fit_contain_video_no_elemento_ui_transcribrothers.ts";
 import { formatarSegundosComoMmSsTranscribrothers } from "./modulo_util_rotulos_fase_pipeline_status_portugues_ui_transcribrothers.ts";
 import { tentarDescobrirDuracaoVideoPorSeekAoFimNavegadorTranscribrothers } from "./modulo_util_tentar_descobrir_duracao_video_por_seek_ao_fim_navegador_transcribrothers.ts";
 
@@ -21,6 +22,41 @@ type PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTra
   /** Quando o job já tem `steps_json.duracao_video_segundos` (ffprobe no servidor). */
   duracaoVideoSegundosDoJob?: number | null;
   classNameVideo?: string;
+  /** Override do `src` (ex.: MP4 narrado). Default: `/api/jobs/{jobId}/video`. */
+  urlVideoSrc?: string;
+  /** Se false, esconde botão flutuante, ação na barra e portal de tela maior. Default: true. */
+  exibirBotaoTelaMaior?: boolean;
+  /** Filhos do `<video>` inline (ex.: `<track>` VTT). */
+  faixaLegendas?: React.ReactNode;
+  /** `key` do `<video>` inline para forçar remount (cache-bust). */
+  keyVideo?: string | number;
+  /** Classe extra no wrapper `.tb-video-player-envoltorio`. */
+  classNameEnvoltorio?: string;
+  /** `preload` do `<video>` inline. Default: `"auto"`. */
+  preloadVideo?: "none" | "metadata" | "auto";
+  /** Segmentos de legenda sob a barra de progresso (modal narrado). */
+  faixaCuesTimeline?: SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers[];
+  indiceCueAtivaFaixaTimeline?: number;
+  aoClicarSegmentoFaixaCuesTimeline?: (indice: number) => void;
+  aoArrastarSegmentoFaixaCuesTimeline?: (indice: number, novoInicioSegundos: number) => void;
+  /**
+   * Quando true, a barra mostra ícone de pausa mesmo com `video.paused`
+   * (ex.: narração WAV auxiliar com o vídeo só no frame).
+   */
+  forcarUiComoTocando?: boolean;
+  /** Substitui o play/pause nativo do `<video>` (modal narrado com áudio auxiliar). */
+  aoAlternarPlayPauseCustomizado?: () => void;
+  /**
+   * Timeline virtual na barra (tempo/duração/seek) sem ler o `currentTime` real do `<video>`.
+   * Usado no preview de recorte: imagem do original, barra como no MP4 narrado.
+   */
+  timelineVirtualUi?: {
+    tempoAtualSegundos: number;
+    duracaoSegundos: number;
+    aoAlterarTempoPelaBarra: (tempoSegundos: number) => void;
+  } | null;
+  /** Conteúdo sobreposto à área do vídeo (ex.: legenda por overlay no preview de recorte). */
+  overlaySobreVideo?: React.ReactNode;
   exibirBotaoCapturarFrame?: boolean;
   capturandoFrame?: boolean;
   /** Recebe o instante atual do vídeo ativo (inline ou modal em tela maior). */
@@ -101,6 +137,24 @@ function IconeCapturarFrameVideoTranscribrothers() {
   );
 }
 
+export type SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers = {
+  inicioSegundos: number;
+  fimSegundos: number;
+  /** Texto curto para tooltip (ex.: início da legenda). */
+  rotulo?: string;
+  /**
+   * Duração do áudio atual (WAV gravado ou prévia TTS) em segundos.
+   * `null`/omitido = sem medida (ex.: texto editado ainda sem «Ouvir»).
+   */
+  duracaoAudioSegundos?: number | null;
+  /** Preenchimento vem de prévia TTS do texto editado (ainda não aplicada ao vídeo). */
+  audioEhPreview?: boolean;
+  /** Texto difere do narrado e ainda não há áudio medido para o texto atual. */
+  aguardandoAudioAtual?: boolean;
+  /** Trecho só com vídeo — sem fala TTS no preview/export. */
+  semNarracao?: boolean;
+};
+
 type BarraControlesPlayerVideoTranscribrothersProps = {
   video: HTMLVideoElement | null;
   duracaoSegundos: number;
@@ -122,7 +176,193 @@ type BarraControlesPlayerVideoTranscribrothersProps = {
   capturandoFrame?: boolean;
   aoCapturarFrame?: () => void;
   compacto?: boolean;
+  /** Trechos de legenda sob a barra de progresso (ex.: modal de vídeo narrado). */
+  faixaCuesTimeline?: SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers[];
+  indiceCueAtivaFaixaTimeline?: number;
+  aoClicarSegmentoFaixaCuesTimeline?: (indice: number) => void;
+  /** Arrastar segmento na faixa: novo início desejado em segundos (pai aplica limites). */
+  aoArrastarSegmentoFaixaCuesTimeline?: (indice: number, novoInicioSegundos: number) => void;
 };
+
+type ArrasteFaixaCueTimelineRefTranscribrothers = {
+  indice: number;
+  pointerId: number;
+  clientXInicial: number;
+  inicioCueSegundos: number;
+  larguraFaixaPx: number;
+  moveu: boolean;
+};
+
+function ComponenteFaixaCuesTimelineAbaixoBarraProgressoTranscribrothers({
+  duracaoSegundos,
+  segmentos,
+  indiceAtiva,
+  aoClicarSegmento,
+  aoArrastarSegmento,
+}: {
+  duracaoSegundos: number;
+  segmentos: SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers[];
+  indiceAtiva: number;
+  aoClicarSegmento?: (indice: number) => void;
+  aoArrastarSegmento?: (indice: number, novoInicioSegundos: number) => void;
+}) {
+  const faixaRef = useRef<HTMLDivElement | null>(null);
+  const arrasteRef = useRef<ArrasteFaixaCueTimelineRefTranscribrothers | null>(null);
+  const [indiceArrastando, setIndiceArrastando] = useState<number | null>(null);
+
+  useEffect(() => {
+    const aoPointerMove = (evento: PointerEvent) => {
+      const arraste = arrasteRef.current;
+      if (!arraste || evento.pointerId !== arraste.pointerId) return;
+      if (!(arraste.larguraFaixaPx > 0) || !(duracaoSegundos > 0)) return;
+      const deltaPx = evento.clientX - arraste.clientXInicial;
+      if (Math.abs(deltaPx) > 3) arraste.moveu = true;
+      const deltaSegundos = (deltaPx / arraste.larguraFaixaPx) * duracaoSegundos;
+      aoArrastarSegmento?.(arraste.indice, arraste.inicioCueSegundos + deltaSegundos);
+    };
+
+    const aoPointerUp = (evento: PointerEvent) => {
+      const arraste = arrasteRef.current;
+      if (!arraste || evento.pointerId !== arraste.pointerId) return;
+      const { indice, moveu } = arraste;
+      arrasteRef.current = null;
+      setIndiceArrastando(null);
+      if (!moveu) {
+        aoClicarSegmento?.(indice);
+      }
+    };
+
+    window.addEventListener("pointermove", aoPointerMove);
+    window.addEventListener("pointerup", aoPointerUp);
+    window.addEventListener("pointercancel", aoPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", aoPointerMove);
+      window.removeEventListener("pointerup", aoPointerUp);
+      window.removeEventListener("pointercancel", aoPointerUp);
+    };
+  }, [aoArrastarSegmento, aoClicarSegmento, duracaoSegundos]);
+
+  if (!(duracaoSegundos > 0) || segmentos.length === 0) return null;
+
+  return (
+    <div
+      ref={faixaRef}
+      className="tb-video-player-faixa-cues"
+      role="list"
+      aria-label="Trechos das legendas no tempo do vídeo — arraste para deslocar"
+    >
+      {segmentos.map((seg, indice) => {
+        const inicio = Math.max(0, Math.min(seg.inicioSegundos, duracaoSegundos));
+        const fim = Math.max(inicio, Math.min(seg.fimSegundos, duracaoSegundos));
+        const duracaoCue = fim - inicio;
+        const larguraPct = (duracaoCue / duracaoSegundos) * 100;
+        const esquerdaPct = (inicio / duracaoSegundos) * 100;
+        if (!(larguraPct > 0)) return null;
+        const ativa = indice === indiceAtiva;
+        const arrastando = indiceArrastando === indice;
+        const durAudio =
+          typeof seg.duracaoAudioSegundos === "number" &&
+          Number.isFinite(seg.duracaoAudioSegundos) &&
+          seg.duracaoAudioSegundos >= 0
+            ? seg.duracaoAudioSegundos
+            : null;
+        const ocupacaoPct =
+          durAudio !== null && duracaoCue > 0 ? (durAudio / duracaoCue) * 100 : null;
+        const fillPct =
+          ocupacaoPct === null ? 0 : Math.max(0, Math.min(100, ocupacaoPct));
+        const estourou = ocupacaoPct !== null && ocupacaoPct > 100.5;
+        const aguardando = Boolean(seg.aguardandoAudioAtual) && ocupacaoPct === null;
+
+        const semNarracao = Boolean(seg.semNarracao);
+        let title = seg.rotulo?.trim() || `Legenda ${indice + 1}`;
+        title = `${title}\nArraste para deslocar · clique para reproduzir`;
+        if (semNarracao) {
+          title = `${title}\nSem narração — só o trecho de tela (sem fala)`;
+        } else if (aguardando) {
+          title = `${title}\nTexto editado — use «Ouvir» para medir a nova fala neste slot.`;
+        } else if (ocupacaoPct !== null && durAudio !== null) {
+          const origem = seg.audioEhPreview ? "prévia TTS" : "áudio gravado";
+          title =
+            `${title}\n${origem}: ${durAudio.toFixed(1)}s / cue ${duracaoCue.toFixed(1)}s` +
+            ` (${Math.round(ocupacaoPct)}%)` +
+            (estourou ? " — fala maior que o slot" : "");
+        }
+
+        return (
+          <button
+            key={`faixa-cue-${indice}`}
+            type="button"
+            role="listitem"
+            className={
+              "tb-video-player-faixa-cues-segmento" +
+              (ativa ? " tb-video-player-faixa-cues-segmento--ativa" : "") +
+              (arrastando ? " tb-video-player-faixa-cues-segmento--arrastando" : "") +
+              (semNarracao ? " tb-video-player-faixa-cues-segmento--sem-narracao" : "") +
+              (seg.audioEhPreview && !semNarracao
+                ? " tb-video-player-faixa-cues-segmento--preview"
+                : "") +
+              (aguardando && !semNarracao
+                ? " tb-video-player-faixa-cues-segmento--aguardando"
+                : "") +
+              (estourou && !semNarracao ? " tb-video-player-faixa-cues-segmento--estouro" : "")
+            }
+            style={{ left: `${esquerdaPct}%`, width: `${larguraPct}%` }}
+            title={title}
+            aria-label={
+              ativa
+                ? `Legenda ${indice + 1} (selecionada) — clique de novo para reproduzir ou pausar; arraste para deslocar`
+                : `Legenda ${indice + 1} — clique para selecionar; arraste para deslocar`
+            }
+            aria-current={ativa ? "true" : undefined}
+            onPointerDown={(evento) => {
+              if (evento.button !== 0) return;
+              const faixa = faixaRef.current;
+              if (!faixa || !aoArrastarSegmento) {
+                return;
+              }
+              evento.preventDefault();
+              evento.stopPropagation();
+              const largura = faixa.getBoundingClientRect().width;
+              arrasteRef.current = {
+                indice,
+                pointerId: evento.pointerId,
+                clientXInicial: evento.clientX,
+                inicioCueSegundos: seg.inicioSegundos,
+                larguraFaixaPx: largura,
+                moveu: false,
+              };
+              setIndiceArrastando(indice);
+              try {
+                evento.currentTarget.setPointerCapture(evento.pointerId);
+              } catch {
+                /* alguns navegadores falham se o alvo sumir */
+              }
+            }}
+            onClick={(evento) => {
+              // Clique sem drag é tratado no pointerup (evita play ao soltar o arraste).
+              if (aoArrastarSegmento) {
+                evento.preventDefault();
+                return;
+              }
+              aoClicarSegmento?.(indice);
+            }}
+          >
+            {ocupacaoPct !== null ? (
+              <span
+                className="tb-video-player-faixa-cues-ocupacao"
+                style={{ width: `${fillPct}%` }}
+                aria-hidden
+              />
+            ) : null}
+            <span className="tb-video-player-faixa-cues-numero" aria-hidden>
+              {indice + 1}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function BarraControlesPlayerVideoTranscribrothers({
   video,
@@ -145,122 +385,148 @@ function BarraControlesPlayerVideoTranscribrothers({
   capturandoFrame = false,
   aoCapturarFrame,
   compacto = false,
+  faixaCuesTimeline,
+  indiceCueAtivaFaixaTimeline = -1,
+  aoClicarSegmentoFaixaCuesTimeline,
+  aoArrastarSegmentoFaixaCuesTimeline,
 }: BarraControlesPlayerVideoTranscribrothersProps) {
   const duracaoValida = Number.isFinite(duracaoSegundos) && duracaoSegundos > 0;
   const maxBarra = duracaoValida ? duracaoSegundos : 0;
   const valorBarra = arrastandoBarraProgresso
     ? tempoAtualSegundos
     : Math.min(tempoAtualSegundos, maxBarra || tempoAtualSegundos);
+  const temFaixaCues = Boolean(faixaCuesTimeline && faixaCuesTimeline.length > 0);
 
   return (
     <div
-      className={`tb-video-player-controles${compacto ? " tb-video-player-controles--compacto" : ""}`}
+      className={`tb-video-player-controles${compacto ? " tb-video-player-controles--compacto" : ""}${
+        temFaixaCues ? " tb-video-player-controles--com-faixa-cues" : ""
+      }`}
       onClick={(evento) => evento.stopPropagation()}
       onDoubleClick={(evento) => evento.stopPropagation()}
     >
-      <button
-        type="button"
-        className="tb-video-player-btn-icone"
-        aria-label={pausado ? "Reproduzir" : "Pausar"}
-        title={pausado ? "Reproduzir" : "Pausar"}
-        disabled={!video}
-        onClick={aoAlternarPlayPause}
-      >
-        {pausado ? <IconePlayVideoTranscribrothers /> : <IconePauseVideoTranscribrothers />}
-      </button>
-
-      <span className="tb-video-player-tempo" aria-live="off">
-        {formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
-        <span className="tb-video-player-tempo-separador">/</span>
-        {duracaoValida
-          ? formatarSegundosComoMmSsTranscribrothers(duracaoSegundos)
-          : video
-            ? "…"
-            : "0:00"}
-      </span>
-
-      <input
-        type="range"
-        className="tb-video-player-barra-progresso"
-        min={0}
-        max={maxBarra || 100}
-        step={0.1}
-        value={valorBarra}
-        disabled={!video}
-        aria-label="Posição no vídeo"
-        aria-valuemin={0}
-        aria-valuemax={maxBarra}
-        aria-valuenow={valorBarra}
-        aria-valuetext={formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
-        onMouseDown={aoIniciarArrastarBarra}
-        onTouchStart={aoIniciarArrastarBarra}
-        onChange={(evento) => aoAlterarTempoPelaBarra(Number(evento.target.value))}
-      />
-
-      <button
-        type="button"
-        className="tb-video-player-btn-icone"
-        aria-label={mudo ? "Ativar som" : "Silenciar"}
-        title={mudo ? "Ativar som" : "Silenciar"}
-        disabled={!video}
-        onClick={aoAlternarMudo}
-      >
-        {mudo || volume === 0 ? <IconeVolumeMudoVideoTranscribrothers /> : <IconeVolumeAltoVideoTranscribrothers />}
-      </button>
-
-      <input
-        type="range"
-        className="tb-video-player-barra-volume"
-        min={0}
-        max={1}
-        step={0.05}
-        value={mudo ? 0 : volume}
-        disabled={!video}
-        aria-label="Volume"
-        onChange={(evento) => aoAlterarVolume(Number(evento.target.value))}
-      />
-
-      <button
-        type="button"
-        className="tb-video-player-btn-velocidade"
-        aria-label={`Velocidade de reprodução: ${velocidadeReproducao}x`}
-        title="Alterar velocidade"
-        disabled={!video}
-        onClick={aoAlternarVelocidade}
-      >
-        {velocidadeReproducao}x
-      </button>
-
-      {exibirBotaoCapturarFrame && aoCapturarFrame ? (
-        <button
-          type="button"
-          className="tb-video-player-btn-capturar-frame"
-          aria-label={capturandoFrame ? "Capturando frame…" : "Capturar frame e abrir imagem"}
-          title={
-            capturandoFrame
-              ? "Capturando frame do vídeo…"
-              : "Capturar frame neste instante e abrir na visualização de imagem"
-          }
-          aria-busy={capturandoFrame}
-          disabled={!video || capturandoFrame}
-          onClick={aoCapturarFrame}
-        >
-          <IconeCapturarFrameVideoTranscribrothers />
-        </button>
-      ) : null}
-
-      {aoSolicitarTelaMaior ? (
+      <div className="tb-video-player-controles-linha-acoes">
         <button
           type="button"
           className="tb-video-player-btn-icone"
-          aria-label="Abrir vídeo em tela maior"
-          title="Tela maior"
+          aria-label={pausado ? "Reproduzir" : "Pausar"}
+          title={pausado ? "Reproduzir" : "Pausar"}
           disabled={!video}
-          onClick={aoSolicitarTelaMaior}
+          onClick={aoAlternarPlayPause}
         >
-          <IconeAmpliarVideoTelaMaiorTranscribrothers />
+          {pausado ? <IconePlayVideoTranscribrothers /> : <IconePauseVideoTranscribrothers />}
         </button>
-      ) : null}
+
+        <span className="tb-video-player-tempo" aria-live="off">
+          {formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
+          <span className="tb-video-player-tempo-separador">/</span>
+          {duracaoValida
+            ? formatarSegundosComoMmSsTranscribrothers(duracaoSegundos)
+            : video
+              ? "…"
+              : "0:00"}
+        </span>
+
+        <div className="tb-video-player-controles-grupo-direita">
+          <button
+            type="button"
+            className="tb-video-player-btn-icone"
+            aria-label={mudo ? "Ativar som" : "Silenciar"}
+            title={mudo ? "Ativar som" : "Silenciar"}
+            disabled={!video}
+            onClick={aoAlternarMudo}
+          >
+            {mudo || volume === 0 ? (
+              <IconeVolumeMudoVideoTranscribrothers />
+            ) : (
+              <IconeVolumeAltoVideoTranscribrothers />
+            )}
+          </button>
+
+          <input
+            type="range"
+            className="tb-video-player-barra-volume"
+            min={0}
+            max={1}
+            step={0.05}
+            value={mudo ? 0 : volume}
+            disabled={!video}
+            aria-label="Volume"
+            onChange={(evento) => aoAlterarVolume(Number(evento.target.value))}
+          />
+
+          <button
+            type="button"
+            className="tb-video-player-btn-velocidade"
+            aria-label={`Velocidade de reprodução: ${velocidadeReproducao}x`}
+            title="Alterar velocidade"
+            disabled={!video}
+            onClick={aoAlternarVelocidade}
+          >
+            {velocidadeReproducao}x
+          </button>
+
+          {exibirBotaoCapturarFrame && aoCapturarFrame ? (
+            <button
+              type="button"
+              className="tb-video-player-btn-capturar-frame"
+              aria-label={capturandoFrame ? "Capturando frame…" : "Capturar frame e abrir imagem"}
+              title={
+                capturandoFrame
+                  ? "Capturando frame do vídeo…"
+                  : "Capturar frame neste instante e abrir na visualização de imagem"
+              }
+              aria-busy={capturandoFrame}
+              disabled={!video || capturandoFrame}
+              onClick={aoCapturarFrame}
+            >
+              <IconeCapturarFrameVideoTranscribrothers />
+            </button>
+          ) : null}
+
+          {aoSolicitarTelaMaior ? (
+            <button
+              type="button"
+              className="tb-video-player-btn-icone"
+              aria-label="Abrir vídeo em tela maior"
+              title="Tela maior"
+              disabled={!video}
+              onClick={aoSolicitarTelaMaior}
+            >
+              <IconeAmpliarVideoTelaMaiorTranscribrothers />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="tb-video-player-coluna-progresso-e-faixa-cues">
+        <input
+          type="range"
+          className="tb-video-player-barra-progresso"
+          min={0}
+          max={maxBarra || 100}
+          step={0.1}
+          value={valorBarra}
+          disabled={!video}
+          aria-label="Posição no vídeo"
+          aria-valuemin={0}
+          aria-valuemax={maxBarra}
+          aria-valuenow={valorBarra}
+          aria-valuetext={formatarSegundosComoMmSsTranscribrothers(tempoAtualSegundos)}
+          onMouseDown={aoIniciarArrastarBarra}
+          onTouchStart={aoIniciarArrastarBarra}
+          onChange={(evento) => aoAlterarTempoPelaBarra(Number(evento.target.value))}
+        />
+        {temFaixaCues ? (
+          <ComponenteFaixaCuesTimelineAbaixoBarraProgressoTranscribrothers
+            duracaoSegundos={maxBarra}
+            segmentos={faixaCuesTimeline!}
+            indiceAtiva={indiceCueAtivaFaixaTimeline}
+            aoClicarSegmento={aoClicarSegmentoFaixaCuesTimeline}
+            aoArrastarSegmento={aoArrastarSegmentoFaixaCuesTimeline}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -453,6 +719,20 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
   videoRef,
   duracaoVideoSegundosDoJob = null,
   classNameVideo = "tb-video",
+  urlVideoSrc,
+  exibirBotaoTelaMaior = true,
+  faixaLegendas,
+  keyVideo,
+  classNameEnvoltorio,
+  preloadVideo = "auto",
+  faixaCuesTimeline,
+  indiceCueAtivaFaixaTimeline = -1,
+  aoClicarSegmentoFaixaCuesTimeline,
+  aoArrastarSegmentoFaixaCuesTimeline,
+  forcarUiComoTocando = false,
+  aoAlternarPlayPauseCustomizado,
+  timelineVirtualUi = null,
+  overlaySobreVideo = null,
   exibirBotaoCapturarFrame = false,
   capturandoFrame = false,
   aoCapturarFrameNoInstanteAtual,
@@ -463,7 +743,19 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
   const [videoElementoMontado, setVideoElementoMontado] = useState<HTMLVideoElement | null>(null);
   const [videoModalMontado, setVideoModalMontado] = useState<HTMLVideoElement | null>(null);
   const videoModalRef = useRef<HTMLVideoElement | null>(null);
-  const urlVideo = `/api/jobs/${encodeURIComponent(jobId)}/video`;
+  /** Alinha overlay (ex.: legenda) ao quadro da imagem com object-fit: contain. */
+  const [retanguloOverlaySobreVideo, setRetanguloOverlaySobreVideo] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const urlVideoPadraoJob = `/api/jobs/${encodeURIComponent(jobId)}/video`;
+  const urlVideo =
+    typeof urlVideoSrc === "string" && urlVideoSrc.trim()
+      ? urlVideoSrc.trim()
+      : urlVideoPadraoJob;
+  const usaUrlVideoOverride = urlVideo !== urlVideoPadraoJob;
   const [duracaoSegundosApi, setDuracaoSegundosApi] = useState(0);
 
   const duracaoDoJob =
@@ -473,7 +765,8 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
       ? duracaoVideoSegundosDoJob
       : 0;
 
-  const duracaoConhecidaSegundos = duracaoDoJob > 0 ? duracaoDoJob : duracaoSegundosApi;
+  const duracaoConhecidaSegundos =
+    !usaUrlVideoOverride && duracaoDoJob > 0 ? duracaoDoJob : duracaoSegundosApi;
 
   const registrarDuracaoConhecida = useCallback(
     (duracaoSegundos: number) => {
@@ -486,7 +779,8 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
 
   useEffect(() => {
     setDuracaoSegundosApi(0);
-    if (duracaoDoJob > 0) return;
+    // Com override (ex.: MP4 narrado), a duração vem do próprio `<video>`, não do metadata do vídeo fonte.
+    if (usaUrlVideoOverride || duracaoDoJob > 0) return;
     let cancelado = false;
     void fetch(`/api/jobs/${encodeURIComponent(jobId)}/video/metadata`)
       .then(async (resposta) => {
@@ -504,7 +798,7 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
     return () => {
       cancelado = true;
     };
-  }, [duracaoDoJob, jobId, registrarDuracaoConhecida]);
+  }, [duracaoDoJob, jobId, registrarDuracaoConhecida, usaUrlVideoOverride]);
 
   const estadoInline = useEstadoUiPlayerVideoTranscribrothers(
     videoElementoMontado,
@@ -520,6 +814,8 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
     modalTelaMaiorAberto ? videoModalMontado : null,
     estadoModal,
   );
+  const aoPlayPauseInline = aoAlternarPlayPauseCustomizado ?? handlersInline.aoAlternarPlayPause;
+  const aoPlayPauseModal = aoAlternarPlayPauseCustomizado ?? handlersModal.aoAlternarPlayPause;
 
   const atribuirRefVideoInline = useCallback(
     (elemento: HTMLVideoElement | null) => {
@@ -529,9 +825,37 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
     [videoRef],
   );
 
+  useEffect(() => {
+    if (!overlaySobreVideo || !videoElementoMontado) {
+      setRetanguloOverlaySobreVideo(null);
+      return;
+    }
+    const video = videoElementoMontado;
+    const atualizar = () => {
+      const caixa = video.getBoundingClientRect();
+      const r = calcularRetanguloObjectFitContainVideoNoElementoUiTranscribrothers(
+        caixa.width,
+        caixa.height,
+        video.videoWidth || 0,
+        video.videoHeight || 0,
+      );
+      setRetanguloOverlaySobreVideo(r);
+    };
+    atualizar();
+    const ro = new ResizeObserver(atualizar);
+    ro.observe(video);
+    video.addEventListener("loadedmetadata", atualizar);
+    video.addEventListener("resize", atualizar);
+    return () => {
+      ro.disconnect();
+      video.removeEventListener("loadedmetadata", atualizar);
+      video.removeEventListener("resize", atualizar);
+    };
+  }, [overlaySobreVideo, videoElementoMontado, urlVideo, keyVideo]);
+
   const alternarPlayPausePeloCliqueNoVideo = useCallback(() => {
-    handlersInline.aoAlternarPlayPause();
-  }, [handlersInline]);
+    aoPlayPauseInline();
+  }, [aoPlayPauseInline]);
 
   const abrirModalTelaMaior = useCallback(() => {
     const video = videoRef.current;
@@ -616,46 +940,100 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
     aoCapturarFrame: solicitarCapturaFrameDoVideoAtivo,
   };
 
+  const propsFaixaCuesCompartilhados = {
+    faixaCuesTimeline,
+    indiceCueAtivaFaixaTimeline,
+    aoClicarSegmentoFaixaCuesTimeline,
+    aoArrastarSegmentoFaixaCuesTimeline,
+  };
+
+  const handlersInlineComTimelineVirtual = timelineVirtualUi
+    ? {
+        ...handlersInline,
+        aoAlterarTempoPelaBarra: (tempoSegundos: number) => {
+          const dur = Math.max(0, timelineVirtualUi.duracaoSegundos);
+          const t = Math.max(0, dur > 0 ? Math.min(tempoSegundos, dur) : tempoSegundos);
+          estadoInline.arrastandoBarraProgressoRef.current = true;
+          estadoInline.setTempoAtualSegundos(t);
+          timelineVirtualUi.aoAlterarTempoPelaBarra(t);
+        },
+      }
+    : handlersInline;
+
+  const handlersModalComTimelineVirtual = timelineVirtualUi
+    ? {
+        ...handlersModal,
+        aoAlterarTempoPelaBarra: (tempoSegundos: number) => {
+          const dur = Math.max(0, timelineVirtualUi.duracaoSegundos);
+          const t = Math.max(0, dur > 0 ? Math.min(tempoSegundos, dur) : tempoSegundos);
+          estadoModal.arrastandoBarraProgressoRef.current = true;
+          estadoModal.setTempoAtualSegundos(t);
+          timelineVirtualUi.aoAlterarTempoPelaBarra(t);
+        },
+      }
+    : handlersModal;
+
   const propsBarraInline: BarraControlesPlayerVideoTranscribrothersProps = {
     video: videoElementoMontado,
-    duracaoSegundos: estadoInline.duracaoSegundos,
-    tempoAtualSegundos: estadoInline.tempoAtualSegundos,
-    pausado: estadoInline.pausado,
+    duracaoSegundos: timelineVirtualUi
+      ? Math.max(0, timelineVirtualUi.duracaoSegundos)
+      : estadoInline.duracaoSegundos,
+    tempoAtualSegundos: timelineVirtualUi
+      ? timelineVirtualUi.tempoAtualSegundos
+      : estadoInline.tempoAtualSegundos,
+    pausado: forcarUiComoTocando ? false : estadoInline.pausado,
     mudo: estadoInline.mudo,
     volume: estadoInline.volume,
     velocidadeReproducao: estadoInline.velocidadeReproducao,
     arrastandoBarraProgresso: estadoInline.arrastandoBarraProgresso,
-    aoSolicitarTelaMaior: abrirModalTelaMaior,
+    ...(exibirBotaoTelaMaior ? { aoSolicitarTelaMaior: abrirModalTelaMaior } : {}),
+    ...propsFaixaCuesCompartilhados,
     ...propsCapturaFrameCompartilhados,
-    ...handlersInline,
+    ...handlersInlineComTimelineVirtual,
+    aoAlternarPlayPause: aoPlayPauseInline,
   };
 
   const propsBarraModal: BarraControlesPlayerVideoTranscribrothersProps = {
     video: videoModalMontado,
-    duracaoSegundos: estadoModal.duracaoSegundos,
-    tempoAtualSegundos: estadoModal.tempoAtualSegundos,
-    pausado: estadoModal.pausado,
+    duracaoSegundos: timelineVirtualUi
+      ? Math.max(0, timelineVirtualUi.duracaoSegundos)
+      : estadoModal.duracaoSegundos,
+    tempoAtualSegundos: timelineVirtualUi
+      ? timelineVirtualUi.tempoAtualSegundos
+      : estadoModal.tempoAtualSegundos,
+    pausado: forcarUiComoTocando ? false : estadoModal.pausado,
     mudo: estadoModal.mudo,
     volume: estadoModal.volume,
     velocidadeReproducao: estadoModal.velocidadeReproducao,
     arrastandoBarraProgresso: estadoModal.arrastandoBarraProgresso,
+    ...propsFaixaCuesCompartilhados,
     ...propsCapturaFrameCompartilhados,
-    ...handlersModal,
+    ...handlersModalComTimelineVirtual,
+    aoAlternarPlayPause: aoPlayPauseModal,
   };
+
+  const classeEnvoltorio = [
+    "tb-video-player-envoltorio",
+    classNameEnvoltorio?.trim() || "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>
-      <div className="tb-video-player-envoltorio">
+      <div className={classeEnvoltorio}>
         <div className="tb-video-player-area-midia">
           <video
+            key={keyVideo}
             ref={atribuirRefVideoInline}
             className={classNameVideo}
             src={urlVideo}
             playsInline
-            preload="auto"
+            preload={preloadVideo}
             onLoadedMetadata={(evento) => {
               const alvo = evento.currentTarget;
-              if (duracaoDoJob > 0) return;
+              // Duração do job (vídeo fonte) não se aplica quando há override de URL.
+              if (!usaUrlVideoOverride && duracaoDoJob > 0) return;
               const dur = lerDuracaoSegundosElementoVideoPlayerTranscribrothers(alvo);
               if (dur > 0) {
                 registrarDuracaoConhecida(dur);
@@ -666,24 +1044,49 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
               });
             }}
             onClick={alternarPlayPausePeloCliqueNoVideo}
-          />
-          <button
-            type="button"
-            className="tb-video-player-btn-flutuante-ampliar"
-            aria-label="Abrir vídeo em tela maior"
-            title="Tela maior"
-            onClick={(evento) => {
-              evento.stopPropagation();
-              abrirModalTelaMaior();
-            }}
           >
-            <IconeAmpliarVideoTelaMaiorTranscribrothers />
-          </button>
+            {faixaLegendas}
+          </video>
+          {overlaySobreVideo ? (
+            <div
+              className="tb-video-player-overlay-sobre-video"
+              style={
+                retanguloOverlaySobreVideo &&
+                retanguloOverlaySobreVideo.width > 0 &&
+                retanguloOverlaySobreVideo.height > 0
+                  ? {
+                      left: retanguloOverlaySobreVideo.left,
+                      top: retanguloOverlaySobreVideo.top,
+                      width: retanguloOverlaySobreVideo.width,
+                      height: retanguloOverlaySobreVideo.height,
+                      right: "auto",
+                      bottom: "auto",
+                    }
+                  : undefined
+              }
+            >
+              {overlaySobreVideo}
+            </div>
+          ) : null}
+          {exibirBotaoTelaMaior ? (
+            <button
+              type="button"
+              className="tb-video-player-btn-flutuante-ampliar"
+              aria-label="Abrir vídeo em tela maior"
+              title="Tela maior"
+              onClick={(evento) => {
+                evento.stopPropagation();
+                abrirModalTelaMaior();
+              }}
+            >
+              <IconeAmpliarVideoTelaMaiorTranscribrothers />
+            </button>
+          ) : null}
         </div>
         <BarraControlesPlayerVideoTranscribrothers {...propsBarraInline} />
       </div>
 
-      {modalTelaMaiorAberto
+      {exibirBotaoTelaMaior && modalTelaMaiorAberto
         ? createPortal(
             <div
               className="tb-video-modal-tela-maior-overlay"

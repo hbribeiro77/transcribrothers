@@ -7,6 +7,7 @@ export type TelaAtivaAplicacaoTranscribrothers = "projeto" | "pipelines";
 function lerTelaAtivaDaQueryStringTranscribrothers(): TelaAtivaAplicacaoTranscribrothers {
   if (typeof window === "undefined") return "projeto";
   const view = new URLSearchParams(window.location.search).get("view");
+  // `video-narrado` é página dentro do projeto (não o catálogo de pipelines).
   return view === "pipelines" ? "pipelines" : "projeto";
 }
 
@@ -21,12 +22,21 @@ function atualizarQueryViewNaUrlTranscribrothers(tela: TelaAtivaAplicacaoTranscr
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+/**
+ * Mantém a página do projeto montada ao ir para Pipelines (só oculta),
+ * para «Voltar ao projeto» restaurar o job/markdown em memória.
+ */
 export function ComponenteAplicacaoTranscribrothersNavegacaoEntreProjetoECatalogoPipelines() {
   const [telaAtiva, setTelaAtiva] = useState<TelaAtivaAplicacaoTranscribrothers>(() =>
     lerTelaAtivaDaQueryStringTranscribrothers(),
   );
+  /** Evita desmontar o catálogo a cada ida/volta (estado de edição no catálogo). */
+  const [catalogoJaMontado, setCatalogoJaMontado] = useState(
+    () => lerTelaAtivaDaQueryStringTranscribrothers() === "pipelines",
+  );
 
   const irParaPipelines = useCallback(() => {
+    setCatalogoJaMontado(true);
     setTelaAtiva("pipelines");
     atualizarQueryViewNaUrlTranscribrothers("pipelines");
   }, []);
@@ -37,20 +47,41 @@ export function ComponenteAplicacaoTranscribrothersNavegacaoEntreProjetoECatalog
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setTelaAtiva(lerTelaAtivaDaQueryStringTranscribrothers());
+    const onPopState = () => {
+      const tela = lerTelaAtivaDaQueryStringTranscribrothers();
+      if (tela === "pipelines") setCatalogoJaMontado(true);
+      setTelaAtiva(tela);
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  if (telaAtiva === "pipelines") {
-    return (
-      <ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTranscribrothers
-        onVoltarParaProjeto={irParaProjeto}
-      />
-    );
-  }
+  const projetoVisivel = telaAtiva === "projeto";
+  const pipelinesVisivel = telaAtiva === "pipelines";
 
   return (
-    <PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial onAbrirCatalogoPipelines={irParaPipelines} />
+    <>
+      <div
+        className="tb-app-tela-projeto"
+        hidden={!projetoVisivel}
+        aria-hidden={!projetoVisivel}
+      >
+        <PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial
+          onAbrirCatalogoPipelines={irParaPipelines}
+          projetoVisivel={projetoVisivel}
+        />
+      </div>
+      {catalogoJaMontado ? (
+        <div
+          className="tb-app-tela-pipelines"
+          hidden={!pipelinesVisivel}
+          aria-hidden={!pipelinesVisivel}
+        >
+          <ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTranscribrothers
+            onVoltarParaProjeto={irParaProjeto}
+          />
+        </div>
+      ) : null}
+    </>
   );
 }

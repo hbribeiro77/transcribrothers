@@ -10,6 +10,7 @@ export type PassoBarraPipelineHorizontalVisualTranscribrothers = {
   id: string;
   rotuloCurto: string;
   estado: EstadoPassoPipelineHorizontalModalStatusTranscribrothers;
+  duracaoRotulo?: string;
 };
 
 export type ComponenteBarraPassosPipelineHorizontalVisualComPainelDetalheTranscribrothersProps = {
@@ -69,8 +70,8 @@ export function ComponenteBarraPassosPipelineHorizontalVisualComPainelDetalheTra
                     aria-controls={idPainelDescricao}
                     aria-label={
                       aberto
-                        ? `${p.rotuloCurto}, descrição aberta abaixo`
-                        : `${p.rotuloCurto}, clique para ver a descrição completa`
+                        ? `${p.rotuloCurto}${p.duracaoRotulo ? ` (${p.duracaoRotulo})` : ""}, descrição aberta abaixo`
+                        : `${p.rotuloCurto}${p.duracaoRotulo ? ` (${p.duracaoRotulo})` : ""}, clique para ver a descrição completa`
                     }
                     onClick={() => {
                       if (onClickPasso) {
@@ -80,7 +81,12 @@ export function ComponenteBarraPassosPipelineHorizontalVisualComPainelDetalheTra
                       onAlternarPainelPasso(p.id);
                     }}
                   >
-                    {p.rotuloCurto}
+                    <span className="tb-pipeline-status-step-rotulo">{p.rotuloCurto}</span>
+                    {p.duracaoRotulo ? (
+                      <span className="tb-pipeline-status-step-duracao" aria-hidden>
+                        {p.duracaoRotulo}
+                      </span>
+                    ) : null}
                   </button>
                 </div>
               );

@@ -62,6 +62,17 @@ const PIPELINE_FASE_PARA_ROTULO_PORTUGUES: Record<string, string> = {
   planejando_instantes_captura_frames_tutorial: "Escolhendo quais momentos merecem captura de tela…",
   capturando_frames_png_sob_demanda: "Capturando telas nos momentos do rascunho…",
   capturando_frame_png_sob_demanda: "Capturando tela (sob demanda)…",
+  video_narrado_agendado: "Vídeo narrado: na fila…",
+  video_narrado_alinhando_legendas: "Vídeo narrado: alinhando legendas…",
+  video_narrado_validando_legendas: "Vídeo narrado: validando legendas…",
+  video_narrado_limpando_legendas_ia: "Vídeo narrado: limpeza IA das legendas…",
+  video_narrado_gerando_tts: "Vídeo narrado: gerando narração…",
+  video_narrado_mux_ffmpeg: "Vídeo narrado: montando MP4…",
+  video_narrado_atualizando_legendas_editadas: "Vídeo narrado: atualizando legendas editadas…",
+  video_narrado_gerando_com_edicoes_modal: "Vídeo narrado: gerando com edições do modal…",
+  video_narrado_remux_janelas_editadas: "Vídeo narrado: aplicando tempos de tela…",
+  video_narrado_concluido: "Vídeo narrado concluído",
+  video_narrado_falhou: "Vídeo narrado falhou",
 };
 
 const STATUS_JOB_PARA_ROTULO_PORTUGUES: Record<string, string> = {
@@ -197,6 +208,88 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
     if (i !== null && t !== null) {
       return `Tópico ${i} de ${t}`;
     }
+  }
+
+  if (fase === "video_narrado_gerando_tts") {
+    const i = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cue_indice);
+    const t = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cue_total);
+    const preview =
+      typeof steps.video_narrado_tts_cue_preview === "string"
+        ? steps.video_narrado_tts_cue_preview.trim()
+        : "";
+    const puladas = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cues_puladas);
+    const partes: string[] = [];
+    if (i !== null && t !== null && t > 0) {
+      partes.push(`Trecho ${i} de ${t}`);
+    }
+    if (preview) {
+      partes.push(`«${preview}»`);
+    }
+    if (puladas !== null && puladas > 0) {
+      partes.push(`${puladas} pulado(s)`);
+    }
+    if (partes.length > 0) return partes.join(" · ");
+    return "Sintetizando narração trecho a trecho (pode levar vários minutos)…";
+  }
+
+  if (fase === "video_narrado_limpando_legendas_ia") {
+    const resumo =
+      typeof steps.video_narrado_limpeza_ia_resumo === "string"
+        ? steps.video_narrado_limpeza_ia_resumo.trim()
+        : "";
+    const modelo =
+      typeof steps.video_narrado_limpeza_ia_modelo_atual === "string"
+        ? steps.video_narrado_limpeza_ia_modelo_atual.trim()
+        : "";
+    const partes: string[] = [];
+    if (resumo) partes.push(resumo);
+    else partes.push("Removendo lixo de Markdown/âncoras nas legendas com modelo de chat…");
+    if (modelo) partes.push(`modelo: ${modelo}`);
+    return partes.join(" · ");
+  }
+
+  if (fase === "video_narrado_mux_ffmpeg") {
+    const i = numeroDeStepsJsonTranscribrothers(steps.video_narrado_mux_segmento_indice);
+    const t = numeroDeStepsJsonTranscribrothers(steps.video_narrado_mux_segmento_total);
+    const muxFase =
+      typeof steps.video_narrado_mux_fase === "string" ? steps.video_narrado_mux_fase : "";
+    const paralelismo = numeroDeStepsJsonTranscribrothers(steps.video_narrado_mux_paralelismo);
+    const cacheHits = numeroDeStepsJsonTranscribrothers(steps.video_narrado_mux_segmentos_cache);
+    if (muxFase === "precorte") {
+      const extra =
+        paralelismo !== null && paralelismo > 1 ? ` · ${paralelismo} em paralelo` : "";
+      return i !== null && t !== null && t > 0
+        ? `Cortando janelas ${i} de ${t} (clips pequenos)${extra}…`
+        : "Cortando janelas do vídeo em clips pequenos…";
+    }
+    if (muxFase === "passagem_unica" || muxFase === "passagem_unica_ok") {
+      const encoder =
+        typeof steps.video_narrado_mux_encoder === "string"
+          ? steps.video_narrado_mux_encoder.trim()
+          : "";
+      const encTxt =
+        encoder === "h264_nvenc" ? " · GPU" : encoder === "libx264" ? " · CPU" : "";
+      return t !== null && t > 0
+        ? `Montando MP4 em uma passagem (${t} cues → 1 encode)${encTxt}…`
+        : `Montando MP4 em uma passagem (ffmpeg)${encTxt}…`;
+    }
+    if (muxFase === "fallback_paralelo") {
+      return "Passagem única falhou — montando segmentos em paralelo…";
+    }
+    if (muxFase === "concat") {
+      return "Concatenando segmentos do vídeo narrado…";
+    }
+    if (muxFase === "segmento_cache" && i !== null && t !== null && t > 0) {
+      return `Reusando cache ${i} de ${t} segmentos…`;
+    }
+    if (i !== null && t !== null && t > 0) {
+      const extra =
+        paralelismo !== null && paralelismo > 1 ? ` · ${paralelismo} em paralelo` : "";
+      const cacheTxt =
+        cacheHits !== null && cacheHits > 0 ? ` · ${cacheHits} do cache` : "";
+      return `Montando segmento ${i} de ${t} (vídeo + fala)${extra}${cacheTxt}`;
+    }
+    return "Montando MP4 com áudio narrado…";
   }
 
   return "";

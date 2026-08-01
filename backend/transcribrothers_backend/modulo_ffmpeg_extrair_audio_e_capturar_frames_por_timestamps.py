@@ -1,10 +1,14 @@
 import asyncio
 import subprocess
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from transcribrothers_backend.modulo_resolver_executavel_ffmpeg_ffprobe_transcribrothers import (
     ffmpeg_disponivel_transcribrothers,
     resolver_caminho_ffmpeg_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_parse_progresso_ffmpeg_out_time_para_percentual_transcribrothers import (
+    percentual_encode_ffmpeg_a_partir_linha_progresso_transcribrothers,
 )
 
 
@@ -31,7 +35,11 @@ def _ffmpeg_disponivel() -> bool:
     return ffmpeg_disponivel_transcribrothers()
 
 
-def _executar_ffmpeg_subprocess_run_sync(args: list[str]) -> subprocess.CompletedProcess[bytes]:
+def _executar_ffmpeg_subprocess_run_sync(
+    args: list[str],
+    *,
+    cwd: Path | None = None,
+) -> subprocess.CompletedProcess[bytes]:
     """Roda ffmpeg no thread pool: no Windows, `asyncio.create_subprocess_exec` pode levantar `NotImplementedError` com `WindowsSelectorEventLoop`."""
     executavel = resolver_caminho_ffmpeg_transcribrothers()
     if not executavel:
@@ -40,19 +48,102 @@ def _executar_ffmpeg_subprocess_run_sync(args: list[str]) -> subprocess.Complete
         [executavel, *args],
         capture_output=True,
         check=False,
+        cwd=str(cwd) if cwd is not None else None,
     )
 
 
-async def executar_ffmpeg_com_argumentos(args: list[str]) -> None:
+async def executar_ffmpeg_com_argumentos(
+    args: list[str],
+    *,
+    cwd: Path | None = None,
+) -> None:
     if not _ffmpeg_disponivel():
         raise ErroFfmpegTranscribrothers(
             "ffmpeg não encontrado no PATH. Instale ffmpeg e reinicie o terminal."
         )
 
-    proc = await asyncio.to_thread(_executar_ffmpeg_subprocess_run_sync, args)
+    proc = await asyncio.to_thread(_executar_ffmpeg_subprocess_run_sync, args, cwd=cwd)
     if proc.returncode != 0:
         msg = (proc.stderr or b"").decode(errors="replace")[-4000:]
         raise ErroFfmpegTranscribrothers(f"ffmpeg falhou (código {proc.returncode}): {msg}")
+
+
+async def executar_ffmpeg_com_argumentos_e_progresso_percentual_transcribrothers(
+    args: list[str],
+    *,
+    cwd: Path | None = None,
+    duracao_entrada_segundos: float,
+    on_percentual: Callable[[float], Awaitable[None]] | None = None,
+    caminho_arquivo_progresso: Path | None = None,
+) -> None:
+    """
+    Como `executar_ffmpeg_com_argumentos`, mas escreve `-progress` num ficheiro e
+    invoca `on_percentual(0..100)` enquanto corre (útil no Windows sem pipe async).
+    """
+    if not _ffmpeg_disponivel():
+        raise ErroFfmpegTranscribrothers(
+            "ffmpeg não encontrado no PATH. Instale ffmpeg e reinicie o terminal."
+        )
+
+    diretorio = (cwd or Path.cwd()).resolve()
+    progresso_path = (
+        caminho_arquivo_progresso.resolve()
+        if caminho_arquivo_progresso is not None
+        else diretorio / "_ffmpeg_progresso_encode_transcribrothers.txt"
+    )
+    if progresso_path.is_file():
+        try:
+            progresso_path.unlink()
+        except OSError:
+            pass
+
+    args_com_progresso = ["-nostats", "-progress", str(progresso_path), *args]
+    tarefa_ff = asyncio.create_task(
+        asyncio.to_thread(_executar_ffmpeg_subprocess_run_sync, args_com_progresso, cwd=cwd)
+    )
+    offset = 0
+    ultimo_pct = -1.0
+    proc: subprocess.CompletedProcess[bytes] | None = None
+    try:
+        while not tarefa_ff.done():
+            await asyncio.sleep(0.4)
+            if not progresso_path.is_file():
+                continue
+            try:
+                texto = progresso_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if len(texto) <= offset:
+                continue
+            novo = texto[offset:]
+            offset = len(texto)
+            for linha in novo.splitlines():
+                pct = percentual_encode_ffmpeg_a_partir_linha_progresso_transcribrothers(
+                    linha,
+                    duracao_entrada_segundos=duracao_entrada_segundos,
+                )
+                if pct is None or pct < ultimo_pct:
+                    continue
+                ultimo_pct = pct
+                if on_percentual is not None:
+                    await on_percentual(pct)
+        proc = await tarefa_ff
+    finally:
+        if not tarefa_ff.done():
+            tarefa_ff.cancel()
+        if progresso_path.is_file():
+            try:
+                progresso_path.unlink()
+            except OSError:
+                pass
+
+    if proc is None:
+        raise ErroFfmpegTranscribrothers("ffmpeg não devolveu resultado do encode.")
+    if proc.returncode != 0:
+        msg = (proc.stderr or b"").decode(errors="replace")[-4000:]
+        raise ErroFfmpegTranscribrothers(f"ffmpeg falhou (código {proc.returncode}): {msg}")
+    if on_percentual is not None and ultimo_pct < 100.0:
+        await on_percentual(100.0)
 
 
 async def extrair_audio_wav_de_video_para_caminho(

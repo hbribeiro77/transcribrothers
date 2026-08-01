@@ -2,6 +2,8 @@
  * Passos visuais horizontais do modal de status: rótulos curtos na UI e descrições longas em `hintTitulo`.
  */
 
+import { formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers } from "./modulo_util_formatar_duracao_segundos_curta_portugues_ui_transcribrothers.ts";
+
 export type EstadoPassoPipelineHorizontalModalStatusTranscribrothers =
   | "done"
   | "active"
@@ -24,13 +26,20 @@ export type IdPassoPipelineHorizontalModalStatusTranscribrothers =
   | "planejador"
   | "editores"
   | "consolidador"
-  | "auditor";
+  | "auditor"
+  | "alinhamento_legendas"
+  | "validacao_legendas"
+  | "limpeza_legendas_ia"
+  | "narracao_tts"
+  | "mux_video";
 
 export type PassoPipelineHorizontalModalStatusTranscribrothers = {
   id: IdPassoPipelineHorizontalModalStatusTranscribrothers;
   rotuloCurto: string;
   hintTitulo: string;
   estado: EstadoPassoPipelineHorizontalModalStatusTranscribrothers;
+  /** Duração da etapa (ex.: `1m 05s`), quando disponível em steps_json. */
+  duracaoRotulo?: string;
 };
 
 /** Qual jornada a barra de passos descreve (alinhado aos fluxos 1 / 2.x da documentação de produto). */
@@ -38,7 +47,8 @@ export type ModoFluxoPipelineModalStatusJobTranscribrothers =
   | "pipeline_inicial"
   | "regeneracao_markdown"
   | "revisao_profunda"
-  | "edicao_parcial_secao";
+  | "edicao_parcial_secao"
+  | "video_narrado";
 
 export type ContextoPipelineHorizontalModalStatusJobTranscribrothers = {
   modoFluxo: ModoFluxoPipelineModalStatusJobTranscribrothers;
@@ -67,6 +77,11 @@ const ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS: Record<
     titulo: "Fluxo 2 — Edição parcial",
     descricao: "Interpreta o pedido, regenera só a região escolhida e gera pré-visualização para aplicar no editor.",
   },
+  video_narrado: {
+    titulo: "Fluxo — Vídeo narrado",
+    descricao:
+      "Usa âncoras ?t= do Markdown (ou STT) para janelas de tela, limpa lixo das legendas com IA, narra cada trecho (TTS) e monta o MP4 esticando o vídeo à fala.",
+  },
 };
 
 /** Rótulos curtos alinhados ao catálogo de agentes (`GET /api/pipelines/catalogo`). */
@@ -93,6 +108,11 @@ const ROTULO_PASSO_REGENERACAO_SECAO_TRANSCRIBROTHERS = "Regeneração de seçã
 const ROTULO_PASSO_REDUNDANCIA_SECOES_TRANSCRIBROTHERS = "Redundância entre seções";
 const ROTULO_PASSO_PREVIEW_DOCUMENTO_TRANSCRIBROTHERS = "Preview (documento)";
 const ROTULO_PASSO_PREVIEW_SECAO_TRANSCRIBROTHERS = "Preview (seção)";
+const ROTULO_PASSO_ALINHAMENTO_LEGENDAS_TRANSCRIBROTHERS = "Legendas (VTT)";
+const ROTULO_PASSO_VALIDACAO_LEGENDAS_TRANSCRIBROTHERS = "Validação";
+const ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS = "Limpeza IA";
+const ROTULO_PASSO_NARRACAO_TTS_TRANSCRIBROTHERS = "Narração (TTS)";
+const ROTULO_PASSO_MUX_VIDEO_TRANSCRIBROTHERS = "Montar MP4";
 
 type DestinoPipelineInicialModalStatusTranscribrothers = "tutorial" | "notas" | "bug";
 
@@ -393,6 +413,238 @@ function faseIndicaRegeneracaoMarkdownApenasTranscribrothers(fase: string): bool
     fase.startsWith("regenerando_markdown_reproducao_bug") ||
     fase.startsWith("regenerando_markdown_notas_proposta")
   );
+}
+
+function faseIndicaPipelineVideoNarradoTranscribrothers(fase: string): boolean {
+  return fase.startsWith("video_narrado_");
+}
+
+function pipelineVideoNarradoDetectadoEmStepsTranscribrothers(
+  _steps: Record<string, unknown> | null | undefined,
+  fase: string,
+): boolean {
+  // Só pela fase atual — evita “grudar” no vídeo narrado após regeneração Markdown posterior.
+  return faseIndicaPipelineVideoNarradoTranscribrothers(fase);
+}
+
+function inferirIndicePassoFalhaPipelineVideoNarradoTranscribrothers(
+  fase: string,
+  steps: Record<string, unknown> | null | undefined,
+): number {
+  if (fase === "video_narrado_agendado") return 0;
+  if (fase === "video_narrado_alinhando_legendas") return 1;
+  if (fase === "video_narrado_validando_legendas") return 2;
+  if (fase === "video_narrado_limpando_legendas_ia") return 3;
+  if (fase === "video_narrado_gerando_tts") return 4;
+  if (fase === "video_narrado_mux_ffmpeg") return 5;
+  if (fase === "video_narrado_falhou") {
+    const legendas = steps?.legendas_documento_alinhadas;
+    if (legendas && typeof legendas === "object") {
+      const L = legendas as Record<string, unknown>;
+      if (L.validacao_ok === false) return 2;
+      const limpeza = steps?.limpeza_legendas_ia_antes_tts;
+      if (
+        limpeza &&
+        typeof limpeza === "object" &&
+        (limpeza as Record<string, unknown>).usou_fallback_originais === true &&
+        steps?.narracao_tts_documento == null
+      ) {
+        return 3;
+      }
+      if (L.validacao_ok === true && steps?.narracao_tts_documento == null) return 4;
+      if (steps?.narracao_tts_documento != null && steps?.video_com_narracao_tts == null) return 5;
+    }
+    return 4;
+  }
+  return 0;
+}
+
+function duracaoRotuloEtapaPipelineTemposVideoNarradoTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+  etapaId: string,
+): string | undefined {
+  const bloco = steps?.pipeline_tempos_video_narrado;
+  if (!bloco || typeof bloco !== "object") return undefined;
+  const etapas = (bloco as Record<string, unknown>).etapas;
+  if (!etapas || typeof etapas !== "object") return undefined;
+  const info = (etapas as Record<string, unknown>)[etapaId];
+  if (!info || typeof info !== "object") return undefined;
+  const dur = (info as Record<string, unknown>).duracao_segundos;
+  if (typeof dur !== "number" || !Number.isFinite(dur)) return undefined;
+  const rotulo = formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(dur);
+  return rotulo || undefined;
+}
+
+function totalRotuloPipelineTemposVideoNarradoTranscribrothers(
+  steps: Record<string, unknown> | null | undefined,
+): string | undefined {
+  const bloco = steps?.pipeline_tempos_video_narrado;
+  if (!bloco || typeof bloco !== "object") return undefined;
+  const total = (bloco as Record<string, unknown>).total_segundos;
+  if (typeof total !== "number" || !Number.isFinite(total) || total <= 0) return undefined;
+  const rotulo = formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(total);
+  return rotulo || undefined;
+}
+
+function montarPassosPipelineVideoNarradoTranscribrothers(
+  status: string,
+  steps: Record<string, unknown> | null | undefined,
+  fase: string,
+  terminal: boolean,
+  falhou: boolean,
+): PassoPipelineHorizontalModalStatusTranscribrothers[] {
+  const indiceErro = falhou
+    ? inferirIndicePassoFalhaPipelineVideoNarradoTranscribrothers(fase, steps)
+    : -1;
+  const dur = (id: string) => duracaoRotuloEtapaPipelineTemposVideoNarradoTranscribrothers(steps, id);
+  const legendasSteps = steps?.legendas_documento_alinhadas;
+  const legendasObj =
+    legendasSteps && typeof legendasSteps === "object"
+      ? (legendasSteps as Record<string, unknown>)
+      : null;
+  const validacaoFalhou =
+    legendasObj != null && legendasObj.validacao_ok === false;
+  const temVtt = legendasObj != null && typeof legendasObj.nome_arquivo === "string";
+  const temNarracao = steps?.narracao_tts_documento != null;
+  const temMp4 = steps?.video_com_narracao_tts != null;
+  const concluidoOk = fase === "video_narrado_concluido" || (terminal && status === "completed" && temMp4);
+
+  const preparacaoConcluida =
+    faseIndicaPipelineVideoNarradoTranscribrothers(fase) || temVtt || concluidoOk;
+  const limpezaSteps = steps?.limpeza_legendas_ia_antes_tts;
+  const limpezaObj =
+    limpezaSteps && typeof limpezaSteps === "object"
+      ? (limpezaSteps as Record<string, unknown>)
+      : null;
+  const limpezaRegistrada = limpezaObj != null;
+
+  const alinhamentoAtivo = !terminal && fase === "video_narrado_alinhando_legendas";
+  const alinhamentoConcluido =
+    !alinhamentoAtivo &&
+    (fase === "video_narrado_validando_legendas" ||
+      fase === "video_narrado_limpando_legendas_ia" ||
+      fase === "video_narrado_gerando_tts" ||
+      fase === "video_narrado_mux_ffmpeg" ||
+      concluidoOk ||
+      temVtt);
+
+  const validacaoAtivo = !terminal && fase === "video_narrado_validando_legendas";
+  const validacaoConcluida =
+    !validacaoAtivo &&
+    !validacaoFalhou &&
+    (fase === "video_narrado_limpando_legendas_ia" ||
+      fase === "video_narrado_gerando_tts" ||
+      fase === "video_narrado_mux_ffmpeg" ||
+      concluidoOk ||
+      (temVtt && legendasObj?.validacao_ok === true));
+
+  const limpezaAtivo = !terminal && fase === "video_narrado_limpando_legendas_ia";
+  const limpezaConcluida =
+    !limpezaAtivo &&
+    (fase === "video_narrado_gerando_tts" ||
+      fase === "video_narrado_mux_ffmpeg" ||
+      concluidoOk ||
+      limpezaRegistrada);
+
+  const ttsAtivo = !terminal && fase === "video_narrado_gerando_tts";
+  const ttsConcluido =
+    !ttsAtivo && (fase === "video_narrado_mux_ffmpeg" || concluidoOk || Boolean(temNarracao));
+
+  const muxAtivo = !terminal && fase === "video_narrado_mux_ffmpeg";
+  const muxConcluido = !muxAtivo && (concluidoOk || Boolean(temMp4));
+
+  // Se falhou na validação, marca o passo 2; se falhou no TTS/mux, usa indiceErro
+  let erroAlinhamento = falhou && indiceErro === 1 && !validacaoFalhou && !temVtt;
+  let erroValidacao = falhou && (validacaoFalhou || indiceErro === 2);
+  let erroLimpeza = falhou && !validacaoFalhou && indiceErro === 3;
+  let erroTts = falhou && !validacaoFalhou && indiceErro === 4;
+  let erroMux = falhou && !validacaoFalhou && indiceErro === 5;
+  if (falhou && fase === "video_narrado_falhou" && validacaoFalhou) {
+    erroValidacao = true;
+    erroAlinhamento = false;
+    erroLimpeza = false;
+    erroTts = false;
+    erroMux = false;
+  }
+
+  return [
+    {
+      id: "preparacao",
+      rotuloCurto: ROTULO_PASSO_PREPARACAO_REUTILIZACAO_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Usa o Markdown atual, o snapshot de transcrição e o vídeo de entrada já no job (sem regenerar o tutorial).",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: falhou && indiceErro === 0,
+        ativo: !terminal && fase === "video_narrado_agendado",
+        concluido: preparacaoConcluida && fase !== "video_narrado_agendado",
+      }),
+    },
+    {
+      id: "alinhamento_legendas",
+      rotuloCurto: ROTULO_PASSO_ALINHAMENTO_LEGENDAS_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Parte o documento em frases, alinha aos tempos da transcrição (com teto na duração do vídeo) e grava o VTT.",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: erroAlinhamento,
+        ativo: alinhamentoAtivo,
+        concluido: alinhamentoConcluido,
+        pendenteAposPrecedente: preparacaoConcluida,
+      }),
+      duracaoRotulo: dur("alinhamento_legendas"),
+    },
+    {
+      id: "validacao_legendas",
+      rotuloCurto: ROTULO_PASSO_VALIDACAO_LEGENDAS_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Confere se as cues cabem na duração do vídeo, se o % casado com a STT é suficiente e se não há chute em massa (interpolação).",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: erroValidacao,
+        ativo: validacaoAtivo,
+        concluido: validacaoConcluida,
+        pendenteAposPrecedente: alinhamentoConcluido,
+      }),
+      duracaoRotulo: dur("validacao_legendas"),
+    },
+    {
+      id: "limpeza_legendas_ia",
+      rotuloCurto: ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Etapa de limpeza com IA: remove lixo de Markdown/âncoras nas legendas (ex.: «[01:49](», «).») antes do TTS. No painel do job você vê o antes/depois de cada cue alterada.",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: erroLimpeza,
+        ativo: limpezaAtivo,
+        concluido: limpezaConcluida,
+        pendenteAposPrecedente: validacaoConcluida,
+      }),
+      duracaoRotulo: dur("limpeza_legendas_ia"),
+    },
+    {
+      id: "narracao_tts",
+      rotuloCurto: ROTULO_PASSO_NARRACAO_TTS_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Narra cada cue em trechos curtos via modelo TTS, concatena o WAV e rejeita áudio curto demais para o texto.",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: erroTts,
+        ativo: ttsAtivo,
+        concluido: ttsConcluido,
+        pendenteAposPrecedente: limpezaConcluida,
+      }),
+      duracaoRotulo: dur("narracao_tts"),
+    },
+    {
+      id: "mux_video",
+      rotuloCurto: ROTULO_PASSO_MUX_VIDEO_TRANSCRIBROTHERS,
+      hintTitulo:
+        "Monta o MP4 narrado (ffmpeg): preferência por 1 encode; senão segmentos em paralelo com cache.",
+      estado: estadoPassoPipelineTranscribrothers({
+        erro: erroMux,
+        ativo: muxAtivo,
+        concluido: muxConcluido,
+        pendenteAposPrecedente: ttsConcluido,
+      }),
+      duracaoRotulo: dur("mux_video"),
+    },
+  ];
 }
 
 function inferirIndicePassoFalhaPipelineRegeneracaoSimplesTranscribrothers(fase: string): number {
@@ -1087,6 +1339,10 @@ export function resolverModoFluxoPipelineModalStatusJobTranscribrothers(
   const multifase = boolDeStepsJsonTranscribrothers(steps?.revisao_profunda_multifase);
   const deepPath = caminhoRevisaoProfundaDetectadoEmStepsTranscribrothers(steps, fase);
 
+  // Vídeo narrado tem prioridade sobre regeneração residual em steps_json.
+  if (pipelineVideoNarradoDetectadoEmStepsTranscribrothers(steps, fase)) {
+    return "video_narrado";
+  }
   if (edicaoParcialSecaoMarkdownComoFluxoAtualEmStepsTranscribrothers(status, steps, fase)) {
     return "edicao_parcial_secao";
   }
@@ -1137,6 +1393,8 @@ function obterPassosPipelinePorModoFluxoTranscribrothers(
         terminal,
         falhou,
       );
+    case "video_narrado":
+      return montarPassosPipelineVideoNarradoTranscribrothers(status, steps, fase, terminal, falhou);
     default:
       return montarPassosPipelineInicialUploadVideoTranscribrothers(status, steps, fase, terminal, falhou);
   }
@@ -1160,10 +1418,18 @@ export function obterContextoPipelineHorizontalModalStatusJobTranscribrothers(
     if (custom) return custom;
   }
 
+  let descricaoFluxo = rotulosFluxo.descricao;
+  if (modoFluxo === "video_narrado") {
+    const totalRotulo = totalRotuloPipelineTemposVideoNarradoTranscribrothers(steps);
+    if (totalRotulo) {
+      descricaoFluxo = `${descricaoFluxo} Tempo total: ${totalRotulo}.`;
+    }
+  }
+
   return {
     modoFluxo,
     tituloFluxo: rotulosFluxo.titulo,
-    descricaoFluxo: rotulosFluxo.descricao,
+    descricaoFluxo,
     passos: passosSistema,
   };
 }
