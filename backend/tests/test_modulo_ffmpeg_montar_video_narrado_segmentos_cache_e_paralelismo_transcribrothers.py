@@ -84,8 +84,14 @@ async def test_montar_reusa_cache_e_nao_chama_ffmpeg_de_novo(tmp_path: Path) -> 
         )
     ]
 
-    async def _fake_gerar(*, caminho_video, segmento, caminho_mp4_saida):  # noqa: ANN001
-        del caminho_video, segmento
+    async def _fake_gerar(  # noqa: ANN001
+        *,
+        caminho_video,
+        segmento,
+        caminho_mp4_saida,
+        preferencias_encode=None,
+    ):
+        del caminho_video, segmento, preferencias_encode
         caminho_mp4_saida.parent.mkdir(parents=True, exist_ok=True)
         caminho_mp4_saida.write_bytes(b"mp4-segmento")
 
