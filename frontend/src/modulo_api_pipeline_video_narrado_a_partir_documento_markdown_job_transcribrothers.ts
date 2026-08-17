@@ -15,6 +15,11 @@ export async function agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscrib
   opcoes?: {
     markdownNarracao?: string | null;
     titulosSecoesEscopo?: string[] | null;
+    perfilTts?: string | null;
+    paralelismoTtsExperimental?: number | null;
+    temperaturaTts?: number | null;
+    ritmoTts?: string | null;
+    diretrizConteudoLegendas?: string | null;
   },
 ): Promise<JobStatus> {
   const r = await fetch(`/api/jobs/${jobId}/pipeline-video-narrado-a-partir-documento`, {
@@ -27,6 +32,15 @@ export async function agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscrib
       titulos_secoes_escopo: opcoes?.titulosSecoesEscopo?.length
         ? opcoes.titulosSecoesEscopo
         : null,
+      perfil_tts: (opcoes?.perfilTts || "").trim() || null,
+      paralelismo_tts_experimental:
+        typeof opcoes?.paralelismoTtsExperimental === "number"
+          ? opcoes.paralelismoTtsExperimental
+          : null,
+      temperatura_tts:
+        typeof opcoes?.temperaturaTts === "number" ? opcoes.temperaturaTts : null,
+      ritmo_tts: (opcoes?.ritmoTts || "").trim() || null,
+      diretriz_conteudo_legendas: (opcoes?.diretrizConteudoLegendas || "").trim() || null,
     }),
   });
   if (!r.ok) {

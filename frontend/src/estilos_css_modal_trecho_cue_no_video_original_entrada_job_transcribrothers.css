@@ -51,10 +51,10 @@
 
 .tb-modal-trecho-video-original-cabecalho {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.7rem 1rem 0.55rem;
+  padding: 0.55rem 1rem;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
 }
@@ -70,29 +70,6 @@
   font-weight: 700;
   color: #0f172a;
   line-height: 1.3;
-}
-
-.tb-modal-trecho-video-original-sub {
-  margin: 0.35rem 0 0;
-  font-size: 0.82rem;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-.tb-modal-trecho-video-original-toggle-audio {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.55rem;
-  font-size: 0.78rem;
-  color: #475569;
-  cursor: pointer;
-  user-select: none;
-}
-
-.tb-modal-trecho-video-original-toggle-audio input {
-  margin: 0;
-  cursor: pointer;
 }
 
 .tb-modal-trecho-video-original-cabecalho-acoes {
@@ -144,14 +121,15 @@
 .tb-modal-trecho-video-original-col-player {
   min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(280px, 1fr) auto;
-  gap: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   overflow: hidden;
 }
 
 .tb-modal-trecho-video-original-player-wrap {
-  min-height: 0;
+  flex: 1;
+  min-height: 280px;
   background: #0f172a;
   border-radius: 8px;
   overflow: hidden;
@@ -191,7 +169,15 @@
 
 .tb-modal-trecho-video-original-player-envoltorio .tb-video-player-controles-linha-acoes {
   display: flex;
+  align-items: center;
   min-height: 36px;
+}
+
+.tb-modal-trecho-video-original-player-envoltorio
+  .tb-video-player-controles-linha-acoes--com-extra
+  .tb-video-player-barra-volume {
+  width: 56px;
+  max-width: 56px;
 }
 
 .tb-modal-trecho-video-original-player-wrap .tb-modal-trecho-video-original-video {
@@ -203,9 +189,8 @@
   background: #000;
 }
 
-.tb-modal-trecho-video-original-painel--maximizado
-  .tb-modal-trecho-video-original-col-player {
-  grid-template-rows: minmax(360px, 1fr) auto;
+.tb-modal-trecho-video-original-painel--maximizado .tb-modal-trecho-video-original-player-wrap {
+  min-height: 360px;
 }
 
 .tb-modal-trecho-video-original-col-trechos {
@@ -361,44 +346,139 @@
   color: #c2410c;
 }
 
-.tb-modal-trecho-video-original-recorte {
-  margin-top: 0;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex-shrink: 0;
+/* Recorte na mesma linha dos controles do player. */
+.tb-modal-trecho-video-original-recorte-barra {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  min-width: 0;
+  width: 100%;
 }
 
-.tb-modal-trecho-video-original-recorte-titulo {
-  margin: 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #334155;
+.tb-modal-trecho-video-original-recorte-divisor {
+  flex: 0 0 1px;
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.1rem;
+  margin: 0 0.1rem;
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.tb-modal-trecho-video-original-recorte-grupo-janela {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
 }
 
 .tb-modal-trecho-video-original-recorte-tempos {
   margin: 0;
-  font-size: 0.75rem;
+  margin-right: 0.15rem;
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
-  color: #475569;
+  color: #cbd5e1;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.tb-modal-trecho-video-original-recorte-btn {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.45);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.5rem;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.tb-modal-trecho-video-original-recorte-btn:hover {
+  background: rgba(148, 163, 184, 0.22);
+  border-color: rgba(148, 163, 184, 0.7);
+}
+
+.tb-modal-trecho-video-original-recorte-ajuda-details {
+  position: relative;
+}
+
+.tb-modal-trecho-video-original-recorte-ajuda-resumo {
+  list-style: none;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.45);
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.tb-modal-trecho-video-original-recorte-ajuda-resumo::-webkit-details-marker {
+  display: none;
+}
+
+.tb-modal-trecho-video-original-recorte-ajuda-resumo:hover {
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.tb-modal-trecho-video-original-recorte-ajuda-details[open]
+  .tb-modal-trecho-video-original-recorte-ajuda-resumo {
+  background: rgba(148, 163, 184, 0.3);
 }
 
 .tb-modal-trecho-video-original-recorte-ajuda {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 5;
   margin: 0;
-  font-size: 0.68rem;
-  color: #64748b;
+  width: min(22rem, 70vw);
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #0f172a;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  color: #cbd5e1;
   line-height: 1.35;
 }
 
-.tb-modal-trecho-video-original-recorte-acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.tb-modal-trecho-video-original-recorte-audio {
+  display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tb-modal-trecho-video-original-recorte-audio--direita {
+  margin-left: auto;
+}
+
+.tb-modal-trecho-video-original-recorte-audio input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.tb-modal-trecho-video-original-recorte-mensagens {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .tb-modal-trecho-video-original-recorte-erro {
@@ -422,8 +502,9 @@
 .tb-modal-trecho-video-original-rodape {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.75rem 1.1rem 1rem;
+  padding: 0.55rem 1.1rem 0.75rem;
   border-top: 1px solid #e2e8f0;
   flex-shrink: 0;
 }

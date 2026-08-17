@@ -12,12 +12,37 @@ import {
 } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 import { baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers } from "./modulo_api_baixar_video_narrado_com_legendas_queimadas_job_transcribrothers.ts";
 import {
+  escolherModeloTtsDaListaDisponivelTranscribrothers,
+  listarModelosTtsDaListaDisponivelTranscribrothers,
+  rotuloCurtoModeloTtsParaUiTranscribrothers,
+} from "./modulo_api_gerar_narracao_tts_markdown_job_transcribrothers.ts";
+import {
   listarVersoesVideoNarradoJobApiTranscribrothers,
   tornarVersaoVideoNarradoAtualJobApiTranscribrothers,
   type MetaVersaoVideoNarradoApiTranscribrothers,
 } from "./modulo_api_listar_versoes_video_narrado_job_transcribrothers.ts";
 import { obterUrlAssetLegendasVttAlinhadasDosStepsJsonJobTranscribrothers } from "./modulo_api_pipeline_video_narrado_a_partir_documento_markdown_job_transcribrothers.ts";
 import { salvarLegendasDocumentoAlinhadasVttEditadasJobApiTranscribrothers } from "./modulo_api_salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers.ts";
+import { salvarModeloTtsNarracaoPreferidoNoNavegadorTranscribrothers } from "./modulo_armazenamento_local_modelo_tts_narracao_preferido_navegador_transcribrothers.ts";
+import {
+  carregarTemperaturaTtsNarracaoPreferidaSalvaNoNavegadorTranscribrothers,
+  salvarTemperaturaTtsNarracaoPreferidaNoNavegadorTranscribrothers,
+} from "./modulo_armazenamento_local_temperatura_tts_narracao_preferido_navegador_transcribrothers.ts";
+import {
+  carregarRitmoTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers,
+  salvarRitmoTtsNarracaoPreferidoNoNavegadorTranscribrothers,
+} from "./modulo_armazenamento_local_ritmo_tts_narracao_preferido_navegador_transcribrothers.ts";
+import { ComponenteControleSliderTemperaturaTtsNarracaoComAjudaTranscribrothers } from "./componente_controle_slider_temperatura_tts_narracao_com_ajuda_transcribrothers.tsx";
+import { ComponentePainelSugestaoReescritaTextoCueIaUsarOuDescartarTranscribrothers } from "./componente_painel_sugestao_reescrita_texto_cue_ia_usar_ou_descartar_transcribrothers.tsx";
+import { sugerirReescritaTextoCueNarracaoJobApiTranscribrothers } from "./modulo_api_sugerir_reescrita_texto_cue_narracao_job_transcribrothers.ts";
+import {
+  RITMO_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+  TEMPERATURA_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+  listarOpcoesRitmoTtsNarracaoParaUiTranscribrothers,
+  normalizarRitmoTtsNarracaoTranscribrothers,
+  normalizarTemperaturaTtsNarracaoTranscribrothers,
+  type RitmoTtsNarracaoTranscribrothers,
+} from "./modulo_perfil_motor_sintese_tts_narracao_transcribrothers.ts";
 import type { JobStatus } from "./tipos_job_status_api_transcribrothers.ts";
 import {
   carregarCuesWebVttDeUrlParaListaUiTranscribrothers,
@@ -29,15 +54,46 @@ import {
   mapearTempoJanelaVideoOriginalParaTimelineCuePreviewUiTranscribrothers,
   mapearTempoTimelineCueParaJanelaVideoOriginalPreviewUiTranscribrothers,
   urlVideoEntradaJobParaPreviewUiTranscribrothers,
+  urlVideoFonteTelaCueParaPreviewUiTranscribrothers,
 } from "./modulo_util_mapear_tempo_timeline_cue_para_janela_video_original_preview_ui_transcribrothers.ts";
 import {
+  ajustarFimCueTimelineAJanelaTelaUiTranscribrothers,
   ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers,
+  cuePodeAjustarFimAJanelaTelaNaTimelineUiTranscribrothers,
   cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers,
   cuePodeDeslocarNaTimelineUiTranscribrothers,
   DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS,
   deslocarCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers,
   posicionarInicioCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers,
+  resolverDuracaoAudioAtualDaCueParaAjusteTimelineUiTranscribrothers,
 } from "./modulo_util_ajustar_e_deslocar_cues_timeline_narracao_sem_sobreposicao_ui_transcribrothers.ts";
+import {
+  garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers,
+  inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers,
+  remaparRecordPorIndiceAposInserirUiTranscribrothers,
+  remaparRecordPorIndiceAposReordenarUiTranscribrothers,
+  resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers,
+  reordenarCuesEmpacotandoTimelineNarracaoUiTranscribrothers,
+  alinharJanelasAoNumeroDeCuesTimelineNarracaoUiTranscribrothers,
+  type CueTimelineComIdClienteUiTranscribrothers,
+} from "./modulo_util_inserir_e_reordenar_cues_timeline_narracao_video_narrado_ui_transcribrothers.ts";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers,
   resolverAcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers,
@@ -47,9 +103,17 @@ import {
   type SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers,
 } from "./componente_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.tsx";
 import { ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothers } from "./componente_modal_trecho_cue_no_video_original_entrada_job_transcribrothers.tsx";
+import { ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothers } from "./componente_modal_escolher_fonte_midia_tela_cue_biblioteca_transcribrothers.tsx";
+import {
+  ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS,
+  normalizarIdFonteVideoUiTranscribrothers,
+} from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
+import { CartaoCueSortableListaVideoNarradoTranscribrothers } from "./componente_cartao_cue_sortable_lista_video_narrado_transcribrothers.tsx";
+import { ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrothers } from "./componente_painel_debug_cache_segmentos_video_narrado_modal_transcribrothers.tsx";
 import { formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers } from "./modulo_util_formatar_duracao_segundos_curta_portugues_ui_transcribrothers.ts";
 import { obterDuracaoSegundosArquivoAudioPorUrlNavegadorTranscribrothers } from "./modulo_util_obter_duracao_segundos_arquivo_audio_por_url_navegador_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 import "./estilos_css_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.css";
 import "./estilos_css_modal_assistir_video_narrado_com_legendas_vtt_e_downloads_transcribrothers.css";
 
@@ -124,6 +188,18 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
   urlLegendasVtt: string | null;
   urlNarracaoWav: string | null;
   litellmModelTts?: string | null;
+  /** Lista completa (chat + TTS); o select filtra só slugs com -tts. */
+  modelosLitellmDisponiveis?: string[] | null;
+  /** Notifica o pai quando o usuário troca o modelo TTS (prévia/regenerar). */
+  onModeloTtsPreferidoAlterado?: (modeloTts: string) => void;
+  /** Temperatura TTS do job/steps ou preferência. */
+  temperaturaTtsInicial?: number | null;
+  onTemperaturaTtsPreferidaAlterada?: (temperatura: number) => void;
+  /** Ritmo TTS do job/steps ou preferência. */
+  ritmoTtsInicial?: string | null;
+  onRitmoTtsPreferidoAlterado?: (ritmo: RitmoTtsNarracaoTranscribrothers) => void;
+  /** Modelo de chat para sugestão IA de legenda. */
+  litellmModelChat?: string | null;
   regenerando: boolean;
   vozPadraoJob?: string | null;
   vozesDisponiveis?: Array<{ id: string; estilo: string }>;
@@ -146,11 +222,13 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
       forcar_regenerar_tts?: boolean;
     }>;
     janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
+    temperaturaTts?: number;
+    ritmoTts?: RitmoTtsNarracaoTranscribrothers;
   }) => void;
   onLegendasSalvas?: () => void | Promise<void>;
   /** Após «tornar atual» uma versão — atualiza URLs do job no pai. */
   onJobAtualizado?: (job: JobStatus) => void;
-  /** Há vídeo de entrada no job (não é só-áudio) — habilita «Original» nas cues. */
+  /** Há vídeo de entrada no job (não é só-áudio) — habilita «Origem» nas cues. */
   jobTemVideoEntrada?: boolean;
 };
 
@@ -281,7 +359,9 @@ function janelasEstaoSujasTranscribrothers(
     if (
       atuais[i].inicioVideoSegundos !== originais[i].inicioVideoSegundos ||
       atuais[i].fimVideoSegundos !== originais[i].fimVideoSegundos ||
-      Boolean(atuais[i].semNarracao) !== Boolean(originais[i].semNarracao)
+      Boolean(atuais[i].semNarracao) !== Boolean(originais[i].semNarracao) ||
+      normalizarIdFonteVideoUiTranscribrothers(atuais[i].idFonteVideo) !==
+        normalizarIdFonteVideoUiTranscribrothers(originais[i].idFonteVideo)
     ) {
       return true;
     }
@@ -296,6 +376,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   urlLegendasVtt,
   urlNarracaoWav,
   litellmModelTts,
+  modelosLitellmDisponiveis,
+  onModeloTtsPreferidoAlterado,
+  temperaturaTtsInicial,
+  onTemperaturaTtsPreferidaAlterada,
+  ritmoTtsInicial,
+  onRitmoTtsPreferidoAlterado,
+  litellmModelChat,
   regenerando,
   vozPadraoJob = "Kore",
   vozesDisponiveis = [],
@@ -314,6 +401,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const tituloId = useId();
   const { pushToast, pushToastProgresso, atualizarToastProgresso, removerToast } =
     usarToastFeedbackAcoesUiTranscribrothers();
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioCueRef = useRef<HTMLAudioElement | null>(null);
   const cueAtivaRef = useRef<HTMLLIElement | null>(null);
@@ -322,7 +411,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const indiceCueReproducaoSoloRef = useRef<number | null>(null);
   /** Play contínuo com WAV nas posições atuais das cues (vídeo pausado; sem mutar volume). */
   const reproducaoContinuaPorWavRef = useRef(false);
-  const cuesRef = useRef<CueWebVttParaListaUiTranscribrothers[]>([]);
+  const cuesRef = useRef<CueTimelineComIdClienteUiTranscribrothers[]>([]);
   const janelasRef = useRef<JanelaVideoCueLocalUiTranscribrothers[]>([]);
   const cuesOriginaisRef = useRef<CueWebVttParaListaUiTranscribrothers[]>([]);
   const tocarNarracaoWavDaCueRef = useRef<
@@ -356,8 +445,11 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const pedidoSeekNarradoAposSairPreviewRef = useRef<number | null>(null);
   /** Cue escolhida no clique (destaque estável; evita “pular” para a próxima no limite fim==próximo início). */
   const [indiceCueSelecionadaSolo, setIndiceCueSelecionadaSolo] = useState<number | null>(null);
-  /** Modal «trecho no vídeo original» aberta nesta cue (índice 0-based). */
+  /** Modal «Origem» (recorte na fonte de tela da cue; índice 0-based). */
   const [indiceCueModalVideoOriginal, setIndiceCueModalVideoOriginal] = useState<number | null>(
+    null,
+  );
+  const [indiceCueModalEscolherFonte, setIndiceCueModalEscolherFonte] = useState<number | null>(
     null,
   );
   const [versoesVideoNarrado, setVersoesVideoNarrado] = useState<
@@ -365,7 +457,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   >([]);
   const [versaoAtualVideoNarradoId, setVersaoAtualVideoNarradoId] = useState<string | null>(null);
   const [trocandoVersaoVideoNarrado, setTrocandoVersaoVideoNarrado] = useState(false);
-  const [cues, setCues] = useState<CueWebVttParaListaUiTranscribrothers[]>([]);
+  const [cues, setCues] = useState<CueTimelineComIdClienteUiTranscribrothers[]>([]);
   cuesRef.current = cues;
   const [cuesOriginais, setCuesOriginais] = useState<CueWebVttParaListaUiTranscribrothers[]>([]);
   cuesOriginaisRef.current = cuesOriginais;
@@ -374,10 +466,55 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const [janelasOriginais, setJanelasOriginais] = useState<JanelaVideoCueLocalUiTranscribrothers[]>(
     [],
   );
+  const [idCueArrastando, setIdCueArrastando] = useState<string | null>(null);
+  const [idCueSobre, setIdCueSobre] = useState<string | null>(null);
+  const sensorsOrdenacaoCues = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const [carregandoCues, setCarregandoCues] = useState(false);
   const [erroCues, setErroCues] = useState<string | null>(null);
   const [tempoAtualSegundos, setTempoAtualSegundos] = useState(0);
   const [legendasNoVideo, setLegendasNoVideo] = useState(true);
+  const opcoesModeloTts = useMemo(
+    () => listarModelosTtsDaListaDisponivelTranscribrothers(modelosLitellmDisponiveis || []),
+    [modelosLitellmDisponiveis],
+  );
+  const [modeloTtsUi, setModeloTtsUi] = useState(() => {
+    const opcoes = listarModelosTtsDaListaDisponivelTranscribrothers(
+      modelosLitellmDisponiveis || [],
+    );
+    const escolhido = escolherModeloTtsDaListaDisponivelTranscribrothers(opcoes, litellmModelTts);
+    return (escolhido && opcoes.includes(escolhido) ? escolhido : opcoes[0]) || "";
+  });
+  const modeloTtsEfetivo =
+    (modeloTtsUi && opcoesModeloTts.includes(modeloTtsUi) ? modeloTtsUi : null) ||
+    escolherModeloTtsDaListaDisponivelTranscribrothers(opcoesModeloTts, litellmModelTts) ||
+    (litellmModelTts || "").trim() ||
+    null;
+  const [temperaturaTtsUi, setTemperaturaTtsUi] = useState(() =>
+    normalizarTemperaturaTtsNarracaoTranscribrothers(
+      temperaturaTtsInicial ??
+        carregarTemperaturaTtsNarracaoPreferidaSalvaNoNavegadorTranscribrothers() ??
+        TEMPERATURA_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    ),
+  );
+  const temperaturaTtsEfetiva = normalizarTemperaturaTtsNarracaoTranscribrothers(temperaturaTtsUi);
+  const opcoesRitmoTts = useMemo(() => listarOpcoesRitmoTtsNarracaoParaUiTranscribrothers(), []);
+  const [ritmoTtsUi, setRitmoTtsUi] = useState<RitmoTtsNarracaoTranscribrothers>(() =>
+    normalizarRitmoTtsNarracaoTranscribrothers(
+      ritmoTtsInicial ??
+        carregarRitmoTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers() ??
+        RITMO_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    ),
+  );
+  const ritmoTtsEfetivo = normalizarRitmoTtsNarracaoTranscribrothers(ritmoTtsUi);
+  const [sugestoesReescritaLegendaPorIndice, setSugestoesReescritaLegendaPorIndice] = useState<
+    Record<number, string>
+  >({});
+  const [indicesSugerindoReescritaLegenda, setIndicesSugerindoReescritaLegenda] = useState<
+    Set<number>
+  >(() => new Set());
   const [salvandoLegendas, setSalvandoLegendas] = useState(false);
   const [salvandoJanelas, setSalvandoJanelas] = useState(false);
   const [baixandoVideoComLegendasQueimadas, setBaixandoVideoComLegendasQueimadas] = useState(false);
@@ -385,6 +522,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const [indiceAudioTocando, setIndiceAudioTocando] = useState<number | null>(null);
   const [indiceAudioGerandoPreview, setIndiceAudioGerandoPreview] = useState<number | null>(null);
   const [menuRodapeAbertoId, setMenuRodapeAbertoId] = useState<string | null>(null);
+  const [painelDebugCacheAberto, setPainelDebugCacheAberto] = useState(false);
   /** Índices com o campo «Fala (TTS)» expandido manualmente (por padrão fica colapsado). */
   const [indicesFalaTtsExpandidos, setIndicesFalaTtsExpandidos] = useState<Record<number, true>>(
     {},
@@ -450,9 +588,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const urlVideoEntradaJob = jobId
     ? urlVideoEntradaJobParaPreviewUiTranscribrothers(jobId)
     : "";
+  const indiceCueParaFontePreview = indiceAudioTocando ?? indiceCueSelecionadaSolo ?? 0;
+  const urlVideoFontePreviewAtiva =
+    jobId && previewRecorteTelaAtivo
+      ? urlVideoFonteTelaCueParaPreviewUiTranscribrothers(
+          jobId,
+          janelas[indiceCueParaFontePreview]?.idFonteVideo,
+        )
+      : "";
   const urlVideoPlayerEfetivo =
-    previewRecorteTelaAtivo && jobTemVideoEntrada && urlVideoEntradaJob
-      ? urlVideoEntradaJob
+    previewRecorteTelaAtivo && (jobTemVideoEntrada || Boolean(urlVideoFontePreviewAtiva))
+      ? urlVideoFontePreviewAtiva || urlVideoEntradaJob
       : urlVideoMp4;
 
   const duracaoTimelineNarradaParaBarraUi = useMemo(() => {
@@ -499,6 +645,33 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     revogarTodosBlobsPreviewCuePorIndiceTranscribrothers(previewAudioPorIndiceRef.current);
     setPreviewAudioPorIndice({});
   }, []);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const escolhido = escolherModeloTtsDaListaDisponivelTranscribrothers(
+      opcoesModeloTts,
+      litellmModelTts,
+    );
+    setModeloTtsUi(
+      (escolhido && opcoesModeloTts.includes(escolhido) ? escolhido : opcoesModeloTts[0]) || "",
+    );
+    setTemperaturaTtsUi(
+      normalizarTemperaturaTtsNarracaoTranscribrothers(
+        temperaturaTtsInicial ??
+          carregarTemperaturaTtsNarracaoPreferidaSalvaNoNavegadorTranscribrothers() ??
+          TEMPERATURA_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+      ),
+    );
+    setRitmoTtsUi(
+      normalizarRitmoTtsNarracaoTranscribrothers(
+        ritmoTtsInicial ??
+          carregarRitmoTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers() ??
+          RITMO_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+      ),
+    );
+    setSugestoesReescritaLegendaPorIndice({});
+    setIndicesSugerindoReescritaLegenda(new Set());
+  }, [aberto, litellmModelTts, opcoesModeloTts, temperaturaTtsInicial, ritmoTtsInicial]);
 
   /** Cacheia a duração do MP4 narrado enquanto ele está no player (fora do preview de recorte). */
   useEffect(() => {
@@ -596,9 +769,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         cuesEstaoSujasEmRelacaoAoOriginalTranscribrothers(cuesRef.current, cuesOriginaisRef.current) ||
         janelasEstaoSujasTranscribrothers(janelasRef.current, janelasOriginais);
       if (temEdicoesLocais) {
-        const ok = window.confirm(
-          "Há edições locais não salvas nesta versão. Trocar de versão descarta essas alterações. Continuar?",
-        );
+        const ok = await pedirConfirmacao({
+          titulo: "Trocar de versão?",
+          mensagem:
+            "Há edições locais não salvas nesta versão. Trocar de versão descarta essas alterações. Continuar?",
+          rotuloConfirmar: "Trocar versão",
+          varianteConfirmar: "destrutiva",
+        });
         if (!ok) return;
       }
       setTrocandoVersaoVideoNarrado(true);
@@ -620,7 +797,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
           setErroCues(null);
           try {
             const lista = await carregarCuesWebVttDeUrlParaListaUiTranscribrothers(urlVttFresca);
-            setCues(lista);
+            setCues(garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(lista));
             setCuesOriginais(lista.map((c) => ({ ...c })));
           } catch (e: unknown) {
             setCues([]);
@@ -649,6 +826,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       onJobAtualizado,
       carregarVersoesVideoNarradoUi,
       pushToast,
+      pedirConfirmacao,
     ],
   );
 
@@ -723,7 +901,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     void carregarCuesWebVttDeUrlParaListaUiTranscribrothers(urlLegendasVtt)
       .then((lista) => {
         if (!cancelado) {
-          setCues(lista);
+          setCues(garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(lista));
           setCuesOriginais(lista.map((c) => ({ ...c })));
           setCarregandoCues(false);
         }
@@ -768,20 +946,37 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             semNarracao: Boolean(c.sem_narracao),
             vozTts: voz,
             vozNarrada: voz,
+            idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(c.id_fonte_video),
           };
         });
-        setJanelas(lista);
+        setJanelas((prev) => {
+          const cuesLen = cuesRef.current.length;
+          // Edição local alinhada (inserir/excluir) não deve ser apagada pelo manifesto antigo.
+          if (prev.length > 0 && prev.length === cuesLen && prev.length !== lista.length) {
+            return prev;
+          }
+          if (cuesLen > lista.length && prev.length === cuesLen) {
+            return prev;
+          }
+          return lista;
+        });
         setJanelasOriginais(lista.map((j) => ({ ...j })));
         const aplicarTextoTtsDoManifesto = (
-          prev: CueWebVttParaListaUiTranscribrothers[],
-        ): CueWebVttParaListaUiTranscribrothers[] =>
+          prev: CueTimelineComIdClienteUiTranscribrothers[],
+        ): CueTimelineComIdClienteUiTranscribrothers[] =>
           prev.map((cue, i) => {
             const tts = String(resp.cues[i]?.texto_tts || "").trim();
             if ((cue.textoTts || "") === tts) return cue;
             return { ...cue, textoTts: tts };
           });
         setCues(aplicarTextoTtsDoManifesto);
-        setCuesOriginais(aplicarTextoTtsDoManifesto);
+        setCuesOriginais((prev) =>
+          prev.map((cue, i) => {
+            const tts = String(resp.cues[i]?.texto_tts || "").trim();
+            if ((cue.textoTts || "") === tts) return cue;
+            return { ...cue, textoTts: tts };
+          }),
+        );
         limparTodosPreviewsAudioCue();
       })
       .catch(() => {
@@ -796,6 +991,20 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       cancelado = true;
     };
   }, [aberto, jobId, urlVideoMp4, limparTodosPreviewsAudioCue, vozPadraoJob]);
+
+  // VTT e manifesto podem divergir (ex.: geração falhou após gravar legendas).
+  useEffect(() => {
+    if (!aberto || carregandoCues || cues.length === 0) return;
+    if (janelas.length === 0 || janelas.length === cues.length) return;
+    const alinhadas = alinharJanelasAoNumeroDeCuesTimelineNarracaoUiTranscribrothers({
+      quantidadeCues: cues.length,
+      janelas,
+      vozPadrao: vozPadraoJob || "Kore",
+    });
+    if (alinhadas.length === cues.length && alinhadas.length !== janelas.length) {
+      setJanelas(alinhadas);
+    }
+  }, [aberto, carregandoCues, cues.length, janelas, vozPadraoJob]);
 
   useEffect(() => {
     if (!aberto || janelas.length === 0) {
@@ -1171,19 +1380,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     return () => video.removeEventListener("loadedmetadata", aplicar);
   }, [aberto, previewRecorteTelaAtivo, urlVideoPlayerEfetivo]);
 
-  useEffect(() => {
-    if (!aberto) return;
-    const video = videoRef.current;
-    if (!video) return;
-    const tracks = video.textTracks;
-    for (let i = 0; i < tracks.length; i++) {
-      const track = tracks[i];
-      if (track.kind === "subtitles" || track.kind === "captions") {
-        track.mode = legendasNoVideo ? "showing" : "hidden";
-      }
-    }
-  }, [aberto, legendasNoVideo, urlTrackVttParaVideo, urlVideoPlayerEfetivo]);
-
   const indiceCueAtivaPorTempo = (() => {
     const t = tempoAtualSegundos;
     for (let i = 0; i < cues.length; i++) {
@@ -1206,26 +1402,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       : indiceCueAtivaPorTempo;
 
   /**
-   * No preview de recorte o `<track>` VTT segue o currentTime do original (errado).
-   * Overlay usa a cue da timeline virtual (tempo narrado).
+   * Legenda no quadro via overlay (quebra de linha confiável).
+   * Substitui o `<track>` nativo nesta modal — mesmo texto da cue ativa por tempo.
    */
-  const textoLegendaOverlayPreviewRecorte = useMemo(() => {
-    if (!previewRecorteTelaAtivo || !legendasNoVideo) return "";
-    const indice =
-      indiceCueAtivaPorTempo >= 0
-        ? indiceCueAtivaPorTempo
-        : indiceCueAtiva >= 0
-          ? indiceCueAtiva
-          : -1;
-    if (indice < 0) return "";
-    return String(cues[indice]?.texto || "").trim();
-  }, [
-    previewRecorteTelaAtivo,
-    legendasNoVideo,
-    indiceCueAtivaPorTempo,
-    indiceCueAtiva,
-    cues,
-  ]);
+  const textoLegendaOverlayNoVideo = useMemo(() => {
+    if (!legendasNoVideo || indiceCueAtivaPorTempo < 0) return "";
+    return String(cues[indiceCueAtivaPorTempo]?.texto || "").trim();
+  }, [legendasNoVideo, indiceCueAtivaPorTempo, cues]);
 
   const faixaCuesTimeline = useMemo<SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers[]>(
     () =>
@@ -1351,8 +1534,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       video.pause();
       setIndiceAudioTocando(null);
 
-      // Preview do recorte no vídeo de entrada (reflete janelas editadas sem remux).
-      if (jobTemVideoEntrada && j) {
+      // Preview do recorte na fonte de tela da cue (entrada ou biblioteca), sem remux.
+      if (
+        j &&
+        (jobTemVideoEntrada ||
+          normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo) !==
+            ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS)
+      ) {
         const iniTela = Math.max(0, j.inicioVideoSegundos);
         const fimTela = Math.max(iniTela + 0.05, j.fimVideoSegundos);
         let tempoJanela = iniTela;
@@ -1687,6 +1875,57 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     [tocarNarracaoWavDaCueNaPosicaoTimelineUi],
   );
 
+  /**
+   * Seek na barra fora do preview: timeline narrada pode ser mais longa que o MP4
+   * (ex.: cue adicionada). Além do fim do arquivo / com edições locais → cadeia WAV/preview.
+   */
+  const aoAlterarTempoPelaBarraForaDoPreviewRecorteUi = useCallback(
+    (tempoTimelineSegundos: number) => {
+      if (previewRecorteTelaAtivoRef.current) {
+        aoAlterarTempoPelaBarraDurantePreviewRecorteUi(tempoTimelineSegundos);
+        return;
+      }
+      const video = videoRef.current;
+      const t = Math.max(0, tempoTimelineSegundos);
+      setTempoAtualSegundos(t);
+      if (!video) return;
+
+      const durMp4 =
+        duracaoMp4NarradoSegundos > 0
+          ? duracaoMp4NarradoSegundos
+          : Number.isFinite(video.duration) && video.duration > 0
+            ? video.duration
+            : 0;
+      const alemDoMp4 = durMp4 > 0 && t > durMp4 - 0.02;
+      if (audioDoMp4NaoRefleteEdicoesLocais || alemDoMp4) {
+        const indice = indiceCueNoInstanteTimelineUiTranscribrothers(cuesRef.current, t);
+        if (indice >= 0) {
+          tocarNarracaoWavDaCueNaPosicaoTimelineUi(indice, {
+            continuo: false,
+            partirDoTempoTimelineSegundos: t,
+          });
+        }
+        return;
+      }
+
+      try {
+        const teto =
+          Number.isFinite(video.duration) && video.duration > 0
+            ? Math.max(0, video.duration - 0.05)
+            : t;
+        video.currentTime = Math.min(t, teto);
+      } catch {
+        /* ignore */
+      }
+    },
+    [
+      aoAlterarTempoPelaBarraDurantePreviewRecorteUi,
+      audioDoMp4NaoRefleteEdicoesLocais,
+      duracaoMp4NarradoSegundos,
+      tocarNarracaoWavDaCueNaPosicaoTimelineUi,
+    ],
+  );
+
   const aoAlternarPlayPausePlayerComNarracaoAuxiliarUi = useCallback(() => {
     const video = videoRef.current;
     const audio = audioCueRef.current;
@@ -1803,8 +2042,10 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         const blob = await gerarPreviewTtsCueNarracaoTextoAtualJobApiTranscribrothers(jobId, {
           indice,
           texto: textoAtual,
-          litellmModel: litellmModelTts,
+          litellmModel: modeloTtsEfetivo,
           voz: vozUsada,
+          temperaturaTts: temperaturaTtsEfetiva,
+          ritmoTts: ritmoTtsEfetivo,
         });
         const url = URL.createObjectURL(blob);
         let durPreview = 0;
@@ -1852,7 +2093,44 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         setIndiceAudioGerandoPreview(null);
       }
     },
-    [cues, jobId, litellmModelTts, vozPadraoJob, pushToast],
+    [cues, jobId, modeloTtsEfetivo, temperaturaTtsEfetiva, ritmoTtsEfetivo, vozPadraoJob, pushToast],
+  );
+
+  const sugerirReescritaLegendaCueUi = useCallback(
+    async (indice: number) => {
+      if (!jobId) return;
+      const cue = cues[indice];
+      if (!cue || !(cue.texto || "").trim()) {
+        pushToast("Informe o texto da legenda para pedir sugestão.", "error");
+        return;
+      }
+      setIndicesSugerindoReescritaLegenda((prev) => new Set(prev).add(indice));
+      try {
+        const res = await sugerirReescritaTextoCueNarracaoJobApiTranscribrothers(jobId, {
+          indice,
+          texto: cue.texto,
+          litellmModelChat,
+        });
+        if (!res.ok || !(res.sugestao || "").trim()) {
+          pushToast(res.mensagem || "A IA não devolveu uma sugestão utilizável.", "error");
+          return;
+        }
+        setSugestoesReescritaLegendaPorIndice((prev) => ({
+          ...prev,
+          [indice]: res.sugestao.trim(),
+        }));
+        pushToast("Sugestão pronta — revise antes de usar.", "success");
+      } catch (e: unknown) {
+        pushToast(e instanceof Error ? e.message : "Falha ao sugerir reescrita.", "error");
+      } finally {
+        setIndicesSugerindoReescritaLegenda((prev) => {
+          const next = new Set(prev);
+          next.delete(indice);
+          return next;
+        });
+      }
+    },
+    [jobId, cues, litellmModelChat, pushToast],
   );
 
   const ouvirOuPararAudioCue = useCallback(
@@ -1977,24 +2255,21 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       const j = janelas[indice];
       if (!cue) return null;
       const textoFala = textoEfetivoParaTtsCueUiTranscribrothers(cue.texto, cue.textoTts);
-      const textoDifere =
-        !!j && cueTextoDifereDoNarradoTranscribrothers(textoFala, j.textoNarrado || "");
-      const vozDifere =
-        !!j && cueVozDifereDaNarradaTranscribrothers(j.vozTts || "", j.vozNarrada || "");
-      const audioDifere = textoDifere || vozDifere;
+      const vozAtual = j?.vozTts || "";
+      const audioNarradoDesatualizado =
+        !!j &&
+        (cueTextoDifereDoNarradoTranscribrothers(textoFala, j.textoNarrado || "") ||
+          cueVozDifereDaNarradaTranscribrothers(vozAtual, j.vozNarrada || ""));
       const preview = previewAudioPorIndice[indice];
-      if (audioDifere) {
-        if (
-          previaAudioCueBateComTextoEVozUiTranscribrothers(preview, textoFala, j?.vozTts || "") &&
-          preview &&
-          preview.duracaoSegundos > 0
-        ) {
-          return preview.duracaoSegundos;
-        }
-        return null;
-      }
-      const durWav = duracoesWavPorIndice[indice];
-      return typeof durWav === "number" && durWav > 0 ? durWav : null;
+      return resolverDuracaoAudioAtualDaCueParaAjusteTimelineUiTranscribrothers({
+        textoFalaAtual: textoFala,
+        vozAtual,
+        audioNarradoDesatualizado,
+        preview: preview
+          ? { texto: preview.texto, voz: preview.voz, duracaoSegundos: preview.duracaoSegundos }
+          : undefined,
+        duracaoWavGravadoSegundos: duracoesWavPorIndice[indice],
+      });
     },
     [cues, janelas, previewAudioPorIndice, duracoesWavPorIndice],
   );
@@ -2014,11 +2289,73 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         pushToast(r.motivo, "info");
         return;
       }
-      setCues(r.cues);
+      setCues(
+        garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+          r.cues.map((c, i) => ({ ...c, idCliente: cues[i]?.idCliente })),
+        ),
+      );
       setIndiceCueSelecionadaSolo(indice);
       pushToast("Cue ajustada ao áudio — ficou folga na timeline para deslocar.", "success");
     },
     [cues, pushToast, resolverDuracaoAudioAtualDaCueParaAjusteUi],
+  );
+
+  const ajustarCueAJanelaTelaAtual = useCallback(
+    (indice: number) => {
+      void (async () => {
+        const j = janelas[indice];
+        if (!j) {
+          pushToast("Janela de tela ainda não disponível para esta cue.", "info");
+          return;
+        }
+        const durTela = Math.max(0, j.fimVideoSegundos - j.inicioVideoSegundos);
+        const durAudio = resolverDuracaoAudioAtualDaCueParaAjusteUi(indice);
+        if (
+          typeof durAudio === "number" &&
+          Number.isFinite(durAudio) &&
+          durAudio > durTela + 0.05
+        ) {
+          const rotuloTela =
+            formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(durTela) ||
+            `${durTela.toFixed(1)}s`;
+          const rotuloAudio =
+            formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(durAudio) ||
+            `${durAudio.toFixed(1)}s`;
+          const ok = await pedirConfirmacao({
+            titulo: "Ajustar à tela com áudio maior?",
+            mensagem:
+              `A janela de tela tem ${rotuloTela} e o áudio atual tem ${rotuloAudio}. ` +
+              "O slot da cue ficará menor que a fala (estouro no vídeo narrado). Continuar mesmo assim?",
+            rotuloConfirmar: "Ajustar à tela",
+            varianteConfirmar: "neutra",
+          });
+          if (!ok) return;
+        }
+        const r = ajustarFimCueTimelineAJanelaTelaUiTranscribrothers(cues, indice, durTela);
+        if (!r.ok) {
+          pushToast(r.motivo, "info");
+          return;
+        }
+        setCues(
+          garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+            r.cues.map((c, i) => ({ ...c, idCliente: cues[i]?.idCliente })),
+          ),
+        );
+        setIndiceCueSelecionadaSolo(indice);
+        const msg =
+          r.deslocouSegundos > 0
+            ? "Cue ajustada à tela — cues seguintes foram empurradas se necessário."
+            : "Cue ajustada à tela — ficou folga na timeline para deslocar.";
+        pushToast(msg, "success");
+      })();
+    },
+    [
+      cues,
+      janelas,
+      pedirConfirmacao,
+      pushToast,
+      resolverDuracaoAudioAtualDaCueParaAjusteUi,
+    ],
   );
 
   const deslocarCueNaTimeline = useCallback(
@@ -2036,7 +2373,11 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         pushToast(r.motivo, "info");
         return;
       }
-      setCues(r.cues);
+      setCues(
+        garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+          r.cues.map((c, i) => ({ ...c, idCliente: cues[i]?.idCliente })),
+        ),
+      );
       setIndiceCueSelecionadaSolo(indice);
     },
     [cues, pushToast],
@@ -2058,7 +2399,11 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       );
       if (!r.ok) return;
       if (Math.abs(r.deslocouSegundos) < 1e-9) return;
-      setCues(r.cues);
+      setCues(
+        garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+          r.cues.map((c, i) => ({ ...c, idCliente: cues[i]?.idCliente })),
+        ),
+      );
       setIndiceCueSelecionadaSolo(indice);
     },
     [cues],
@@ -2103,6 +2448,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     const payload = janelas.map((j) => ({
       inicio_video_segundos: j.inicioVideoSegundos,
       fim_video_segundos: j.fimVideoSegundos,
+      id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
     }));
     const erroLocal = validarJanelasVideoSemSobreposicaoNaUiTranscribrothers(payload);
     if (erroLocal) {
@@ -2129,6 +2475,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             semNarracao: prev[i]?.semNarracao ?? Boolean(c.sem_narracao),
             vozTts: prev[i]?.vozTts || vozApi,
             vozNarrada: prev[i]?.vozNarrada || vozApi,
+            idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(
+              c.id_fonte_video || prev[i]?.idFonteVideo,
+            ),
           };
         });
         setJanelasOriginais((orig) =>
@@ -2226,6 +2575,19 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     urlVideoMp4,
   ]);
 
+  const urlsAudioNarracaoParaModalOriginal = useMemo(() => {
+    const mapa: Record<number, string> = {};
+    for (let i = 0; i < cues.length; i++) {
+      const url = resolverUrlAudioNarracaoDaCueParaPlaybackUi(i);
+      if (url) mapa[i] = url;
+    }
+    return mapa;
+  }, [cues, janelas, previewAudioPorIndice, resolverUrlAudioNarracaoDaCueParaPlaybackUi]);
+
+  useEffect(() => {
+    if (!aberto) setPainelDebugCacheAberto(false);
+  }, [aberto]);
+
   if (!aberto) return null;
 
   const ocupado =
@@ -2262,24 +2624,57 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     },
   });
   const dispararGerarVideoComEstasEdicoes = () => {
-    onGerarVideoComEstasEdicoes({
-      cues: cues.map((c, i) => ({
-        inicio_segundos: c.inicioSegundos,
-        fim_segundos: c.fimSegundos,
-        texto: c.texto,
-        texto_tts: (c.textoTts || "").trim() || undefined,
-        sem_narracao: Boolean(janelas[i]?.semNarracao),
-        voz_tts: janelas[i]?.vozTts || vozPadraoJob || "Kore",
-        forcar_regenerar_tts: Boolean(janelas[i]?.forcarRegenerarTts),
-      })),
-      janelas:
-        janelas.length === cues.length
-          ? janelas.map((j) => ({
-              inicio_video_segundos: j.inicioVideoSegundos,
-              fim_video_segundos: j.fimVideoSegundos,
-            }))
-          : null,
-    });
+    void (async () => {
+      const videoEl = videoRef.current;
+      const durEntrada =
+        videoEl && Number.isFinite(videoEl.duration) && videoEl.duration > 0
+          ? videoEl.duration
+          : null;
+      const janelasAlinhadas = alinharJanelasAoNumeroDeCuesTimelineNarracaoUiTranscribrothers({
+        quantidadeCues: cues.length,
+        janelas,
+        duracaoVideoEntradaSegundos: durEntrada,
+        vozPadrao: vozPadraoJob || "Kore",
+      });
+      if (janelasAlinhadas.length !== cues.length) {
+        pushToast(
+          `Não foi possível alinhar tempos de tela (${janelas.length}) às cues (${cues.length}).`,
+          "error",
+        );
+        return;
+      }
+      if (janelasAlinhadas.length !== janelas.length) {
+        setJanelas(janelasAlinhadas);
+      }
+      if (janelasAlinhadas.some((j) => j.janelaProvisoria)) {
+        const ok = await pedirConfirmacao({
+          titulo: "Janelas provisórias",
+          mensagem:
+            "Há cue(s) com janela provisória (ainda não ajustada em «Origem»). Gerar o vídeo mesmo assim?",
+          rotuloConfirmar: "Gerar mesmo assim",
+          varianteConfirmar: "neutra",
+        });
+        if (!ok) return;
+      }
+      onGerarVideoComEstasEdicoes({
+        cues: cues.map((c, i) => ({
+          inicio_segundos: c.inicioSegundos,
+          fim_segundos: c.fimSegundos,
+          texto: c.texto,
+          texto_tts: (c.textoTts || "").trim() || undefined,
+          sem_narracao: Boolean(janelasAlinhadas[i]?.semNarracao),
+          voz_tts: janelasAlinhadas[i]?.vozTts || vozPadraoJob || "Kore",
+          forcar_regenerar_tts: Boolean(janelasAlinhadas[i]?.forcarRegenerarTts),
+        })),
+        janelas: janelasAlinhadas.map((j) => ({
+          inicio_video_segundos: j.inicioVideoSegundos,
+          fim_video_segundos: j.fimVideoSegundos,
+          id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
+        })),
+        temperaturaTts: temperaturaTtsEfetiva,
+        ritmoTts: ritmoTtsEfetivo,
+      });
+    })();
   };
 
   const alternarSemNarracaoDaCue = (indice: number) => {
@@ -2309,57 +2704,163 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     });
   };
 
+  const adicionarCueDepoisDoSelecionadoUi = () => {
+    if (ocupado) return;
+    // Destaque visual pode ser só por tempo do vídeo (entrada em 0:00), sem clique.
+    const indiceBase = resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers({
+      quantidadeCues: cues.length,
+      indiceSelecionadoSolo: indiceCueSelecionadaSolo,
+      indiceCueAtiva,
+    });
+    const videoEl = videoRef.current;
+    const durEntrada =
+      previewRecorteTelaAtivo && videoEl && Number.isFinite(videoEl.duration) && videoEl.duration > 0
+        ? videoEl.duration
+        : null;
+    const r = inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers({
+      cues,
+      janelas,
+      indiceSelecionado: indiceBase,
+      duracaoVideoEntradaSegundos: durEntrada,
+      vozPadrao: vozPadraoJob || "Kore",
+    });
+    setCues(r.cues);
+    setJanelas(r.janelas);
+    setDuracoesWavPorIndice((prev) =>
+      remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+    );
+    setPreviewAudioPorIndice((prev) =>
+      remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+    );
+    setIndicesFalaTtsExpandidos((prev) =>
+      remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+    );
+    setSugestoesReescritaLegendaPorIndice((prev) =>
+      remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+    );
+    setIndiceCueSelecionadaSolo(r.indiceInserido);
+    pushToast(
+      "Cue adicionada (janela provisória). Ajuste o trecho em «Origem» e gere a prévia TTS.",
+      "success",
+    );
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const ta = listaCuesRef.current?.querySelector(
+          ".tb-modal-assistir-video-narrado-cue-item--ativa textarea",
+        ) as HTMLTextAreaElement | null;
+        ta?.focus();
+      });
+    });
+  };
+
+  const reordenarCueNaListaUi = (indiceDe: number, indicePara: number) => {
+    if (ocupado || indiceDe === indicePara) return;
+    const r = reordenarCuesEmpacotandoTimelineNarracaoUiTranscribrothers({
+      cues,
+      janelas,
+      indiceDe,
+      indicePara,
+    });
+    setCues(r.cues);
+    setJanelas(r.janelas);
+    setDuracoesWavPorIndice((prev) =>
+      remaparRecordPorIndiceAposReordenarUiTranscribrothers(prev, indiceDe, indicePara),
+    );
+    setPreviewAudioPorIndice((prev) =>
+      remaparRecordPorIndiceAposReordenarUiTranscribrothers(prev, indiceDe, indicePara),
+    );
+    setIndicesFalaTtsExpandidos((prev) =>
+      remaparRecordPorIndiceAposReordenarUiTranscribrothers(prev, indiceDe, indicePara),
+    );
+    setSugestoesReescritaLegendaPorIndice((prev) =>
+      remaparRecordPorIndiceAposReordenarUiTranscribrothers(prev, indiceDe, indicePara),
+    );
+    if (indiceCueSelecionadaSolo === indiceDe) {
+      setIndiceCueSelecionadaSolo(indicePara);
+    } else if (indiceCueSelecionadaSolo != null) {
+      const ids = r.cues.map((c) => c.idCliente);
+      const idSel = cues[indiceCueSelecionadaSolo]?.idCliente;
+      if (idSel) {
+        const novo = ids.indexOf(idSel);
+        if (novo >= 0) setIndiceCueSelecionadaSolo(novo);
+      }
+    }
+  };
+
+  const aoIniciarArrasteCue = (e: DragStartEvent) => {
+    setIdCueArrastando(String(e.active.id));
+  };
+
+  const aoSobreArrasteCue = (e: DragOverEvent) => {
+    setIdCueSobre(e.over ? String(e.over.id) : null);
+  };
+
+  const aoFinalizarArrasteCue = (e: DragEndEvent) => {
+    setIdCueArrastando(null);
+    setIdCueSobre(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const de = cues.findIndex((c) => c.idCliente === String(active.id));
+    const para = cues.findIndex((c) => c.idCliente === String(over.id));
+    if (de < 0 || para < 0) return;
+    reordenarCueNaListaUi(de, para);
+  };
+
   const excluirCueDaListaLocalUi = (indice: number) => {
     if (indice < 0 || indice >= cues.length) return;
     if (cues.length <= 1) {
       pushToast("É preciso manter ao menos uma cue.", "info");
       return;
     }
-    const ok = window.confirm(
-      `Excluir a cue ${indice + 1}? Esse trecho deixa de entrar no vídeo narrado ao gerar de novo.`,
-    );
-    if (!ok) return;
-
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-      video.muted = false;
-    }
-    audioCueRef.current?.pause();
-    setIndiceAudioTocando(null);
-    indiceCueReproducaoSoloRef.current = null;
-    reproducaoContinuaPorWavRef.current = false;
-    setIndiceCueSelecionadaSolo(null);
-
-    // Mantém cuesOriginais/janelasOriginais: o MP4 ainda tem o trecho; o preview precisa da cadeia WAV.
-    setCues((prev) => prev.filter((_, i) => i !== indice));
-    setJanelas((prev) => prev.filter((_, i) => i !== indice));
-    setDuracoesWavPorIndice((prev) => {
-      const proximo: Record<number, number> = {};
-      Object.entries(prev).forEach(([k, v]) => {
-        const i = Number(k);
-        if (i < indice) proximo[i] = v;
-        else if (i > indice) proximo[i - 1] = v;
+    void (async () => {
+      const ok = await pedirConfirmacao({
+        titulo: `Excluir cue ${indice + 1}?`,
+        mensagem:
+          "Esse trecho deixa de entrar no vídeo narrado ao gerar de novo.",
+        rotuloConfirmar: "Excluir",
+        varianteConfirmar: "destrutiva",
       });
-      return proximo;
-    });
-    setPreviewAudioPorIndice((prev) => {
-      const proximo: Record<number, PreviewAudioCueFaixaTimelineUiTranscribrothers> = {};
-      Object.entries(prev).forEach(([k, v]) => {
-        const i = Number(k);
-        if (i === indice) {
-          if (v.urlBlob) URL.revokeObjectURL(v.urlBlob);
-          return;
-        }
-        if (i < indice) proximo[i] = v;
-        else proximo[i - 1] = v;
+      if (!ok) return;
+
+      const video = videoRef.current;
+      if (video) {
+        video.pause();
+        video.muted = false;
+      }
+      audioCueRef.current?.pause();
+      setIndiceAudioTocando(null);
+      indiceCueReproducaoSoloRef.current = null;
+      reproducaoContinuaPorWavRef.current = false;
+      setIndiceCueSelecionadaSolo(null);
+
+      // Mantém cuesOriginais/janelasOriginais: o MP4 ainda tem o trecho; o preview precisa da cadeia WAV.
+      setCues((prev) => prev.filter((_, i) => i !== indice));
+      setJanelas((prev) => prev.filter((_, i) => i !== indice));
+      setDuracoesWavPorIndice((prev) => {
+        const proximo: Record<number, number> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          const i = Number(k);
+          if (i < indice) proximo[i] = v;
+          else if (i > indice) proximo[i - 1] = v;
+        });
+        return proximo;
       });
-      return proximo;
-    });
-    pushToast("Cue excluída da lista. Gere o vídeo para aplicar no MP4.", "info");
+      setPreviewAudioPorIndice((prev) => {
+        const proximo: Record<number, PreviewAudioCueFaixaTimelineUiTranscribrothers> = {};
+        Object.entries(prev).forEach(([k, v]) => {
+          const i = Number(k);
+          if (i === indice) {
+            if (v.urlBlob) URL.revokeObjectURL(v.urlBlob);
+            return;
+          }
+          if (i < indice) proximo[i] = v;
+          else proximo[i - 1] = v;
+        });
+        return proximo;
+      });
+      pushToast("Cue excluída da lista. Gere o vídeo para aplicar no MP4.", "info");
+    })();
   };
-
-  if (!aberto) return null;
 
   const textosCuesParaModalOriginal = cues.map((c) => c.texto);
 
@@ -2432,15 +2933,18 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         />
         <header className="tb-modal-assistir-video-narrado-cabecalho">
           <div className="tb-modal-assistir-video-narrado-cabecalho-topo">
-            <h2 id={tituloId}>Editar vídeo narrado</h2>
+            <h2 id={tituloId} className="tb-modal-assistir-video-narrado-titulo">
+              Editar vídeo narrado
+            </h2>
             {versoesVideoNarrado.length > 0 ? (
-              <label className="tb-modal-assistir-video-narrado-seletor-versao">
-                <span className="tb-modal-assistir-video-narrado-seletor-versao-rotulo">Versão</span>
+              <label className="tb-modal-assistir-video-narrado-seletor-versao tb-modal-assistir-video-narrado-seletor-versao--compacto">
+                <span className="tb-sr-only">Versão</span>
                 <select
                   className="tb-modal-assistir-video-narrado-seletor-versao-select"
                   value={versaoAtualVideoNarradoId ?? ""}
                   disabled={ocupado || versoesVideoNarrado.length < 1}
                   aria-label="Versão do vídeo narrado"
+                  title="Versão do vídeo narrado"
                   onChange={(e) => {
                     const id = e.target.value;
                     if (!id || id === versaoAtualVideoNarradoId) return;
@@ -2458,11 +2962,84 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 </select>
               </label>
             ) : null}
+            <details className="tb-modal-assistir-video-narrado-config-tts">
+              <summary
+                className="tb-modal-assistir-video-narrado-config-tts-resumo"
+                title="Modelo, temperatura e ritmo do TTS (prévia e regenerar)"
+              >
+                Config TTS
+              </summary>
+              <div
+                className="tb-modal-assistir-video-narrado-config-tts-popover"
+                role="group"
+                aria-label="Configuração TTS"
+              >
+                <label className="tb-modal-assistir-video-narrado-config-tts-campo">
+                  <span className="tb-modal-assistir-video-narrado-seletor-versao-rotulo">
+                    Modelo
+                  </span>
+                  <select
+                    className="tb-modal-assistir-video-narrado-seletor-versao-select"
+                    value={modeloTtsUi}
+                    disabled={ocupado || opcoesModeloTts.length === 0}
+                    aria-label="Modelo TTS para prévia e regenerar"
+                    title="Usado em «Ouvir»/«Prévia» e «Regenerar» desta página"
+                    onChange={(e) => {
+                      const m = e.target.value.trim();
+                      if (!m) return;
+                      setModeloTtsUi(m);
+                      salvarModeloTtsNarracaoPreferidoNoNavegadorTranscribrothers(m);
+                      onModeloTtsPreferidoAlterado?.(m);
+                    }}
+                  >
+                    {opcoesModeloTts.length === 0 ? (
+                      <option value="">Nenhum TTS na lista</option>
+                    ) : (
+                      opcoesModeloTts.map((m) => (
+                        <option key={m} value={m}>
+                          {rotuloCurtoModeloTtsParaUiTranscribrothers(m)}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+                <ComponenteControleSliderTemperaturaTtsNarracaoComAjudaTranscribrothers
+                  variante="compacto"
+                  valor={temperaturaTtsEfetiva}
+                  desabilitado={ocupado}
+                  onChange={(t) => {
+                    setTemperaturaTtsUi(t);
+                    salvarTemperaturaTtsNarracaoPreferidaNoNavegadorTranscribrothers(t);
+                    onTemperaturaTtsPreferidaAlterada?.(t);
+                  }}
+                />
+                <label className="tb-modal-assistir-video-narrado-config-tts-campo">
+                  <span className="tb-modal-assistir-video-narrado-seletor-versao-rotulo">
+                    Ritmo
+                  </span>
+                  <select
+                    className="tb-modal-assistir-video-narrado-seletor-versao-select"
+                    value={ritmoTtsEfetivo}
+                    disabled={ocupado}
+                    aria-label="Ritmo da fala para prévia e regenerar"
+                    title="Ajusta o ritmo via prompt (sem atempo no áudio)."
+                    onChange={(e) => {
+                      const r = normalizarRitmoTtsNarracaoTranscribrothers(e.target.value);
+                      setRitmoTtsUi(r);
+                      salvarRitmoTtsNarracaoPreferidoNoNavegadorTranscribrothers(r);
+                      onRitmoTtsPreferidoAlterado?.(r);
+                    }}
+                  >
+                    {opcoesRitmoTts.map((op) => (
+                      <option key={op.id} value={op.id} title={op.descricao}>
+                        {op.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </details>
           </div>
-          <p className="tb-modal-assistir-video-narrado-sub">
-            «Atualizar narração» usa as legendas editadas aqui. «Gerar nova narração» / toolbar partem do
-            Markdown com limpeza IA (não reaproveitam este VTT).
-          </p>
           <button
             type="button"
             className="tb-modal-assistir-video-narrado-fechar"
@@ -2519,36 +3096,22 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   }
                   forcarUiComoTocando={indiceAudioTocando !== null}
                   aoAlternarPlayPauseCustomizado={aoAlternarPlayPausePlayerComNarracaoAuxiliarUi}
-                  timelineVirtualUi={
-                    previewRecorteTelaAtivo
-                      ? {
-                          tempoAtualSegundos,
-                          duracaoSegundos: duracaoTimelineNarradaParaBarraUi,
-                          aoAlterarTempoPelaBarra: aoAlterarTempoPelaBarraDurantePreviewRecorteUi,
-                        }
-                      : null
-                  }
+                  timelineVirtualUi={{
+                    tempoAtualSegundos,
+                    duracaoSegundos: duracaoTimelineNarradaParaBarraUi,
+                    aoAlterarTempoPelaBarra: previewRecorteTelaAtivo
+                      ? aoAlterarTempoPelaBarraDurantePreviewRecorteUi
+                      : aoAlterarTempoPelaBarraForaDoPreviewRecorteUi,
+                  }}
                   overlaySobreVideo={
-                    previewRecorteTelaAtivo && textoLegendaOverlayPreviewRecorte ? (
+                    textoLegendaOverlayNoVideo ? (
                       <p
                         className="tb-modal-assistir-video-narrado-legenda-overlay-preview"
                         role="status"
                         aria-live="polite"
                       >
-                        {textoLegendaOverlayPreviewRecorte}
+                        {textoLegendaOverlayNoVideo}
                       </p>
-                    ) : null
-                  }
-                  faixaLegendas={
-                    !previewRecorteTelaAtivo && urlTrackVttParaVideo ? (
-                      <track
-                        key={urlTrackVttParaVideo}
-                        kind="subtitles"
-                        src={urlTrackVttParaVideo}
-                        srcLang="pt"
-                        label="Português"
-                        default
-                      />
                     ) : null
                   }
                 />
@@ -2574,6 +3137,15 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 {sujas ? " · editado" : ""}
                 {janelasSujas ? " · tela" : ""}
               </p>
+              <button
+                type="button"
+                className="tb-modal-assistir-video-narrado-adicionar-cue"
+                disabled={ocupado || !urlLegendasVtt || carregandoCues || Boolean(erroCues)}
+                title="Insere uma cue depois do cartão destacado (seleção ou instante do vídeo)"
+                onClick={() => adicionarCueDepoisDoSelecionadoUi()}
+              >
+                Adicionar cue
+              </button>
               <details className="tb-modal-assistir-video-narrado-ajuda-legendas">
                 <summary
                   className="tb-modal-assistir-video-narrado-ajuda-legendas-resumo"
@@ -2604,11 +3176,20 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                     «Ajustar ao áudio» encolhe a cue quando a fala é menor que o slot.
                   </p>
                   <p>
+                    «Ajustar à tela» alinha a duração da cue à janela do vídeo original (encolhe ou
+                    estica; ao esticar, empurra as cues seguintes).
+                  </p>
+                  <p>
                     «← →» ou arraste na faixa sob o progresso deslocam a cue sem sobrepor.
                   </p>
                   <p>
                     «Ouvir»/«Prévia» gera o áudio TTS; se o badge «prévia ok» aparecer, esse áudio
                     será reaproveitado ao gerar o vídeo (sem narrar de novo).
+                  </p>
+                  <p>
+                    «Adicionar cue» insere depois do cartão destacado (clique ou cue do instante
+                    atual do vídeo; janela provisória). Arraste pelo handle ou use as setas para
+                    reordenar (estilo Trello).
                   </p>
                   <p>
                     O número (#1, #2…) identifica a cue na lista e no tooltip da timeline.
@@ -2629,12 +3210,31 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 {erroCues}
               </p>
             ) : cues.length === 0 ? (
-              <p className="tb-modal-assistir-video-narrado-aviso">Arquivo VTT sem cues utilizáveis.</p>
+              <div className="tb-modal-assistir-video-narrado-cues-vazia">
+                <p className="tb-modal-assistir-video-narrado-aviso">
+                  Nenhuma cue na lista. Use «Adicionar cue» para criar a primeira.
+                </p>
+              </div>
             ) : (
-              <ul
-                ref={listaCuesRef}
-                className="tb-modal-assistir-video-narrado-cues-lista"
+              <DndContext
+                sensors={sensorsOrdenacaoCues}
+                collisionDetection={closestCenter}
+                onDragStart={aoIniciarArrasteCue}
+                onDragOver={aoSobreArrasteCue}
+                onDragEnd={aoFinalizarArrasteCue}
+                onDragCancel={() => {
+                  setIdCueArrastando(null);
+                  setIdCueSobre(null);
+                }}
               >
+                <SortableContext
+                  items={cues.map((c) => c.idCliente)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ul
+                    ref={listaCuesRef}
+                    className="tb-modal-assistir-video-narrado-cues-lista"
+                  >
                 {cues.map((cue, i) => {
                   const ativa = i === indiceCueAtiva;
                   const janela = janelas[i];
@@ -2680,9 +3280,16 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   const regeneracaoForcada = Boolean(janela?.forcarRegenerarTts);
                   const duracaoAudioAjuste = resolverDuracaoAudioAtualDaCueParaAjusteUi(i);
                   const duracaoCueSlot = cue.fimSegundos - cue.inicioSegundos;
+                  const duracaoJanelaTela = janela
+                    ? Math.max(0, janela.fimVideoSegundos - janela.inicioVideoSegundos)
+                    : 0;
                   const podeAjustarAoAudio = cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(
                     duracaoCueSlot,
                     duracaoAudioAjuste,
+                  );
+                  const podeAjustarATela = cuePodeAjustarFimAJanelaTelaNaTimelineUiTranscribrothers(
+                    duracaoCueSlot,
+                    duracaoJanelaTela > 0 ? duracaoJanelaTela : null,
                   );
                   const podeDeslocarEsq = cuePodeDeslocarNaTimelineUiTranscribrothers(
                     cues,
@@ -2695,28 +3302,77 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                     "direita",
                   );
                   const semNarracao = Boolean(janela?.semNarracao);
-                  const duracaoJanelaTela = janela
-                    ? Math.max(0, janela.fimVideoSegundos - janela.inicioVideoSegundos)
-                    : 0;
+                  const janelaProvisoria = Boolean(janela?.janelaProvisoria);
+                  const mostrarGapAntes =
+                    Boolean(idCueArrastando) &&
+                    idCueSobre === cue.idCliente &&
+                    idCueArrastando !== cue.idCliente;
                   return (
-                    <li
-                      key={`${cue.inicioSegundos}-${i}`}
-                      ref={ativa ? cueAtivaRef : undefined}
+                    <CartaoCueSortableListaVideoNarradoTranscribrothers
+                      key={cue.idCliente}
+                      id={cue.idCliente}
+                      desabilitado={ocupado}
+                      mostrarGapAntes={mostrarGapAntes}
+                      ariaCurrent={ativa ? "true" : undefined}
+                      onClickLista={() => selecionarCueNaListaSemAlterarPlaybackUi(i)}
+                      liRef={ativa ? (el) => { cueAtivaRef.current = el; } : undefined}
                       className={
                         "tb-modal-assistir-video-narrado-cue-item" +
                         (ativa ? " tb-modal-assistir-video-narrado-cue-item--ativa" : "") +
-                        (semNarracao ? " tb-modal-assistir-video-narrado-cue-item--sem-narracao" : "")
+                        (semNarracao ? " tb-modal-assistir-video-narrado-cue-item--sem-narracao" : "") +
+                        (janelaProvisoria
+                          ? " tb-modal-assistir-video-narrado-cue-item--janela-provisoria"
+                          : "")
                       }
-                      aria-current={ativa ? "true" : undefined}
-                      onClick={() => selecionarCueNaListaSemAlterarPlaybackUi(i)}
                     >
+                      {(handleArraste) => (
+                      <>
                       <div className="tb-modal-assistir-video-narrado-cue-cabecalho">
+                        <button
+                          type="button"
+                          ref={handleArraste.setActivatorNodeRef}
+                          className="tb-modal-assistir-video-narrado-cue-drag"
+                          aria-label={`Arrastar cue ${i + 1}`}
+                          title="Arrastar para reordenar"
+                          disabled={ocupado}
+                          onClick={(e) => e.stopPropagation()}
+                          {...handleArraste.attributes}
+                          {...handleArraste.listeners}
+                        >
+                          <span aria-hidden="true">⋮⋮</span>
+                        </button>
                         <span
                           className="tb-modal-assistir-video-narrado-cue-numero"
                           title={`Cue ${i + 1} de ${cues.length}`}
                         >
                           #{i + 1}
                         </span>
+                        <button
+                          type="button"
+                          className="tb-modal-assistir-video-narrado-cue-nudge"
+                          disabled={ocupado || i === 0}
+                          title="Mover cue para cima"
+                          aria-label={`Mover cue ${i + 1} para cima`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            reordenarCueNaListaUi(i, i - 1);
+                          }}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="tb-modal-assistir-video-narrado-cue-nudge"
+                          disabled={ocupado || i >= cues.length - 1}
+                          title="Mover cue para baixo"
+                          aria-label={`Mover cue ${i + 1} para baixo`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            reordenarCueNaListaUi(i, i + 1);
+                          }}
+                        >
+                          ↓
+                        </button>
                         <button
                           type="button"
                           className="tb-modal-assistir-video-narrado-cue-tempo"
@@ -2738,6 +3394,25 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             Math.max(0, duracaoCueSlot),
                           ) || "—"}
                         </span>
+                        {podeAjustarATela ? (
+                          <span
+                            className="tb-modal-assistir-video-narrado-cue-duracao-tela"
+                            title="Duração da janela de tela no vídeo original (difere do slot narrado)"
+                          >
+                            tela{" "}
+                            {formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(
+                              duracaoJanelaTela,
+                            ) || "—"}
+                          </span>
+                        ) : null}
+                        {janelaProvisoria ? (
+                          <span
+                            className="tb-modal-assistir-video-narrado-cue-badge-janela-provisoria"
+                            title="Trecho de tela provisório — ajuste em «Origem»"
+                          >
+                            janela provisória
+                          </span>
+                        ) : null}
                         <button
                           type="button"
                           className="tb-modal-assistir-video-narrado-cue-ir"
@@ -2753,15 +3428,35 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                         <button
                           type="button"
                           className="tb-modal-assistir-video-narrado-cue-original"
+                          disabled={!jobId || !janela || ocupado}
+                          title={
+                            !janela
+                              ? "Janela de tela ainda não disponível para esta cue"
+                              : "Trocar a origem (vídeo de tela) desta cue"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIndiceCueSelecionadaSolo(i);
+                            setIndiceCueModalEscolherFonte(i);
+                          }}
+                        >
+                          Fonte
+                        </button>
+                        <button
+                          type="button"
+                          className="tb-modal-assistir-video-narrado-cue-original"
                           disabled={
-                            !jobId || !jobTemVideoEntrada || !janela || ocupado
+                            !jobId ||
+                            (!jobTemVideoEntrada &&
+                              normalizarIdFonteVideoUiTranscribrothers(janela?.idFonteVideo) ===
+                                ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS) ||
+                            !janela ||
+                            ocupado
                           }
                           title={
-                            !jobTemVideoEntrada
-                              ? "Este projeto não tem vídeo de entrada"
-                              : !janela
-                                ? "Janela de tela ainda não disponível para esta cue"
-                                : "Ver este trecho no vídeo original"
+                            !janela
+                              ? "Janela de tela ainda não disponível para esta cue"
+                              : "Recortar trecho na origem desta cue (só cues com o mesmo vídeo)"
                           }
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2769,7 +3464,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             setIndiceCueModalVideoOriginal(i);
                           }}
                         >
-                          Original
+                          Origem
                         </button>
                         <button
                           type="button"
@@ -2949,12 +3644,61 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             Ajustar ao áudio
                           </button>
                         ) : null}
+                        {podeAjustarATela ? (
+                          <button
+                            type="button"
+                            className="tb-modal-assistir-video-narrado-cue-ajustar-audio"
+                            disabled={ocupado}
+                            title="Alinhar a duração da cue à janela de tela do vídeo original (ao esticar, empurra as seguintes)"
+                            onClick={() => ajustarCueAJanelaTelaAtual(i)}
+                          >
+                            Ajustar à tela
+                          </button>
+                        ) : null}
                       </div>
                       <div className="tb-modal-assistir-video-narrado-cue-textos">
-                        <label className="tb-modal-assistir-video-narrado-cue-texto-campo">
-                          <span className="tb-modal-assistir-video-narrado-cue-texto-rotulo">
-                            Legenda
-                          </span>
+                        <div className="tb-modal-assistir-video-narrado-cue-texto-campo">
+                          <div className="tb-modal-assistir-video-narrado-cue-texto-rotulo-linha">
+                            <span className="tb-modal-assistir-video-narrado-cue-texto-rotulo">
+                              Legenda
+                            </span>
+                            {!semNarracao ? (
+                              <button
+                                type="button"
+                                className="tb-modal-assistir-video-narrado-cue-sugestao-ia"
+                                disabled={
+                                  ocupado || indicesSugerindoReescritaLegenda.has(i)
+                                }
+                                title="Sugerir reescrita da legenda (IA)"
+                                aria-label={`Sugerir reescrita da legenda ${i + 1}`}
+                                onClick={() => void sugerirReescritaLegendaCueUi(i)}
+                              >
+                                {indicesSugerindoReescritaLegenda.has(i) ? (
+                                  "…"
+                                ) : (
+                                  <svg
+                                    width="15"
+                                    height="15"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      d="M8 1.5l.9 3.2L12 5.6l-3.1 1-.9 3.2-.9-3.2L4 5.6l3.1-.9L8 1.5z"
+                                      stroke="currentColor"
+                                      strokeWidth="1.2"
+                                      strokeLinejoin="round"
+                                    />
+                                    <path
+                                      d="M12.5 9.5l.45 1.6 1.55.45-1.55.45-.45 1.6-.45-1.6-1.55-.45 1.55-.45.45-1.6z"
+                                      fill="currentColor"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            ) : null}
+                          </div>
                           <textarea
                             className={CLASS_TEXTAREA_CUE_LEGENDA_VIDEO_NARRADO}
                             value={cue.texto}
@@ -2969,7 +3713,29 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                               );
                             }}
                           />
-                        </label>
+                        </div>
+                        <ComponentePainelSugestaoReescritaTextoCueIaUsarOuDescartarTranscribrothers
+                          sugestao={sugestoesReescritaLegendaPorIndice[i] || ""}
+                          desabilitado={ocupado}
+                          onUsar={() => {
+                            const s = sugestoesReescritaLegendaPorIndice[i];
+                            if (!s) return;
+                            atualizarTextoCue(i, s);
+                            setSugestoesReescritaLegendaPorIndice((prev) => {
+                              const next = { ...prev };
+                              delete next[i];
+                              return next;
+                            });
+                            pushToast(`Sugestão aplicada na legenda ${i + 1}.`, "success");
+                          }}
+                          onDescartar={() =>
+                            setSugestoesReescritaLegendaPorIndice((prev) => {
+                              const next = { ...prev };
+                              delete next[i];
+                              return next;
+                            })
+                          }
+                        />
                         {!semNarracao ? (
                           falaTtsExpandida ? (
                             <div className="tb-modal-assistir-video-narrado-cue-texto-campo">
@@ -3030,16 +3796,68 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                           )
                         ) : null}
                       </div>
-                    </li>
+                      </>
+                      )}
+                    </CartaoCueSortableListaVideoNarradoTranscribrothers>
                   );
                 })}
-              </ul>
+                  </ul>
+                </SortableContext>
+                <DragOverlay dropAnimation={null}>
+                  {idCueArrastando ? (
+                    <div className="tb-modal-assistir-video-narrado-cue-drag-overlay">
+                      {(() => {
+                        const idx = cues.findIndex((c) => c.idCliente === idCueArrastando);
+                        if (idx < 0) return "Movendo cue…";
+                        const c = cues[idx];
+                        return (
+                          <>
+                            <strong>#{idx + 1}</strong>{" "}
+                            {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(c.inicioSegundos)}
+                            {" – "}
+                            {(c.texto || "").slice(0, 48)}
+                            {(c.texto || "").length > 48 ? "…" : ""}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             )}
           </div>
         </div>
 
+        {jobId && painelDebugCacheAberto ? (
+          <ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrothers
+            jobId={jobId}
+            aberto={painelDebugCacheAberto}
+            onFechar={() => setPainelDebugCacheAberto(false)}
+          />
+        ) : null}
+
         <footer className="tb-modal-assistir-video-narrado-rodape">
           <div className="tb-modal-assistir-video-narrado-rodape-grupos">
+            {jobId ? (
+              <button
+                type="button"
+                className={
+                  painelDebugCacheAberto
+                    ? "tb-modal-assistir-video-narrado-btn-debug tb-modal-assistir-video-narrado-btn-debug--ativo"
+                    : "tb-modal-assistir-video-narrado-btn-debug"
+                }
+                aria-pressed={painelDebugCacheAberto}
+                aria-label={
+                  painelDebugCacheAberto
+                    ? "Esconder painel de debug"
+                    : "Mostrar painel de debug"
+                }
+                title="Mostrar ou esconder informações de debug (cache de segmentos)"
+                onClick={() => setPainelDebugCacheAberto((v) => !v)}
+              >
+                debug
+              </button>
+            ) : null}
             <ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers
               idMenu="baixar"
               rotulo="Baixar"
@@ -3147,7 +3965,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   rotulo: "Gerar nova narração",
                   desabilitado: ocupado,
                   titulo:
-                    "Parte do Markdown com limpeza IA e gera TTS de todas as cues (não reusa este VTT).",
+                    "Parte do Markdown com preparação IA das legendas e gera TTS de todas as cues (não reusa este VTT).",
                   onClick: onGerarNovaNarracao,
                 },
               ]}
@@ -3156,7 +3974,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
           <div className="tb-modal-assistir-video-narrado-rodape-direita">
             <button
               type="button"
-              className="tb-primary"
+              className="tb-primary tb-modal-assistir-video-narrado-cta-principal"
               disabled={!podeGerarVideoComEstasEdicoes}
               title="Salva as edições e gera um MP4 só com os trechos que têm cue (sem gaps), como no play do modal."
               onClick={dispararGerarVideoComEstasEdicoes}
@@ -3178,9 +3996,10 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
               type="button"
               className="tb-linkbtn"
               disabled={ocupado}
+              title="Voltar ao tutorial"
               onClick={onFechar}
             >
-              Voltar ao tutorial
+              Voltar
             </button>
           </div>
         </footer>
@@ -3195,13 +4014,48 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         indiceCueInicial={indiceCueModalVideoOriginal}
         janelas={janelas}
         textosCues={textosCuesParaModalOriginal}
+        urlsAudioNarracaoPorIndice={urlsAudioNarracaoParaModalOriginal}
+        urlVideoSrc={urlVideoFonteTelaCueParaPreviewUiTranscribrothers(
+          jobId,
+          janelas[indiceCueModalVideoOriginal]?.idFonteVideo,
+        )}
+        tituloModal={`Origem — cue #${indiceCueModalVideoOriginal + 1}`}
         onFechar={() => setIndiceCueModalVideoOriginal(null)}
         onAplicarJanelas={(janelasNovas) => {
+          const indiceAplicado = indiceCueModalVideoOriginal;
           const avisoSobreposicao = avisarSobreposicaoSomenteCuesAlteradasUiTranscribrothers(
             janelas,
             janelasNovas,
           );
-          setJanelas(janelasNovas.map((j) => ({ ...j })));
+          setJanelas(
+            janelasNovas.map((j, i) => ({
+              ...j,
+              janelaProvisoria:
+                i === indiceAplicado ? false : Boolean(janelas[i]?.janelaProvisoria),
+            })),
+          );
+          // Se a duração da janela mudou, alinha o slot da timeline (preview = MP4 gerado).
+          setCues((prev) => {
+            let next = prev;
+            let alinhouAlguma = false;
+            for (let i = 0; i < janelasNovas.length; i++) {
+              const ant = janelas[i];
+              const nov = janelasNovas[i];
+              if (!ant || !nov || !next[i]) continue;
+              const durAnt = Math.max(0, ant.fimVideoSegundos - ant.inicioVideoSegundos);
+              const durNov = Math.max(0, nov.fimVideoSegundos - nov.inicioVideoSegundos);
+              if (Math.abs(durNov - durAnt) < 0.15) continue;
+              const r = ajustarFimCueTimelineAJanelaTelaUiTranscribrothers(next, i, durNov);
+              if (r.ok) {
+                next = r.cues;
+                alinhouAlguma = true;
+              }
+            }
+            if (!alinhouAlguma) return prev;
+            return garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+              next.map((c, i) => ({ ...c, idCliente: prev[i]?.idCliente ?? c.idCliente })),
+            );
+          });
           if (avisoSobreposicao) {
             pushToast(
               `${avisoSobreposicao} Janela aplicada mesmo assim. Ao salvar/remux o backend ainda pode recusar.`,
@@ -3210,13 +4064,38 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             return { ok: true as const, aviso: avisoSobreposicao };
           }
           pushToast(
-            "Recortes de tela no editor. Toque a cue para pré-visualizar no vídeo original; salve os tempos e remuxe quando quiser.",
+            "Recortes de tela no editor. Se a duração da origem mudou, o slot da cue foi alinhado à tela.",
             "info",
           );
           return { ok: true as const };
         }}
       />
     ) : null}
+    {jobId && indiceCueModalEscolherFonte !== null && janelas[indiceCueModalEscolherFonte] ? (
+      <ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothers
+        aberto
+        jobId={jobId}
+        idFonteAtual={janelas[indiceCueModalEscolherFonte]?.idFonteVideo}
+        onFechar={() => setIndiceCueModalEscolherFonte(null)}
+        onEscolherFonte={(idFonte) => {
+          const indice = indiceCueModalEscolherFonte;
+          setJanelas((prev) => {
+            if (!prev[indice]) return prev;
+            return prev.map((j, i) =>
+              i === indice
+                ? {
+                    ...j,
+                    idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(idFonte),
+                  }
+                : j,
+            );
+          });
+          setIndiceCueModalEscolherFonte(null);
+          setIndiceCueModalVideoOriginal(indice);
+        }}
+      />
+    ) : null}
+    {elementoDialogoConfirmacao}
     </>
   );
 }

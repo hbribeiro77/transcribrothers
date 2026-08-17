@@ -34,7 +34,16 @@ async def gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     litellm_model: str | None,
     voz: str | None = None,
+    perfil_tts: str | None = None,
+    temperatura_tts: float | None = None,
+    ritmo_tts: str | None = None,
 ) -> ResultadoApiPreviewTtsCueNarracaoTranscribrothers:
+    from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+        PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+        normalizar_perfil_tts_narracao_transcribrothers,
+        normalizar_ritmo_tts_narracao_transcribrothers,
+        normalizar_temperatura_tts_narracao_transcribrothers,
+    )
     from transcribrothers_backend.modulo_preferencias_voz_tts_gemini_narracao_transcribrothers import (
         VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
         normalizar_voz_tts_gemini_transcribrothers,
@@ -50,6 +59,14 @@ async def gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
         )
     except ValueError:
         voz_efetiva = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    try:
+        perfil_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
+            perfil_tts or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+        )
+    except ValueError:
+        perfil_efetivo = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+    temperatura_efetiva = normalizar_temperatura_tts_narracao_transcribrothers(temperatura_tts)
+    ritmo_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(ritmo_tts)
     caminho = caminho_preview_tts_cue_narracao_no_work_transcribrothers(work, indice)
     resultado = await gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
         texto=texto,
@@ -57,6 +74,9 @@ async def gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
         configuracao=configuracao,
         caminho_wav_saida=caminho,
         voz=voz_efetiva,
+        perfil_tts=perfil_efetivo,
+        temperatura=temperatura_efetiva,
+        ritmo=ritmo_efetivo,
     )
     if not resultado.ok or resultado.caminho_wav is None:
         raise RuntimeError(resultado.mensagem)

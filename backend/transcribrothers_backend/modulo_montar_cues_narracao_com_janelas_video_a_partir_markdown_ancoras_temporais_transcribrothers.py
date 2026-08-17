@@ -34,6 +34,8 @@ class CueNarracaoComJanelaVideoTranscribrothers:
     voz_tts: str = ""
     # Pronúncia para TTS; vazio = narrar o mesmo texto da legenda (`texto`).
     texto_tts: str = ""
+    # Fonte de tela: ""/"entrada" = video_entrada; senão id da biblioteca_midias_tela.
+    id_fonte_video: str = ""
 
 
 @dataclass(frozen=True)

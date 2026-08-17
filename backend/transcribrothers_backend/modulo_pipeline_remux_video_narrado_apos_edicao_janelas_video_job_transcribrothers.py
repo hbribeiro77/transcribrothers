@@ -29,11 +29,17 @@ from transcribrothers_backend.modulo_ffmpeg_montar_video_narrado_por_segmentos_r
     SegmentoVideoNarradoRetargetTranscribrothers,
     montar_video_narrado_por_segmentos_retarget_audio_via_ffmpeg_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_transcribrothers import (
+    resolver_caminho_video_fonte_por_id_no_work_transcribrothers,
+)
 from transcribrothers_backend.modulo_ffmpeg_substituir_audio_video_por_narracao_tts_wav_transcribrothers import (
     CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS,
 )
 from transcribrothers_backend.modulo_gerar_narracao_tts_markdown_job_via_litellm_transcribrothers import (
     obter_duracao_wav_pcm16_mono_segundos_transcribrothers,
+)
+from transcribrothers_backend.modulo_util_montar_segmentos_retarget_respeitando_timeline_vtt_cues_editadas_transcribrothers import (
+    ajustar_wav_pcm16_mono_para_duracao_alvo_segundos_transcribrothers,
 )
 from transcribrothers_backend.modulo_montar_cues_narracao_com_janelas_video_a_partir_markdown_ancoras_temporais_transcribrothers import (
     ResultadoCuesNarracaoComJanelasVideoTranscribrothers,
@@ -52,6 +58,9 @@ from transcribrothers_backend.modulo_util_gerar_arquivo_vtt_a_partir_cues_legend
 )
 from transcribrothers_backend.modulo_validar_cues_janelas_video_antes_narracao_tts_transcribrothers import (
     validar_cues_janelas_video_antes_narracao_tts_transcribrothers,
+)
+from transcribrothers_backend.modulo_montar_mapa_duracao_segundos_por_id_fonte_video_cues_job_transcribrothers import (
+    montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers,
 )
 from transcribrothers_backend.modulo_obter_duracao_midia_segundos_via_ffprobe import (
     obter_duracao_video_segundos_via_ffprobe,
@@ -147,21 +156,49 @@ async def executar_remux_video_narrado_apos_edicao_janelas_em_background(
             quantidade_casadas=sum(1 for c in cues if c.casado),
             quantidade_interpoladas=sum(1 for c in cues if not c.casado),
         )
+        mapa_duracao_fontes = (
+            await montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers(
+                work=work,
+                cues_ou_ids_fonte=cues,
+                caminho_video_entrada=video,
+                duracao_video_entrada_segundos=duracao_video,
+            )
+        )
         validacao = validar_cues_janelas_video_antes_narracao_tts_transcribrothers(
             resultado,
             duracao_video_segundos=duracao_video,
+            duracao_por_id_fonte_video=mapa_duracao_fontes,
         )
         if not validacao.ok:
             raise RuntimeError(validacao.motivo_rejeicao or "Janelas inválidas para remux.")
 
         caminhos_wav: list[Path] = []
         duracoes: list[float] = []
+        dir_prep_remux = work / "wavs_remux_pad_janela"
+        dir_prep_remux.mkdir(parents=True, exist_ok=True)
         for i in range(len(cues)):
             caminho = obter_caminho_wav_narracao_por_cue_se_existir_transcribrothers(work, i)
             if caminho is None:
                 raise RuntimeError(f"WAV da cue {i + 1} não encontrado.")
+            cue = cues[i]
+            dur_wav = obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho)
+            dur_janela = max(
+                0.0,
+                float(cue.fim_video_segundos) - float(cue.inicio_video_segundos),
+            )
+            # Remux sem timeline editada: a janela de tela define o hold do trecho.
+            dur_alvo = dur_janela if dur_janela >= 0.05 else dur_wav
+            if abs(dur_alvo - dur_wav) > 0.05:
+                caminho_pad = dir_prep_remux / f"cue_remux_slot_{i:04d}.wav"
+                ajustar_wav_pcm16_mono_para_duracao_alvo_segundos_transcribrothers(
+                    caminho_wav_entrada=caminho,
+                    duracao_alvo_segundos=dur_alvo,
+                    caminho_wav_saida=caminho_pad,
+                )
+                caminho = caminho_pad
+                dur_wav = obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho)
             caminhos_wav.append(caminho)
-            duracoes.append(obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho))
+            duracoes.append(dur_wav)
 
         cues_vtt = converter_cues_janela_video_em_cues_legenda_vtt_timeline_narracao_transcribrothers(
             list(cues),
@@ -195,6 +232,11 @@ async def executar_remux_video_narrado_apos_edicao_janelas_em_background(
                 caminho_wav=wav,
                 inicio_video_segundos=cue.inicio_video_segundos,
                 fim_video_segundos=cue.fim_video_segundos,
+                caminho_video_fonte=resolver_caminho_video_fonte_por_id_no_work_transcribrothers(
+                    work=work,
+                    id_fonte_video=str(getattr(cue, "id_fonte_video", "") or ""),
+                    caminho_video_entrada=video,
+                ),
             )
             for cue, wav in zip(cues, caminhos_wav, strict=True)
         ]
@@ -214,6 +256,8 @@ async def executar_remux_video_narrado_apos_edicao_janelas_em_background(
             diretorio_saida=work,
             atualizar_progresso=_progresso_mux,
             preferencias_encode=prefs_encode,
+            # Remux: só reencode cues sujas; resto vem do cache de segmentos + concat copy.
+            forcar_montagem_por_segmentos_com_cache=True,
         )
         stamp_cache = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
         url_mp4 = f"/api/jobs/{job_id}/video-com-narracao-tts?v={stamp_cache}"

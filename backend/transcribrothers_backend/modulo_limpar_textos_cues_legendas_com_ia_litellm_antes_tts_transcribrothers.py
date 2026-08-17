@@ -1,4 +1,4 @@
-"""Limpa artefatos de Markdown/pontuação órfã nos textos das cues via LiteLLM (antes do TTS)."""
+"""Prepara textos de cues (limpeza + forma narrável) via LiteLLM antes do TTS/VTT."""
 
 from __future__ import annotations
 
@@ -13,6 +13,12 @@ from transcribrothers_backend.modulo_cliente_litellm_chat_completions_texto_simp
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
     ConfiguracaoAmbienteTranscribrothers,
 )
+from transcribrothers_backend.modulo_diretriz_conteudo_legendas_narracao_transcribrothers import (
+    diretriz_conteudo_permite_reescrever_texto_transcribrothers,
+    limites_crescimento_guarda_limpeza_pela_diretriz_transcribrothers,
+    normalizar_diretriz_conteudo_legendas_transcribrothers,
+    texto_extra_prompt_limpeza_pela_diretriz_conteudo_legendas_transcribrothers,
+)
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     listar_modelos_litellm_provisionados_para_interface,
     resolver_api_key_e_api_base_para_chamada_litellm,
@@ -26,27 +32,37 @@ CHAVE_STEPS_JSON_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS = "limpeza_legendas_ia_ant
 FASE_VIDEO_NARRADO_LIMPANDO_LEGENDAS_IA = "video_narrado_limpando_legendas_ia"
 
 _SYSTEM_LIMPEZA_CUES_LEGENDAS = """\
-Você limpa textos de legendas/cues de narração em português do Brasil.
+Você prepara textos de legendas/cues de narração em português do Brasil.
+O mesmo texto será mostrado na legenda do vídeo e falado pelo TTS.
 
-Tarefa: remover APENAS lixo de borda ou artefato de Markdown no início/fim de cada cue, por exemplo:
-- pontuação órfã no início («).», «)», «].», «.,»)
-- restos de link Markdown incompleto («[01:49](», «](», «[mm:ss](»)
-- fragmentos de âncora temporal («?t=123») ou rótulos de tempo soltos no fim («[01:49]»)
-- espaços/pontuação duplicada deixada após a remoção
+Tarefa (por cue):
+1) Remover lixo de borda ou artefato de Markdown, por exemplo:
+   - pontuação órfã no início («).», «)», «].», «.,»)
+   - restos de link Markdown incompleto («[01:49](», «](», «[mm:ss](»)
+   - fragmentos de âncora temporal («?t=123») ou rótulos de tempo soltos («[01:49]»)
+   - espaços/pontuação duplicada deixada após a remoção
+2) Adaptar rótulos, imperativos e frases truncadas para forma narrável e legível na tela,
+   sem parecer comando ao modelo de TTS. Exemplos:
+   - «Remova o grupo:» → «Remova o grupo.»
+   - «Novo Cadastro:» → «Novo cadastro.»
+   - «Não é Nome Social:» → «Não é nome social.»
 
 Regras obrigatórias:
-1) NÃO reescreva, NÃO resuma, NÃO melhore estilo, NÃO traduza.
-2) NÃO altere o sentido, nomes, números úteis nem o miolo da frase.
-3) Se estiver em dúvida, devolva o texto ORIGINAL da cue.
-4) Mantenha a MESMA quantidade de cues e os MESMOS índices.
-5) Responda SOMENTE JSON válido, sem markdown, no formato:
+1) Mantenha o sentido, nomes próprios e números úteis.
+2) NÃO resuma o tutorial, NÃO invente passos, NÃO traduza para outro idioma.
+3) Mudanças mínimas: prefira pontuação/frase curta completa em vez de reescrever o miolo.
+4) Se a cue já estiver boa, devolva o texto ORIGINAL (só com limpeza de lixo, se houver).
+5) Se estiver em dúvida, devolva o texto ORIGINAL da cue.
+6) Mantenha a MESMA quantidade de cues e os MESMOS índices.
+7) Responda SOMENTE JSON válido, sem markdown, no formato:
 {"cues":[{"indice":0,"texto":"..."},{"indice":1,"texto":"..."}]}
 """
 
 _RE_FENCE_JSON = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 _FRACAO_MINIMA_COMPRIMENTO_APOS_LIMPEZA = 0.4
-_CRESCIMENTO_MAXIMO_RELATIVO = 0.15
-_CRESCIMENTO_MAXIMO_ABSOLUTO_CHARS = 24
+# Adaptação narrável curta (ex.: rótulo com «:» → frase) pode crescer um pouco.
+_CRESCIMENTO_MAXIMO_RELATIVO = 0.4
+_CRESCIMENTO_MAXIMO_ABSOLUTO_CHARS = 48
 
 
 @dataclass(frozen=True)
@@ -105,7 +121,7 @@ def resolver_modelo_chat_para_limpeza_legendas_ia_transcribrothers(
     if candidatos:
         return candidatos[0]
     raise ValueError(
-        "Nenhum modelo de chat configurado para limpeza de legendas "
+        "Nenhum modelo de chat configurado para preparação de legendas "
         "(precisa de um slug sem -tts em LITELLM_MODELOS_PROVISIONADOS ou LITELLM_MODEL)."
     )
 
@@ -138,11 +154,12 @@ def _normalizar_espacos_texto_cue_transcribrothers(texto: str) -> str:
 def texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(
     original: str,
     proposto: str,
+    diretriz_conteudo: object = None,
 ) -> bool:
     """
-    Guarda-corpo: rejeita vazio ou reescrita.
-    Aceita se o texto limpo for substring do original (só removeu bordas/lixo)
-    ou se o encolhimento/crescimento ficar dentro de limites seguros.
+    Guarda-corpo: rejeita vazio, encolhimento agressivo ou expansão ensaiada.
+    Aceita limpeza de borda (substring) e adaptação narrável moderada.
+    Presets de reescrita (falável/didático/descontraído) têm limite de crescimento maior.
     """
     o = _normalizar_espacos_texto_cue_transcribrothers(original)
     p = _normalizar_espacos_texto_cue_transcribrothers(proposto)
@@ -158,12 +175,17 @@ def texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(
     if len(p) < max(1, int(len(o) * _FRACAO_MINIMA_COMPRIMENTO_APOS_LIMPEZA)):
         return False
     crescimento = len(p) - len(o)
-    if crescimento > _CRESCIMENTO_MAXIMO_ABSOLUTO_CHARS and crescimento > int(
-        len(o) * _CRESCIMENTO_MAXIMO_RELATIVO
-    ):
+    rel, abs_chars = limites_crescimento_guarda_limpeza_pela_diretriz_transcribrothers(
+        diretriz_conteudo
+    )
+    # Conservador mantém constantes históricas se a diretriz não afrouxar.
+    if not diretriz_conteudo_permite_reescrever_texto_transcribrothers(diretriz_conteudo):
+        rel = _CRESCIMENTO_MAXIMO_RELATIVO
+        abs_chars = _CRESCIMENTO_MAXIMO_ABSOLUTO_CHARS
+    limite_crescimento = max(abs_chars, int(len(o) * rel))
+    if crescimento > limite_crescimento:
         return False
-    # Sem substring e com alteração relevante: trate como reescrita e rejeite.
-    return False
+    return True
 
 
 def extrair_json_objeto_da_resposta_limpeza_legendas_ia_transcribrothers(
@@ -188,6 +210,7 @@ def extrair_json_objeto_da_resposta_limpeza_legendas_ia_transcribrothers(
 def mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
     textos_originais: list[str],
     resposta_bruta_ou_obj: str | dict[str, Any],
+    diretriz_conteudo: object = None,
 ) -> tuple[list[str], list[int], list[int]]:
     """
     Devolve (textos_finais, indices_alterados, indices_rejeitados_pela_guarda).
@@ -228,7 +251,11 @@ def mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
     rejeitados: list[int] = []
     for i, original in enumerate(textos_originais):
         proposto = por_indice[i]
-        if not texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(original, proposto):
+        if not texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(
+            original,
+            proposto,
+            diretriz_conteudo=diretriz_conteudo,
+        ):
             finais.append(_normalizar_espacos_texto_cue_transcribrothers(original) or original)
             rejeitados.append(i)
             continue
@@ -240,20 +267,37 @@ def mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
     return finais, alterados, rejeitados
 
 
-def _montar_mensagens_limpeza_cues_transcribrothers(textos: list[str]) -> list[dict[str, str]]:
+def _montar_mensagens_limpeza_cues_transcribrothers(
+    textos: list[str],
+    diretriz_conteudo: object = None,
+) -> list[dict[str, str]]:
     payload = {
         "cues": [
             {"indice": i, "texto": _normalizar_espacos_texto_cue_transcribrothers(t) or (t or "")}
             for i, t in enumerate(textos)
         ]
     }
-    user = (
-        "Limpe apenas o lixo de borda/artefato Markdown destas cues. "
-        "Devolva JSON com a mesma quantidade e índices.\n\n"
-        + json.dumps(payload, ensure_ascii=False)
+    if diretriz_conteudo_permite_reescrever_texto_transcribrothers(diretriz_conteudo):
+        user = (
+            "Prepare estas cues para legenda e narração (mesmo texto). "
+            "Aplique a DIRETRIZ ATIVA do system: limpe lixo Markdown/âncoras E "
+            "reescreva o texto conforme o tom pedido (não fique só na capitalização/"
+            "pontuação). Devolva JSON com a mesma quantidade e índices.\n\n"
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    else:
+        user = (
+            "Prepare estas cues para legenda e narração (mesmo texto): "
+            "remova lixo Markdown/âncoras e adapte rótulos/imperativos truncados "
+            "para forma narrável. Devolva JSON com a mesma quantidade e índices.\n\n"
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    extra = texto_extra_prompt_limpeza_pela_diretriz_conteudo_legendas_transcribrothers(
+        diretriz_conteudo
     )
+    system = _SYSTEM_LIMPEZA_CUES_LEGENDAS + (extra or "")
     return [
-        {"role": "system", "content": _SYSTEM_LIMPEZA_CUES_LEGENDAS},
+        {"role": "system", "content": system},
         {"role": "user", "content": user},
     ]
 
@@ -263,10 +307,11 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
     textos: list[str],
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     modelo_chat: str | None = None,
+    diretriz_conteudo: object = None,
     steps_para_log: dict[str, Any] | None = None,
 ) -> ResultadoLimpezaTextosCuesLegendasIaTranscribrothers:
     """
-    Chama o proxy LiteLLM (chat) e devolve textos limpos.
+    Chama o proxy LiteLLM (chat) e devolve textos preparados (limpos + narráveis).
     Se um modelo falhar (ex.: HTTP 400), tenta o próximo candidato de chat.
     Em falha total, devolve os originais (não aborta o pipeline).
     """
@@ -275,7 +320,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
         return ResultadoLimpezaTextosCuesLegendasIaTranscribrothers(
             textos=[],
             ok=True,
-            mensagem="Nenhuma cue para limpar.",
+            mensagem="Nenhuma cue para preparar.",
             usou_fallback_originais=False,
         )
 
@@ -288,7 +333,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
             textos=originais,
             ok=False,
             mensagem=(
-                "Nenhum modelo de chat configurado para limpeza de legendas "
+                "Nenhum modelo de chat configurado para preparação de legendas "
                 "(precisa de um slug sem -tts)."
             ),
             usou_fallback_originais=True,
@@ -298,6 +343,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
     httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(configuracao)
     erros_por_modelo: list[str] = []
     modelos_tentados: list[str] = []
+    diretriz_efetiva = normalizar_diretriz_conteudo_legendas_transcribrothers(diretriz_conteudo)
 
     for modelo in candidatos:
         modelos_tentados.append(modelo)
@@ -305,7 +351,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
             steps_para_log["video_narrado_limpeza_ia_status"] = "chamando_modelo"
             steps_para_log["video_narrado_limpeza_ia_modelo_atual"] = modelo
             steps_para_log["video_narrado_limpeza_ia_resumo"] = (
-                f"Limpando {len(originais)} cue(s) com {modelo}…"
+                f"Preparando {len(originais)} cue(s) para legenda/narração com {modelo}…"
             )
         try:
             bruto = await litellm_chat_completions_texto_simples_transcribrothers(
@@ -313,18 +359,25 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
                 api_key=api_key,
                 api_base=api_base,
                 httpx_verify=httpx_verify,
-                mensagens=_montar_mensagens_limpeza_cues_transcribrothers(originais),
+                mensagens=_montar_mensagens_limpeza_cues_transcribrothers(
+                    originais,
+                    diretriz_conteudo=diretriz_efetiva,
+                ),
                 temperature=0.1,
                 usar_response_format_json_object=True,
                 httpx_timeout_connect_segundos=30.0,
                 httpx_timeout_read_segundos=180.0,
                 steps_para_log_decisoes_ia=steps_para_log,
                 log_etapa="limpeza_legendas_ia_antes_tts",
-                log_resumo_pedido=f"{len(originais)} cue(s) para limpeza de artefatos",
+                log_resumo_pedido=(
+                    f"{len(originais)} cue(s) para preparação (limpeza + forma narrável; "
+                    f"diretriz={diretriz_efetiva})"
+                ),
                 log_metadados={
                     "quantidade_cues": len(originais),
                     "modelo_tentativa": modelo,
                     "tentativa": len(modelos_tentados),
+                    "diretriz_conteudo": diretriz_efetiva,
                 },
                 log_incluir_detalhe_resposta=False,
             )
@@ -332,6 +385,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
                 mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
                     originais,
                     bruto,
+                    diretriz_conteudo=diretriz_efetiva,
                 )
             )
         except Exception as exc:
@@ -349,7 +403,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
             alterados,
         )
         msg = (
-            f"Limpeza IA ({modelo}): {len(alterados)} cue(s) ajustada(s)"
+            f"Preparação de legendas IA ({modelo}): {len(alterados)} cue(s) ajustada(s)"
             + (f"; {len(rejeitados)} rejeitada(s) pela guarda." if rejeitados else ".")
         )
         if len(modelos_tentados) > 1:
@@ -372,8 +426,8 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
         textos=originais,
         ok=False,
         mensagem=(
-            "Limpeza IA falhou em todos os modelos de chat; mantidos textos originais. "
-            f"({detalhe_erros})"
+            "Preparação de legendas IA falhou em todos os modelos de chat; "
+            f"mantidos textos originais. ({detalhe_erros})"
         ),
         modelo=modelos_tentados[-1] if modelos_tentados else "",
         usou_fallback_originais=True,
@@ -401,7 +455,8 @@ def aplicar_textos_limpos_nas_cues_janela_transcribrothers(
             casado=c.casado,
             sem_narracao=bool(getattr(c, "sem_narracao", False)),
             voz_tts=str(getattr(c, "voz_tts", "") or ""),
-            texto_tts=str(getattr(c, "texto_tts", "") or ""),
+            # Mesmo texto na legenda e na narração após a preparação IA.
+            texto_tts="",
         )
         for c, texto in zip(cues, textos_limpos, strict=True)
     ]

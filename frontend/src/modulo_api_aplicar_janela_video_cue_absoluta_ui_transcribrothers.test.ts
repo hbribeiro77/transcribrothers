@@ -3,6 +3,7 @@ import {
   aplicarJanelaVideoCueAbsolutaUiTranscribrothers,
   avisarSobreposicaoSomenteCuesAlteradasUiTranscribrothers,
   deslizarJanelaVideoCuePeloPontoUiTranscribrothers,
+  marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers,
   type JanelaVideoCueLocalUiTranscribrothers,
 } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 
@@ -88,6 +89,79 @@ describe("deslizarJanelaVideoCuePeloPontoUiTranscribrothers", () => {
     if (r.ok) {
       expect(r.janelas[1].inicioVideoSegundos).toBe(1);
       expect(r.janelas[1].fimVideoSegundos).toBe(4);
+      expect(r.avisoSobreposicao).toMatch(/sobrepõ/i);
+    }
+  });
+});
+
+describe("marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers", () => {
+  it("marcar início encolhe sem mover o fim", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "inicio", 7);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].inicioVideoSegundos).toBe(7);
+      expect(r.janelas[0].fimVideoSegundos).toBe(10);
+    }
+  });
+
+  it("marcar início expande sem mover o fim", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "inicio", 2);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].inicioVideoSegundos).toBe(2);
+      expect(r.janelas[0].fimVideoSegundos).toBe(10);
+    }
+  });
+
+  it("marcar fim encolhe sem mover o início", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "fim", 8);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].inicioVideoSegundos).toBe(5);
+      expect(r.janelas[0].fimVideoSegundos).toBe(8);
+    }
+  });
+
+  it("marcar fim expande sem mover o início", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "fim", 14);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].inicioVideoSegundos).toBe(5);
+      expect(r.janelas[0].fimVideoSegundos).toBe(14);
+    }
+  });
+
+  it("início depois do fim atual força folga mínima no fim", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "inicio", 12);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].inicioVideoSegundos).toBe(12);
+      expect(r.janelas[0].fimVideoSegundos).toBeCloseTo(12.05, 5);
+    }
+  });
+
+  it("fim antes do início atual força folga mínima no início", () => {
+    const janelas = [janelaStub(5, 10)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 0, "fim", 3);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[0].fimVideoSegundos).toBe(3);
+      expect(r.janelas[0].inicioVideoSegundos).toBeCloseTo(2.95, 5);
+    }
+  });
+
+  it("avisar sem bloquear quando o extremo sobrepõe vizinha", () => {
+    const janelas = [janelaStub(0, 2), janelaStub(5, 8)];
+    const r = marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(janelas, 1, "inicio", 1);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.janelas[1].inicioVideoSegundos).toBe(1);
+      expect(r.janelas[1].fimVideoSegundos).toBe(8);
       expect(r.avisoSobreposicao).toMatch(/sobrepõ/i);
     }
   });

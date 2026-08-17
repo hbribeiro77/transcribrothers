@@ -36,6 +36,7 @@ class ResumoJanelaVideoCueApiTranscribrothers:
     sem_narracao: bool = False
     voz_tts: str = ""
     texto_tts: str = ""
+    id_fonte_video: str = ""
 
 
 def diretorio_wavs_narracao_por_cue_do_work_transcribrothers(work: Path) -> Path:
@@ -66,6 +67,7 @@ def montar_resumo_janelas_video_e_wavs_do_job_transcribrothers(
                 sem_narracao=bool(item.sem_narracao),
                 voz_tts=str(getattr(item, "voz_tts", "") or "").strip(),
                 texto_tts=str(getattr(item, "texto_tts", "") or "").strip(),
+                id_fonte_video=str(getattr(item, "id_fonte_video", "") or "").strip(),
             )
         )
     return saida
@@ -76,7 +78,12 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
     work: Path,
     janelas_brutas: list[dict[str, Any]],
     duracao_video_segundos: float | None = None,
+    duracao_por_id_fonte_video: dict[str, float] | None = None,
 ) -> list[ItemManifestCueNarracaoJanelaVideoTranscribrothers]:
+    from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_transcribrothers import (
+        normalizar_id_fonte_video_transcribrothers,
+    )
+
     manifest = carregar_manifest_cues_narracao_janelas_video_do_work_transcribrothers(work)
     if not manifest:
         raise ErroValidacaoJanelasVideoCuesTranscribrothers(
@@ -88,6 +95,8 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             f"({len(janelas_brutas)} != {len(manifest)})."
         )
     janelas: list[JanelaVideoCueEntradaTranscribrothers] = []
+    ids_fonte: list[str] = []
+    duracoes_por_indice: list[float | None] = []
     for i, raw in enumerate(janelas_brutas):
         try:
             ini = float(raw["inicio_video_segundos"])
@@ -97,10 +106,20 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
                 f"Cue {i + 1}: tempos de janela inválidos."
             ) from exc
         janelas.append(JanelaVideoCueEntradaTranscribrothers(inicio_video_segundos=ini, fim_video_segundos=fim))
+        id_fonte = normalizar_id_fonte_video_transcribrothers(
+            str(raw.get("id_fonte_video") or "").strip()
+        )
+        ids_fonte.append(id_fonte)
+        if duracao_por_id_fonte_video and id_fonte in duracao_por_id_fonte_video:
+            duracoes_por_indice.append(float(duracao_por_id_fonte_video[id_fonte]))
+        else:
+            duracoes_por_indice.append(duracao_video_segundos)
 
     validar_janelas_video_cues_sem_sobreposicao_transcribrothers(
         janelas,
         duracao_video_segundos=duracao_video_segundos,
+        duracoes_video_por_indice=duracoes_por_indice,
+        ids_fonte_video=ids_fonte,
     )
 
     cues_novas = [
@@ -113,8 +132,9 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             sem_narracao=m.sem_narracao,
             voz_tts=m.voz_tts,
             texto_tts=m.texto_tts,
+            id_fonte_video=id_fonte or str(getattr(m, "id_fonte_video", "") or "").strip(),
         )
-        for m, j in zip(manifest, janelas, strict=True)
+        for m, j, id_fonte in zip(manifest, janelas, ids_fonte, strict=True)
     ]
     gravar_manifest_cues_narracao_janelas_video_no_work_transcribrothers(work=work, cues=cues_novas)
     return [
@@ -127,6 +147,7 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             sem_narracao=c.sem_narracao,
             voz_tts=c.voz_tts,
             texto_tts=c.texto_tts,
+            id_fonte_video=c.id_fonte_video,
         )
         for c in cues_novas
     ]

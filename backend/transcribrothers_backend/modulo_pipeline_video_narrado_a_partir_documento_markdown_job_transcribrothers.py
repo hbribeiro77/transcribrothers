@@ -32,6 +32,10 @@ from transcribrothers_backend.modulo_ffmpeg_substituir_audio_video_por_narracao_
     CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS,
     NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
 )
+from transcribrothers_backend.modulo_diagnostico_tts_perfil_experimental_voz_transcribrothers import (
+    CHAVE_STEPS_JSON_CUES_PENDENTES_TIMEOUT_TTS_EXPERIMENTAL_TRANSCRIBROTHERS,
+    aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers,
+)
 from transcribrothers_backend.modulo_gerar_narracao_tts_markdown_job_via_litellm_transcribrothers import (
     CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS,
     NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS,
@@ -86,6 +90,22 @@ from transcribrothers_backend.modulo_util_registrar_tempos_etapas_pipeline_video
 from transcribrothers_backend.modulo_util_resolver_markdown_escopo_pipeline_video_narrado_transcribrothers import (
     resolver_markdown_para_pipeline_video_narrado_transcribrothers,
 )
+from transcribrothers_backend.modulo_diretriz_conteudo_legendas_narracao_transcribrothers import (
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS,
+    normalizar_diretriz_conteudo_legendas_transcribrothers,
+)
+from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PARALELISMO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS,
+    PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS,
+    PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    normalizar_paralelismo_tts_cues_experimental_transcribrothers,
+    normalizar_perfil_tts_narracao_transcribrothers,
+    normalizar_ritmo_tts_narracao_transcribrothers,
+    normalizar_temperatura_tts_narracao_transcribrothers,
+)
 
 CHAVE_STEPS_JSON_PIPELINE_VIDEO_NARRADO_DOCUMENTO_TRANSCRIBROTHERS = "pipeline_video_narrado_documento"
 
@@ -96,6 +116,9 @@ FASE_VIDEO_NARRADO_GERANDO_TTS = "video_narrado_gerando_tts"
 FASE_VIDEO_NARRADO_MUX_FFMPEG = "video_narrado_mux_ffmpeg"
 FASE_VIDEO_NARRADO_CONCLUIDO = "video_narrado_concluido"
 FASE_VIDEO_NARRADO_FALHOU = "video_narrado_falhou"
+FASE_VIDEO_NARRADO_AGUARDANDO_RESOLUCAO_TTS_TIMEOUT = (
+    "video_narrado_aguardando_resolucao_tts_timeout"
+)
 
 _NOME_SUBPASTA_WAVS_POR_CUE = "wavs_narracao_por_cue"
 
@@ -183,6 +206,11 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     modelo_tts: str,
     modelo_chat_limpeza: str | None = None,
+    perfil_tts: str | None = None,
+    paralelismo_tts_experimental: int | None = None,
+    temperatura_tts: float | None = None,
+    ritmo_tts: str | None = None,
+    diretriz_conteudo_legendas: str | None = None,
 ) -> None:
     """A+B: janelas por ?t= (ou STT), TTS por cue, retarget/concat; VTT na timeline da narração."""
     data_dir = configuracao.transcribrothers_data_dir.resolve()
@@ -199,6 +227,48 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 result_markdown=row.result_markdown or "",
                 steps=steps,
             )
+
+        perfil_tts_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
+            perfil_tts
+            if (perfil_tts or "").strip()
+            else steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS)
+            or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = perfil_tts_efetivo
+        paralelismo_tts_efetivo = normalizar_paralelismo_tts_cues_experimental_transcribrothers(
+            paralelismo_tts_experimental
+            if paralelismo_tts_experimental is not None
+            else steps.get(
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PARALELISMO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS
+            )
+        )
+        steps[
+            CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PARALELISMO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS
+        ] = paralelismo_tts_efetivo
+        temperatura_tts_efetiva = normalizar_temperatura_tts_narracao_transcribrothers(
+            temperatura_tts
+            if temperatura_tts is not None
+            else steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS)
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+            temperatura_tts_efetiva
+        )
+        ritmo_tts_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(
+            ritmo_tts
+            if (ritmo_tts or "").strip()
+            else steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS)
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = ritmo_tts_efetivo
+        diretriz_conteudo_efetiva = normalizar_diretriz_conteudo_legendas_transcribrothers(
+            diretriz_conteudo_legendas
+            if (diretriz_conteudo_legendas or "").strip()
+            else steps.get(
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS
+            )
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS] = (
+            diretriz_conteudo_efetiva
+        )
 
         if not markdown:
             raise RuntimeError("Documento sem Markdown para o pipeline de vídeo narrado.")
@@ -307,7 +377,7 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 or "Janelas de tela incompatíveis com o vídeo; narração abortada."
             )
 
-        # Etapa explícita: limpeza IA de artefatos nas cues (sempre neste caminho completo).
+        # Etapa explícita: preparação IA (limpeza + forma narrável; legenda = TTS).
         if resultado_cues.cues:
             _definir_fase_pipeline_video_narrado_com_tempo_transcribrothers(
                 steps,
@@ -315,8 +385,8 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             )
             steps["video_narrado_limpeza_ia_status"] = "iniciando"
             steps["video_narrado_limpeza_ia_resumo"] = (
-                f"Enviando {len(resultado_cues.cues)} cue(s) ao modelo de chat para remover "
-                "lixo de Markdown/âncoras nas legendas…"
+                f"Enviando {len(resultado_cues.cues)} cue(s) ao modelo de chat para preparar "
+                "legendas (limpeza + forma narrável; mesmo texto no TTS)…"
             )
             steps["video_narrado_limpeza_ia_modelo_atual"] = ""
             steps[CHAVE_STEPS_JSON_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS] = {
@@ -342,6 +412,7 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 textos=[c.texto for c in resultado_cues.cues],
                 configuracao=configuracao,
                 modelo_chat=modelo_chat_efetivo,
+                diretriz_conteudo=diretriz_conteudo_efetiva,
                 steps_para_log=steps,
             )
             alteracoes_json = [
@@ -363,6 +434,7 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 "indices_alterados": list(limpeza.indices_alterados),
                 "indices_rejeitados_guarda": list(limpeza.indices_rejeitados_guarda),
                 "usou_fallback_originais": limpeza.usou_fallback_originais,
+                "diretriz_conteudo": diretriz_conteudo_efetiva,
                 "alteracoes": alteracoes_json,
             }
             steps["video_narrado_limpeza_ia_status"] = steps[CHAVE_STEPS_JSON_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS][
@@ -404,14 +476,14 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
         else:
             steps[CHAVE_STEPS_JSON_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS] = {
                 "ok": True,
-                "mensagem": "Nenhuma cue para limpar.",
+                "mensagem": "Nenhuma cue para preparar.",
                 "omitida": True,
                 "motivo": "sem_cues",
             }
 
         if not resultado_cues.cues:
             raise RuntimeError(
-                "Nenhuma cue narrável restou após a limpeza das legendas; narração abortada."
+                "Nenhuma cue narrável restou após a preparação das legendas; narração abortada."
             )
 
         _definir_fase_pipeline_video_narrado_com_tempo_transcribrothers(
@@ -450,6 +522,11 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             session_factory
         )
         steps["pipeline_video_narrado_voz_tts"] = voz_tts
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = perfil_tts_efetivo
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+            temperatura_tts_efetiva
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = ritmo_tts_efetivo
         # preservar_indices evita o 2º filtro interno dropar cues e desalinha WAV×janela.
         resultado_tts = await gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_transcribrothers(
             trechos=trechos_cues,
@@ -460,6 +537,14 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             atualizar_progresso=_progresso_tts,
             preservar_indices_da_entrada=True,
             voz=voz_tts,
+            perfil_tts=perfil_tts_efetivo,
+            temperatura=temperatura_tts_efetiva,
+            ritmo=ritmo_tts_efetivo,
+            paralelismo_cues=paralelismo_tts_efetivo,
+        )
+        aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers(
+            steps,
+            resultado_tts.diagnostico_experimental,
         )
         if not resultado_tts.ok:
             raise RuntimeError(resultado_tts.mensagem)
@@ -519,6 +604,33 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             "gerado_em": datetime.now(timezone.utc).isoformat(),
         }
 
+        pendentes_timeout = list(resultado_tts.cues_pendentes_timeout or ())
+        if pendentes_timeout:
+            steps[CHAVE_STEPS_JSON_CUES_PENDENTES_TIMEOUT_TTS_EXPERIMENTAL_TRANSCRIBROTHERS] = (
+                pendentes_timeout
+            )
+            fechar_etapa_atual_pipeline_tempos_video_narrado_transcribrothers(steps)
+            steps["pipeline_fase"] = FASE_VIDEO_NARRADO_AGUARDANDO_RESOLUCAO_TTS_TIMEOUT
+            steps[CHAVE_STEPS_JSON_PIPELINE_VIDEO_NARRADO_DOCUMENTO_TRANSCRIBROTHERS] = {
+                "ok": False,
+                "aguardando_resolucao_tts_timeout": True,
+                "mensagem": (
+                    f"Narração parcial: {len(pendentes_timeout)} cue(s) com timeout. "
+                    "Reenvie manualmente no modal de status para continuar a montagem do vídeo."
+                ),
+                "quantidade_cues_pendentes_timeout": len(pendentes_timeout),
+                "pausado_em": datetime.now(timezone.utc).isoformat(),
+            }
+            await _atualizar_steps_e_status_job_pipeline_video_narrado_transcribrothers(
+                session_factory,
+                job_id,
+                steps=steps,
+                status=StatusJobTranscribrothers.completed,
+                limpar_mensagem_erro=True,
+            )
+            return
+
+        steps.pop(CHAVE_STEPS_JSON_CUES_PENDENTES_TIMEOUT_TTS_EXPERIMENTAL_TRANSCRIBROTHERS, None)
         _definir_fase_pipeline_video_narrado_com_tempo_transcribrothers(
             steps,
             FASE_VIDEO_NARRADO_MUX_FFMPEG,
@@ -568,6 +680,8 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             diretorio_saida=work,
             atualizar_progresso=_progresso_mux,
             preferencias_encode=prefs_encode,
+            # Aquecer pasta segmentos_video_narrado_retarget para edições do modal.
+            forcar_montagem_por_segmentos_com_cache=True,
         )
         url_mp4 = f"/api/jobs/{job_id}/video-com-narracao-tts?v={stamp_cache}"
         steps[CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS] = {
@@ -675,6 +789,11 @@ def agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona(
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     modelo_tts: str,
     modelo_chat_limpeza: str | None = None,
+    perfil_tts: str | None = None,
+    paralelismo_tts_experimental: int | None = None,
+    temperatura_tts: float | None = None,
+    ritmo_tts: str | None = None,
+    diretriz_conteudo_legendas: str | None = None,
 ) -> None:
     asyncio.create_task(
         executar_pipeline_video_narrado_a_partir_documento_markdown_em_background(
@@ -683,6 +802,11 @@ def agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona(
             configuracao=configuracao,
             modelo_tts=modelo_tts,
             modelo_chat_limpeza=modelo_chat_limpeza,
+            perfil_tts=perfil_tts,
+            paralelismo_tts_experimental=paralelismo_tts_experimental,
+            temperatura_tts=temperatura_tts,
+            ritmo_tts=ritmo_tts,
+            diretriz_conteudo_legendas=diretriz_conteudo_legendas,
         )
     )
 

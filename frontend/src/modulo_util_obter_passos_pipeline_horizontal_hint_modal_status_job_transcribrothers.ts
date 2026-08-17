@@ -110,7 +110,7 @@ const ROTULO_PASSO_PREVIEW_DOCUMENTO_TRANSCRIBROTHERS = "Preview (documento)";
 const ROTULO_PASSO_PREVIEW_SECAO_TRANSCRIBROTHERS = "Preview (seção)";
 const ROTULO_PASSO_ALINHAMENTO_LEGENDAS_TRANSCRIBROTHERS = "Legendas (VTT)";
 const ROTULO_PASSO_VALIDACAO_LEGENDAS_TRANSCRIBROTHERS = "Validação";
-const ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS = "Limpeza IA";
+const ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS = "Preparar legendas";
 const ROTULO_PASSO_NARRACAO_TTS_TRANSCRIBROTHERS = "Narração (TTS)";
 const ROTULO_PASSO_MUX_VIDEO_TRANSCRIBROTHERS = "Montar MP4";
 
@@ -436,6 +436,7 @@ function inferirIndicePassoFalhaPipelineVideoNarradoTranscribrothers(
   if (fase === "video_narrado_validando_legendas") return 2;
   if (fase === "video_narrado_limpando_legendas_ia") return 3;
   if (fase === "video_narrado_gerando_tts") return 4;
+  if (fase === "video_narrado_aguardando_resolucao_tts_timeout") return 4;
   if (fase === "video_narrado_mux_ffmpeg") return 5;
   if (fase === "video_narrado_falhou") {
     const legendas = steps?.legendas_documento_alinhadas;
@@ -507,13 +508,19 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
   const temVtt = legendasObj != null && typeof legendasObj.nome_arquivo === "string";
   const temNarracao = steps?.narracao_tts_documento != null;
   const temMp4 = steps?.video_com_narracao_tts != null;
-  const concluidoOk = fase === "video_narrado_concluido" || (terminal && status === "completed" && temMp4);
+  const aguardandoTimeoutTts = fase === "video_narrado_aguardando_resolucao_tts_timeout";
+  const concluidoOk =
+    fase === "video_narrado_concluido" ||
+    (terminal && status === "completed" && temMp4 && !aguardandoTimeoutTts);
 
   const preparacaoConcluida =
     faseIndicaPipelineVideoNarradoTranscribrothers(fase) || temVtt || concluidoOk;
   const limpezaSteps = steps?.limpeza_legendas_ia_antes_tts;
+  const corridaEdicoesModal =
+    steps?.pipeline_origem_corrida === "edicoes_modal" ||
+    fase === "video_narrado_gerando_com_edicoes_modal";
   const limpezaObj =
-    limpezaSteps && typeof limpezaSteps === "object"
+    !corridaEdicoesModal && limpezaSteps && typeof limpezaSteps === "object"
       ? (limpezaSteps as Record<string, unknown>)
       : null;
   const limpezaRegistrada = limpezaObj != null;
@@ -524,6 +531,7 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
     (fase === "video_narrado_validando_legendas" ||
       fase === "video_narrado_limpando_legendas_ia" ||
       fase === "video_narrado_gerando_tts" ||
+      aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
       concluidoOk ||
       temVtt);
@@ -534,6 +542,7 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
     !validacaoFalhou &&
     (fase === "video_narrado_limpando_legendas_ia" ||
       fase === "video_narrado_gerando_tts" ||
+      aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
       concluidoOk ||
       (temVtt && legendasObj?.validacao_ok === true));
@@ -542,11 +551,15 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
   const limpezaConcluida =
     !limpezaAtivo &&
     (fase === "video_narrado_gerando_tts" ||
+      aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
       concluidoOk ||
       limpezaRegistrada);
 
-  const ttsAtivo = !terminal && fase === "video_narrado_gerando_tts";
+  const ttsAtivo =
+    (!terminal && fase === "video_narrado_gerando_tts") ||
+    (!terminal && fase === "video_narrado_gerando_com_edicoes_modal") ||
+    aguardandoTimeoutTts;
   const ttsConcluido =
     !ttsAtivo && (fase === "video_narrado_mux_ffmpeg" || concluidoOk || Boolean(temNarracao));
 
@@ -556,7 +569,7 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
   // Se falhou na validação, marca o passo 2; se falhou no TTS/mux, usa indiceErro
   let erroAlinhamento = falhou && indiceErro === 1 && !validacaoFalhou && !temVtt;
   let erroValidacao = falhou && (validacaoFalhou || indiceErro === 2);
-  let erroLimpeza = falhou && !validacaoFalhou && indiceErro === 3;
+  let erroLimpeza = falhou && !validacaoFalhou && indiceErro === 3 && !corridaEdicoesModal;
   let erroTts = falhou && !validacaoFalhou && indiceErro === 4;
   let erroMux = falhou && !validacaoFalhou && indiceErro === 5;
   if (falhou && fase === "video_narrado_falhou" && validacaoFalhou) {
@@ -608,26 +621,30 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
     {
       id: "limpeza_legendas_ia",
       rotuloCurto: ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS,
-      hintTitulo:
-        "Etapa de limpeza com IA: remove lixo de Markdown/âncoras nas legendas (ex.: «[01:49](», «).») antes do TTS. No painel do job você vê o antes/depois de cada cue alterada.",
-      estado: estadoPassoPipelineTranscribrothers({
-        erro: erroLimpeza,
-        ativo: limpezaAtivo,
-        concluido: limpezaConcluida,
-        pendenteAposPrecedente: validacaoConcluida,
-      }),
-      duracaoRotulo: dur("limpeza_legendas_ia"),
+      hintTitulo: corridaEdicoesModal
+        ? "Neste fluxo (edições do modal) a limpeza IA não roda — só TTS das cues alteradas e montagem do MP4."
+        : "Prepara as legendas com IA: remove lixo de Markdown/âncoras e adapta rótulos/imperativos para forma narrável (mesmo texto na legenda e no TTS). No painel do job você vê o antes/depois de cada cue alterada.",
+      estado: corridaEdicoesModal
+        ? "skipped"
+        : estadoPassoPipelineTranscribrothers({
+            erro: erroLimpeza,
+            ativo: limpezaAtivo,
+            concluido: limpezaConcluida,
+            pendenteAposPrecedente: validacaoConcluida,
+          }),
+      duracaoRotulo: corridaEdicoesModal ? undefined : dur("limpeza_legendas_ia"),
     },
     {
       id: "narracao_tts",
       rotuloCurto: ROTULO_PASSO_NARRACAO_TTS_TRANSCRIBROTHERS,
-      hintTitulo:
-        "Narra cada cue em trechos curtos via modelo TTS, concatena o WAV e rejeita áudio curto demais para o texto.",
+      hintTitulo: aguardandoTimeoutTts
+        ? "Algumas cues estouraram o tempo do TTS experimental. Edite o texto no painel abaixo e reenvie cada uma; quando todas passarem, a montagem do MP4 continua sozinha."
+        : "Narra cada cue em trechos curtos via modelo TTS, concatena o WAV e rejeita áudio curto demais para o texto.",
       estado: estadoPassoPipelineTranscribrothers({
         erro: erroTts,
         ativo: ttsAtivo,
         concluido: ttsConcluido,
-        pendenteAposPrecedente: limpezaConcluida,
+        pendenteAposPrecedente: corridaEdicoesModal ? validacaoConcluida : limpezaConcluida,
       }),
       duracaoRotulo: dur("narracao_tts"),
     },

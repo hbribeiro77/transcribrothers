@@ -45,7 +45,7 @@ def _gravar_manifest_minimo(work: Path, *, voz: str = "Kore") -> None:
 def test_mudanca_de_voz_em_uma_cue_entra_nos_indices_tts(tmp_path: Path) -> None:
     work = tmp_path / "job"
     _gravar_manifest_minimo(work, voz="Kore")
-    cues, indices = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["primeira cue", "segunda cue"],
         flags_sem_narracao=[False, False],
@@ -62,7 +62,7 @@ def test_mudanca_de_voz_em_uma_cue_entra_nos_indices_tts(tmp_path: Path) -> None
 def test_mesma_voz_nao_marca_tts(tmp_path: Path) -> None:
     work = tmp_path / "job"
     _gravar_manifest_minimo(work, voz="Kore")
-    _cues, indices = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    _cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["primeira cue", "segunda cue"],
         flags_sem_narracao=[False, False],

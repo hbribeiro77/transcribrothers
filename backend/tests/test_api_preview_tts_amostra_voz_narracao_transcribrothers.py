@@ -29,24 +29,31 @@ def test_preview_tts_amostra_voz_gera_wav_e_devolve_audio() -> None:
         preview_path.parent.mkdir(parents=True, exist_ok=True)
         preview_path.write_bytes(b"RIFF" + b"\x00" * 80)
 
+        mock_gerar = AsyncMock(
+            return_value=ResultadoApiPreviewTtsAmostraVozNarracaoTranscribrothers(
+                caminho_wav=preview_path,
+                modelo="gemini/gemini-2.5-flash-preview-tts",
+                voz="Aoede",
+                texto_caracteres=40,
+            )
+        )
         with patch(
             "transcribrothers_backend.main.gerar_arquivo_preview_tts_amostra_voz_narracao_transcribrothers",
-            new=AsyncMock(
-                return_value=ResultadoApiPreviewTtsAmostraVozNarracaoTranscribrothers(
-                    caminho_wav=preview_path,
-                    modelo="gemini/gemini-2.5-flash-preview-tts",
-                    voz="Aoede",
-                    texto_caracteres=40,
-                )
-            ),
+            new=mock_gerar,
         ):
             r = client.post(
                 "/api/preview-tts-amostra-voz-narracao",
                 json={
                     "voz": "Aoede",
                     "litellm_model": "gemini/gemini-2.5-flash-preview-tts",
+                    "perfil_tts": "experimental_voz",
+                    "temperatura_tts": 0.6,
+                    "ritmo_tts": "lento",
                 },
             )
         assert r.status_code == 200, r.text
         assert r.headers["content-type"].startswith("audio/")
         assert len(r.content) > 40
+        assert mock_gerar.await_args.kwargs["perfil_tts"] == "experimental_voz"
+        assert mock_gerar.await_args.kwargs["temperatura_tts"] == 0.6
+        assert mock_gerar.await_args.kwargs["ritmo_tts"] == "lento"

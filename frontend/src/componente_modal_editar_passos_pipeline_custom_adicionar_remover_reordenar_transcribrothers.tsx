@@ -30,6 +30,7 @@ import type {
   RespostaCatalogoPipelinesApiTranscribrothers,
 } from "./tipos_catalogo_pipelines_api_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 
 export type ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReordenarTranscribrothersProps = {
   aberto: boolean;
@@ -100,6 +101,8 @@ export function ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReorden
 }: ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReordenarTranscribrothersProps) {
   const tituloId = useId();
   const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const [passosLocais, setPassosLocais] = useState<PassoCatalogoPipelineApiTranscribrothers[]>([]);
   const [agenteFonteId, setAgenteFonteId] = useState("");
   const [acaoEmAndamento, setAcaoEmAndamento] = useState(false);
@@ -183,13 +186,14 @@ export function ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReorden
   const removerPasso = useCallback(
     async (passoId: string) => {
       if (!pipeline) return;
-      if (
-        !window.confirm(
+      const ok = await pedirConfirmacao({
+        titulo: "Remover passo?",
+        mensagem:
           "Remover este passo? O agente só é excluído da biblioteca se nenhuma outra pipeline o usar.",
-        )
-      ) {
-        return;
-      }
+        rotuloConfirmar: "Remover",
+        varianteConfirmar: "destrutiva",
+      });
+      if (!ok) return;
       setAcaoEmAndamento(true);
       try {
         const catalogo = await removerPassoPipelineCustomApiTranscribrothers(pipeline.id, passoId);
@@ -203,12 +207,13 @@ export function ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReorden
         setAcaoEmAndamento(false);
       }
     },
-    [onAtualizado, pipeline, pushToast],
+    [onAtualizado, pipeline, pushToast, pedirConfirmacao],
   );
 
   if (!aberto || !pipeline) return null;
 
   return createPortal(
+    <>
     <div className="tb-modal-job-root" role="presentation">
       <button
         type="button"
@@ -286,7 +291,9 @@ export function ComponenteModalEditarPassosPipelineCustomAdicionarRemoverReorden
           </div>
         </div>
       </div>
-    </div>,
+    </div>
+    {elementoDialogoConfirmacao}
+    </>,
     document.body,
   );
 }

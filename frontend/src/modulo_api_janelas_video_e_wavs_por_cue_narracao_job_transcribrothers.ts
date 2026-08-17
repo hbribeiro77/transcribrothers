@@ -11,6 +11,8 @@ export type ResumoJanelaVideoCueApiTranscribrothers = {
   voz_tts?: string;
   /** Pronúncia para TTS; vazio = igual a `texto`. */
   texto_tts?: string;
+  /** Fonte de tela; vazio/`entrada` = vídeo de entrada do job. */
+  id_fonte_video?: string;
 };
 
 export type RespostaJanelasVideoCuesNarracaoJobTranscribrothers = {
@@ -43,7 +45,11 @@ export async function listarJanelasVideoCuesNarracaoJobApiTranscribrothers(
 
 export async function salvarJanelasVideoCuesNarracaoJobApiTranscribrothers(
   jobId: string,
-  janelas: { inicio_video_segundos: number; fim_video_segundos: number }[],
+  janelas: {
+    inicio_video_segundos: number;
+    fim_video_segundos: number;
+    id_fonte_video?: string;
+  }[],
 ): Promise<RespostaJanelasVideoCuesNarracaoJobTranscribrothers> {
   const r = await fetch(`/api/jobs/${jobId}/janelas-video-cues-narracao`, {
     method: "PUT",
@@ -164,6 +170,12 @@ export type JanelaVideoCueLocalUiTranscribrothers = {
    * da prévia mesmo sem mudança de texto/voz.
    */
   forcarRegenerarTts?: boolean;
+  /** Cue adicionada na UI ainda sem trecho escolhido no Original. */
+  janelaProvisoria?: boolean;
+  /**
+   * Fonte de tela: vazio/`entrada` = vídeo de entrada; senão id da biblioteca.
+   */
+  idFonteVideo?: string;
 };
 
 export function cueVozDifereDaNarradaTranscribrothers(vozAtual: string, vozNarrada: string): boolean {
@@ -201,6 +213,8 @@ export async function gerarPreviewTtsCueNarracaoTextoAtualJobApiTranscribrothers
     texto: string;
     litellmModel?: string | null;
     voz?: string | null;
+    temperaturaTts?: number | null;
+    ritmoTts?: string | null;
   },
 ): Promise<Blob> {
   const r = await fetch(`/api/jobs/${jobId}/preview-tts-cue-narracao`, {
@@ -211,6 +225,8 @@ export async function gerarPreviewTtsCueNarracaoTextoAtualJobApiTranscribrothers
       texto: opts.texto,
       litellm_model: (opts.litellmModel || "").trim() || null,
       voz: (opts.voz || "").trim() || null,
+      temperatura_tts: typeof opts.temperaturaTts === "number" ? opts.temperaturaTts : null,
+      ritmo_tts: (opts.ritmoTts || "").trim() || null,
     }),
   });
   if (!r.ok) {
@@ -334,6 +350,43 @@ export function deslizarJanelaVideoCuePeloPontoUiTranscribrothers(
     // Se bateu no zero, mantém a duração empurrando o fim.
     if (novoInicio === 0 && novoFim - novoInicio < duracao - 1e-9) {
       novoFim = duracao;
+    }
+  }
+  return aplicarJanelaVideoCueAbsolutaUiTranscribrothers(janelas, indice, novoInicio, novoFim, {
+    avisarSobreposicaoSemBloquear: true,
+  });
+}
+
+/**
+ * Janela provisória: fixa só o extremo no playhead (a duração muda).
+ * Se o outro extremo ficar inválido, aplica a folga mínima.
+ */
+export function marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(
+  janelas: JanelaVideoCueLocalUiTranscribrothers[],
+  indice: number,
+  campo: "inicio" | "fim",
+  tempoSegundos: number,
+): ResultadoAplicarJanelaVideoCueUiTranscribrothers {
+  if (indice < 0 || indice >= janelas.length) {
+    return { ok: false, motivo: "Índice inválido." };
+  }
+  const atual = janelas[indice];
+  if (!atual) return { ok: false, motivo: "Índice inválido." };
+  const t = Math.max(0, tempoSegundos);
+  let novoInicio = atual.inicioVideoSegundos;
+  let novoFim = atual.fimVideoSegundos;
+  if (campo === "inicio") {
+    novoInicio = t;
+    if (novoFim < novoInicio + FOLGA_MIN_JANELAS_UI) {
+      novoFim = novoInicio + FOLGA_MIN_JANELAS_UI;
+    }
+  } else {
+    novoFim = t;
+    if (novoFim < FOLGA_MIN_JANELAS_UI) {
+      novoFim = FOLGA_MIN_JANELAS_UI;
+    }
+    if (novoInicio > novoFim - FOLGA_MIN_JANELAS_UI) {
+      novoInicio = Math.max(0, novoFim - FOLGA_MIN_JANELAS_UI);
     }
   }
   return aplicarJanelaVideoCueAbsolutaUiTranscribrothers(janelas, indice, novoInicio, novoFim, {

@@ -14,6 +14,18 @@ export function modeloLitellmPareceTtsPeloSlugTranscribrothers(modelo: string): 
   return s.includes("-tts") || s.endsWith("/tts") || s.includes("/tts-");
 }
 
+export function listarModelosTtsDaListaDisponivelTranscribrothers(modelos: string[]): string[] {
+  const out: string[] = [];
+  const visto = new Set<string>();
+  for (const m of modelos) {
+    const s = (m || "").trim();
+    if (!s || visto.has(s) || !modeloLitellmPareceTtsPeloSlugTranscribrothers(s)) continue;
+    visto.add(s);
+    out.push(s);
+  }
+  return out;
+}
+
 export function escolherModeloTtsDaListaDisponivelTranscribrothers(
   modelos: string[],
   preferido?: string | null,
@@ -24,6 +36,20 @@ export function escolherModeloTtsDaListaDisponivelTranscribrothers(
     if (modeloLitellmPareceTtsPeloSlugTranscribrothers(m)) return m;
   }
   return null;
+}
+
+/** Rótulo curto para o select de TTS (slug completo fica no value). */
+export function rotuloCurtoModeloTtsParaUiTranscribrothers(modelo: string): string {
+  const s = (modelo || "").trim();
+  if (!s) return "";
+  const base = s.includes("/") ? s.split("/").pop() || s : s;
+  if (/2\.5-pro.*tts/i.test(base) || /pro-preview-tts/i.test(base)) {
+    return `${base} (Pro)`;
+  }
+  if (/2\.5-flash.*tts/i.test(base) || /flash-preview-tts/i.test(base)) {
+    return `${base} (Flash)`;
+  }
+  return base;
 }
 
 /** Modelo de chat (sem -tts) para limpeza IA / tutorial — prioriza o select das configurações. */

@@ -32,6 +32,28 @@ def listar_modelos_litellm_provisionados_para_interface(
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 
+def listar_modelos_litellm_permitidos_efetivos_transcribrothers(
+    cfg: ConfiguracaoAmbienteTranscribrothers,
+) -> list[str]:
+    """Provisionados do .env + extras runtime (SQLite / cache em memória)."""
+    from transcribrothers_backend.modulo_persistencia_runtime_config_modelos_litellm_extras_sqlite_transcribrothers import (
+        obter_modelos_litellm_extras_em_cache_transcribrothers,
+    )
+
+    ordem: list[str] = []
+    vistos: set[str] = set()
+    for m in (
+        *listar_modelos_litellm_provisionados_para_interface(cfg),
+        *obter_modelos_litellm_extras_em_cache_transcribrothers(),
+    ):
+        t = (m or "").strip()
+        if not t or t in vistos:
+            continue
+        vistos.add(t)
+        ordem.append(t)
+    return ordem
+
+
 def validar_e_resolver_modelo_litellm_solicitado_pelo_cliente(
     cfg: ConfiguracaoAmbienteTranscribrothers,
     modelo_solicitado: str | None,
@@ -39,7 +61,7 @@ def validar_e_resolver_modelo_litellm_solicitado_pelo_cliente(
     escolha = (modelo_solicitado or "").strip() or (cfg.litellm_model or "").strip()
     if not escolha:
         raise ValueError("Nenhum modelo LiteLLM configurado (LITELLM_MODEL).")
-    permitidos = listar_modelos_litellm_provisionados_para_interface(cfg)
+    permitidos = listar_modelos_litellm_permitidos_efetivos_transcribrothers(cfg)
     lista_fixa = (cfg.litellm_modelos_provisionados or "").strip()
     if lista_fixa and escolha not in permitidos:
         raise ValueError(

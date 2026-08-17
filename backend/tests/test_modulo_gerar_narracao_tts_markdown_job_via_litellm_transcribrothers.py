@@ -78,6 +78,7 @@ async def test_gerar_narracao_grava_wav_e_usa_modalities_audio(tmp_path: Path) -
     corpo = mock_client.post.await_args.kwargs["json"]
     assert corpo["modalities"] == ["audio"]
     assert corpo["audio"]["format"] == "pcm16"
+    assert corpo["messages"][0]["content"] == "Olá, isto é um teste de narração."
 
 
 @pytest.mark.asyncio

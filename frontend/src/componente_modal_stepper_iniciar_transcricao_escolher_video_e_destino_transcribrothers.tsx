@@ -77,7 +77,7 @@ type PropsModalStepperIniciarTranscricaoTranscribrothers = {
   importacaoRecbrothers?: ImportacaoRecbrothersModalStepperTranscribrothers | null;
   onFechar: () => void;
   onIniciar: (
-    arquivo: File,
+    arquivos: File[],
     destino: DestinoAposTranscricaoTranscribrothers,
     cliquesJsonOpcional?: File | null,
     pipelineCustomId?: string | null,
@@ -106,7 +106,9 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
   const inputTranscricaoRef = useRef<HTMLInputElement | null>(null);
   const [etapa, setEtapa] = useState(0);
   const [tipoEntrada, setTipoEntrada] = useState<TipoEntradaStepperTranscribrothers>("video");
-  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [arquivosMidia, setArquivosMidia] = useState<File[]>([]);
+  /** Quando true, o 1º item é o vídeo do staging RecBrothers (não reenviado; só extras vão em `videos`). */
+  const [primeiroArquivoEhStagingRecbrothers, setPrimeiroArquivoEhStagingRecbrothers] = useState(false);
   const [arquivoCliquesJson, setArquivoCliquesJson] = useState<File | null>(null);
   const [textoTranscricaoPronta, setTextoTranscricaoPronta] = useState("");
   const [arquivoTranscricaoPronta, setArquivoTranscricaoPronta] = useState<File | null>(null);
@@ -153,7 +155,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
       setDestino(
         importacaoRecbrothers.destinoInicial ?? DESTINO_APOS_TRANSCRICAO_PADRAO_NOVO_PROJETO_TRANSCRIBROTHERS,
       );
-      setArquivo(null);
+      setArquivosMidia([]);
+      setPrimeiroArquivoEhStagingRecbrothers(false);
       setArquivoCliquesJson(null);
       setTextoTranscricaoPronta("");
       setArquivoTranscricaoPronta(null);
@@ -163,7 +166,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
       void carregarArquivoVideoDeStagingTranscribrothers(importacaoRecbrothers.stagingId)
         .then((file) => {
           if (cancelado) return;
-          setArquivo(file);
+          setArquivosMidia([file]);
+          setPrimeiroArquivoEhStagingRecbrothers(true);
         })
         .catch((e: unknown) => {
           if (cancelado) return;
@@ -179,7 +183,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
     }
     setEtapa(0);
     setTipoEntrada("video");
-    setArquivo(null);
+    setArquivosMidia([]);
+    setPrimeiroArquivoEhStagingRecbrothers(false);
     setArquivoCliquesJson(null);
     setTextoTranscricaoPronta("");
     setArquivoTranscricaoPronta(null);
@@ -207,12 +212,31 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
 
   const podeAvancarEtapaArquivo = ehTranscricaoPronta
     ? Boolean(textoTranscricaoPronta.trim() || arquivoTranscricaoPronta)
-    : Boolean(arquivo);
+    : arquivosMidia.length > 0;
   const ehUltimaEtapa = etapa === 1;
+  const ehTipoVideo = tipoEntradaEfetivo === "video";
+  const tamanhoTotalMidiaBytes = arquivosMidia.reduce((acc, f) => acc + f.size, 0);
 
   function fecharModal() {
     if (carregando) return;
     onFechar();
+  }
+
+  function moverArquivoMidiaTranscribrothers(indice: number, delta: number) {
+    setArquivosMidia((atual) => {
+      const destino = indice + delta;
+      if (destino < 0 || destino >= atual.length) return atual;
+      if (primeiroArquivoEhStagingRecbrothers && (indice === 0 || destino === 0)) return atual;
+      const proximo = [...atual];
+      const [item] = proximo.splice(indice, 1);
+      proximo.splice(destino, 0, item);
+      return proximo;
+    });
+  }
+
+  function removerArquivoMidiaTranscribrothers(indice: number) {
+    if (primeiroArquivoEhStagingRecbrothers && indice === 0) return;
+    setArquivosMidia((atual) => atual.filter((_, i) => i !== indice));
   }
 
   function confirmarCriarProjeto() {
@@ -228,11 +252,14 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
       });
       return;
     }
-    if (arquivo) {
-      const cliques =
-        destinoEfetivo === "reproducao_bug" && !importadoDoRecbrothers ? arquivoCliquesJson : null;
-      onIniciar(arquivo, destinoEfetivo, cliques, pipelineCustomId);
-    }
+    if (arquivosMidia.length === 0) return;
+    const cliques =
+      destinoEfetivo === "reproducao_bug" && !importadoDoRecbrothers ? arquivoCliquesJson : null;
+    const paraEnviar =
+      importadoDoRecbrothers && primeiroArquivoEhStagingRecbrothers
+        ? arquivosMidia.slice(1)
+        : arquivosMidia;
+    onIniciar(paraEnviar, destinoEfetivo, cliques, pipelineCustomId);
   }
 
   return createPortal(
@@ -306,7 +333,9 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                 <p className="tb-muted tb-stepper-iniciar-transcricao-etapa-lead">
                   {ehTranscricaoPronta
                     ? "Sem STT: o texto vira o snapshot do job. Formatos: TXT, MD, SRT ou VTT."
-                    : "O arquivo será enviado ao servidor. O tipo (vídeo ou áudio) limita as pipelines disponíveis."}
+                    : ehTipoVideo
+                      ? "Pode enviar um ou mais vídeos na ordem da timeline — serão unidos num só antes da transcrição."
+                      : "O arquivo será enviado ao servidor. O tipo (vídeo ou áudio) limita as pipelines disponíveis."}
                 </p>
                 {!importadoDoRecbrothers ? (
                   <div
@@ -324,7 +353,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                         checked={tipoEntrada === "video"}
                         onChange={() => {
                           setTipoEntrada("video");
-                          setArquivo(null);
+                          setArquivosMidia([]);
+                          setPrimeiroArquivoEhStagingRecbrothers(false);
                           setArquivoTranscricaoPronta(null);
                           setTextoTranscricaoPronta("");
                         }}
@@ -341,7 +371,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                         checked={tipoEntrada === "audio"}
                         onChange={() => {
                           setTipoEntrada("audio");
-                          setArquivo(null);
+                          setArquivosMidia([]);
+                          setPrimeiroArquivoEhStagingRecbrothers(false);
                           setArquivoTranscricaoPronta(null);
                           setTextoTranscricaoPronta("");
                           setDestino("so_transcricao");
@@ -360,7 +391,8 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                         checked={tipoEntrada === "transcricao_pronta"}
                         onChange={() => {
                           setTipoEntrada("transcricao_pronta");
-                          setArquivo(null);
+                          setArquivosMidia([]);
+                          setPrimeiroArquivoEhStagingRecbrothers(false);
                           setDestino("so_transcricao");
                           setPipelineCustomId(null);
                         }}
@@ -421,36 +453,127 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                       className="tb-input-file-oculto"
                       type="file"
                       accept={tipoEntradaEfetivo === "audio" ? ACCEPT_AUDIO : ACCEPT_VIDEO}
-                      onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+                      multiple={ehTipoVideo}
+                      onChange={(e) => {
+                        const escolhidos = Array.from(e.target.files ?? []);
+                        if (escolhidos.length === 0) return;
+                        if (tipoEntradaEfetivo === "audio") {
+                          setArquivosMidia(escolhidos.slice(0, 1));
+                          setPrimeiroArquivoEhStagingRecbrothers(false);
+                        } else {
+                          setArquivosMidia((atual) => [...atual, ...escolhidos]);
+                        }
+                        e.target.value = "";
+                      }}
                     />
-                    <button
-                      type="button"
-                      className={`tb-stepper-iniciar-transcricao-zona-arquivo${arquivo ? " tb-stepper-iniciar-transcricao-zona-arquivo--preenchida" : ""}`}
-                      onClick={() => inputVideoRef.current?.click()}
-                    >
-                      {arquivo ? (
-                        <>
-                          <strong className="tb-stepper-iniciar-transcricao-nome-arquivo">{arquivo.name}</strong>
-                          <span className="tb-muted">
-                            {formatarTamanhoArquivoMbTranscribrothers(arquivo.size)}
-                          </span>
-                          <span className="tb-stepper-iniciar-transcricao-trocar">Clique para trocar o arquivo</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="tb-stepper-iniciar-transcricao-cta">
-                            {tipoEntradaEfetivo === "audio"
-                              ? "Selecionar arquivo de áudio"
-                              : "Selecionar arquivo de vídeo"}
-                          </span>
-                          <span className="tb-muted">
-                            {tipoEntradaEfetivo === "audio"
-                              ? "WAV, MP3, M4A, OGG, FLAC…"
-                              : "MP4, WebM, MOV, MKV, AVI…"}
-                          </span>
-                        </>
-                      )}
-                    </button>
+                    {arquivosMidia.length === 0 ? (
+                      <button
+                        type="button"
+                        className="tb-stepper-iniciar-transcricao-zona-arquivo"
+                        onClick={() => inputVideoRef.current?.click()}
+                      >
+                        <span className="tb-stepper-iniciar-transcricao-cta">
+                          {tipoEntradaEfetivo === "audio"
+                            ? "Selecionar arquivo de áudio"
+                            : "Selecionar vídeo(s)"}
+                        </span>
+                        <span className="tb-muted">
+                          {tipoEntradaEfetivo === "audio"
+                            ? "WAV, MP3, M4A, OGG, FLAC…"
+                            : "MP4, WebM, MOV… — pode escolher vários de uma vez"}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="tb-stepper-iniciar-transcricao-lista-videos">
+                        <ol className="tb-stepper-iniciar-transcricao-lista-videos-ol">
+                          {arquivosMidia.map((arq, indice) => {
+                            const ehStaging = primeiroArquivoEhStagingRecbrothers && indice === 0;
+                            return (
+                              <li
+                                key={`${arq.name}-${arq.size}-${indice}`}
+                                className="tb-stepper-iniciar-transcricao-item-video"
+                              >
+                                <span className="tb-stepper-iniciar-transcricao-item-video-ordem">
+                                  {indice + 1}.
+                                </span>
+                                <div className="tb-stepper-iniciar-transcricao-item-video-meta">
+                                  <strong className="tb-stepper-iniciar-transcricao-nome-arquivo">
+                                    {arq.name}
+                                  </strong>
+                                  <span className="tb-muted">
+                                    {formatarTamanhoArquivoMbTranscribrothers(arq.size)}
+                                    {ehStaging ? " · RecBrothers" : ""}
+                                  </span>
+                                </div>
+                                {ehTipoVideo ? (
+                                  <div className="tb-stepper-iniciar-transcricao-item-video-acoes">
+                                    <button
+                                      type="button"
+                                      className="tb-linkbtn"
+                                      disabled={
+                                        carregando ||
+                                        indice === 0 ||
+                                        (primeiroArquivoEhStagingRecbrothers && indice === 1)
+                                      }
+                                      title="Subir na ordem"
+                                      onClick={() => moverArquivoMidiaTranscribrothers(indice, -1)}
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="tb-linkbtn"
+                                      disabled={carregando || indice >= arquivosMidia.length - 1}
+                                      title="Descer na ordem"
+                                      onClick={() => moverArquivoMidiaTranscribrothers(indice, 1)}
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="tb-linkbtn"
+                                      disabled={carregando || ehStaging}
+                                      title={ehStaging ? "Vídeo do RecBrothers (fixo)" : "Remover"}
+                                      onClick={() => removerArquivoMidiaTranscribrothers(indice)}
+                                    >
+                                      Remover
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="tb-linkbtn"
+                                    disabled={carregando}
+                                    onClick={() => inputVideoRef.current?.click()}
+                                  >
+                                    Trocar
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                        {ehTipoVideo ? (
+                          <div className="tb-stepper-iniciar-transcricao-lista-videos-rodape">
+                            <p className="tb-muted">
+                              {arquivosMidia.length} vídeo(s) ·{" "}
+                              {formatarTamanhoArquivoMbTranscribrothers(tamanhoTotalMidiaBytes)} no total
+                              {arquivosMidia.length > 1
+                                ? " — serão unidos na ordem acima antes da transcrição"
+                                : ""}
+                            </p>
+                            <button
+                              type="button"
+                              className="tb-linkbtn"
+                              disabled={carregando}
+                              onClick={() => inputVideoRef.current?.click()}
+                            >
+                              Adicionar outro vídeo
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                   </>
                 )}
               </section>
@@ -481,10 +604,21 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                         : `${textoTranscricaoPronta.trim().length} caracteres colados`}
                     </strong>
                   </p>
-                ) : arquivo ? (
+                ) : arquivosMidia.length > 0 ? (
                   <p className="tb-stepper-iniciar-transcricao-resumo-arquivo">
-                    <span className="tb-muted">{tipoEntradaEfetivo === "audio" ? "Áudio:" : "Vídeo:"}</span>{" "}
-                    <strong>{arquivo.name}</strong> ({formatarTamanhoArquivoMbTranscribrothers(arquivo.size)})
+                    <span className="tb-muted">
+                      {tipoEntradaEfetivo === "audio"
+                        ? "Áudio:"
+                        : arquivosMidia.length > 1
+                          ? "Vídeos:"
+                          : "Vídeo:"}
+                    </span>{" "}
+                    <strong>
+                      {arquivosMidia.length === 1
+                        ? arquivosMidia[0].name
+                        : `${arquivosMidia.length} partes (${arquivosMidia.map((f) => f.name).join(" → ")})`}
+                    </strong>{" "}
+                    ({formatarTamanhoArquivoMbTranscribrothers(tamanhoTotalMidiaBytes)})
                   </p>
                 ) : null}
                 <div className="tb-stepper-iniciar-transcricao-opcoes-destino" role="radiogroup" aria-label="Destino">
@@ -686,7 +820,9 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                   type="button"
                   className="tb-primary"
                   disabled={
-                    (ehTranscricaoPronta ? !podeAvancarEtapaArquivo || !onIniciarComTranscricaoPronta : !arquivo) ||
+                    (ehTranscricaoPronta
+                      ? !podeAvancarEtapaArquivo || !onIniciarComTranscricaoPronta
+                      : arquivosMidia.length === 0) ||
                     carregando ||
                     carregandoImportacaoRecbrothers ||
                     Boolean(erroImportacaoRecbrothers)

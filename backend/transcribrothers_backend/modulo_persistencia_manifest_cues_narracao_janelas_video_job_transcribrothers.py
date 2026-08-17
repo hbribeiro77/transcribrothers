@@ -27,6 +27,8 @@ class ItemManifestCueNarracaoJanelaVideoTranscribrothers:
     voz_tts: str = ""
     # Pronúncia para TTS; vazio = usar `texto` (legenda).
     texto_tts: str = ""
+    # Fonte de tela; vazio = vídeo de entrada do job.
+    id_fonte_video: str = ""
 
 
 def normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto: str) -> str:
@@ -62,6 +64,7 @@ def _item_de_dict_transcribrothers(raw: dict[str, Any]) -> ItemManifestCueNarrac
         sem_narracao=bool(raw.get("sem_narracao", False)),
         voz_tts=str(raw.get("voz_tts") or "").strip(),
         texto_tts=str(raw.get("texto_tts") or "").strip(),
+        id_fonte_video=str(raw.get("id_fonte_video") or "").strip(),
     )
 
 
@@ -84,6 +87,7 @@ def gravar_manifest_cues_narracao_janelas_video_no_work_transcribrothers(
                 "sem_narracao": bool(getattr(c, "sem_narracao", False)),
                 "voz_tts": str(getattr(c, "voz_tts", "") or "").strip(),
                 "texto_tts": str(getattr(c, "texto_tts", "") or "").strip(),
+                "id_fonte_video": str(getattr(c, "id_fonte_video", "") or "").strip(),
             }
             for c in cues
         ],
@@ -132,6 +136,7 @@ def cues_janela_a_partir_manifest_transcribrothers(
             sem_narracao=it.sem_narracao,
             voz_tts=it.voz_tts,
             texto_tts=it.texto_tts,
+            id_fonte_video=str(getattr(it, "id_fonte_video", "") or "").strip(),
         )
         for it in items
     ]
@@ -156,6 +161,7 @@ def aplicar_textos_vtt_sobre_cues_janela_preservando_tempos_video_transcribrothe
             sem_narracao=cue.sem_narracao,
             voz_tts=cue.voz_tts,
             texto_tts=cue.texto_tts,
+            id_fonte_video=str(getattr(cue, "id_fonte_video", "") or "").strip(),
         )
         for cue, texto in zip(cues, textos, strict=True)
     ]
@@ -176,6 +182,7 @@ def carimbar_voz_tts_em_todas_as_cues_janela_transcribrothers(
             sem_narracao=c.sem_narracao,
             voz_tts=voz,
             texto_tts=c.texto_tts,
+            id_fonte_video=str(getattr(c, "id_fonte_video", "") or "").strip(),
         )
         for c in cues
     ]

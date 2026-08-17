@@ -20,6 +20,8 @@ export async function agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribro
   jobId: string,
   opts: {
     litellmModel?: string | null;
+    temperaturaTts?: number | null;
+    ritmoTts?: string | null;
     cues: CueEdicaoModalNarradoParaGerarVideoApiTranscribrothers[];
     janelas?: JanelaEdicaoModalNarradoParaGerarVideoApiTranscribrothers[] | null;
   },
@@ -29,6 +31,8 @@ export async function agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribro
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       litellm_model: (opts.litellmModel || "").trim() || null,
+      temperatura_tts: typeof opts.temperaturaTts === "number" ? opts.temperaturaTts : null,
+      ritmo_tts: (opts.ritmoTts || "").trim() || null,
       cues: opts.cues,
       janelas: opts.janelas ?? null,
     }),

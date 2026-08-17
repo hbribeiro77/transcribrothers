@@ -20,6 +20,7 @@ import {
 import { agendarAtualizacaoNarracaoAPartirLegendasVttEditadasJobApiTranscribrothers } from "./modulo_api_atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers.ts";
 import { agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribrothers } from "./modulo_api_gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers.ts";
 import { baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers } from "./modulo_api_baixar_video_narrado_com_legendas_queimadas_job_transcribrothers.ts";
+import { anexarGravacaoComplementarVideoEntradaJobApiTranscribrothers } from "./modulo_api_anexar_gravacao_complementar_video_entrada_job_transcribrothers.ts";
 import { agendarRemuxVideoNarradoAposEdicaoJanelasJobApiTranscribrothers } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 import {
   lerViewVideoNarradoAbertaNaUrlTranscribrothers,
@@ -30,6 +31,7 @@ import {
   carregarListaModelosLitellmExtrasSalvosNoNavegadorTranscribrothers,
   mesclarModelosServidorComExtrasNavegadorTranscribrothers,
 } from "./modulo_armazenamento_local_modelos_litellm_extras_navegador_transcribrothers.ts";
+import { carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers } from "./modulo_armazenamento_local_modelo_tts_narracao_preferido_navegador_transcribrothers.ts";
 import { gerarMarkdownTutorialComImagensPngEmbutidasComoDataUriParaArquivoDownloadTranscribrothers } from "./modulo_util_gerar_markdown_tutorial_com_imagens_png_embutidas_data_uri_base64_download_transcribrothers.ts";
 import { abrirUrlExternaNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_url_externa_nova_aba_navegador_transcribrothers.ts";
 import { abrirTutorialMarkdownRenderizadoEmNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_tutorial_markdown_renderizado_em_nova_aba_navegador_transcribrothers.ts";
@@ -67,10 +69,21 @@ import {
   rotuloEtapaLogDecisoesIaEmPtBrTranscribrothers,
 } from "./modulo_util_montar_entradas_log_decisoes_ia_modal_status_job_transcribrothers.ts";
 import { extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers } from "./modulo_util_extrair_alteracoes_limpeza_legendas_ia_do_steps_json_transcribrothers.ts";
+import { extrairDiagnosticoTtsExperimentalVozDoStepsJsonTranscribrothers } from "./modulo_util_extrair_diagnostico_tts_experimental_voz_do_steps_json_transcribrothers.ts";
+import {
+  extrairCuesPendentesTimeoutTtsExperimentalDoStepsJsonTranscribrothers,
+  jobAguardandoResolucaoTtsTimeoutExperimentalTranscribrothers,
+} from "./modulo_util_extrair_cues_pendentes_timeout_tts_experimental_do_steps_json_transcribrothers.ts";
+import {
+  descartarCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers,
+  resolverCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers,
+  sugerirReescritaCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers,
+} from "./modulo_api_resolver_cue_tts_pendente_timeout_experimental_job_transcribrothers.ts";
 import { formatarInstanteIsoApiParaDataHoraPtBrLocalTranscribrothers } from "./modulo_util_parse_instante_iso_api_utc_para_date_e_formatar_data_hora_pt_br_transcribrothers.ts";
 import { listarCaminhosAssetsPngOrdemPrimeiraOcorrenciaMarkdownTutorialTranscribrothers } from "./modulo_util_listar_caminhos_assets_png_ordem_markdown_para_referencias_fab_regeneracao_transcribrothers.ts";
 import { montarTextoPlanoTranscricaoOriginalAPartirDeSnapshotJobTutorialTranscribrothers } from "./modulo_util_montar_texto_plano_transcricao_original_a_partir_de_snapshot_job_tutorial_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_documento_projeto_em_branco_transcribrothers.ts";
 import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_tutorial_sem_referencias_video_documento_autonomo_transcribrothers.ts";
 import {
@@ -259,17 +272,6 @@ type ConfigPublicaTranscribrothers = {
 
 type ResolucaoEncodeVideoNarradoUiTranscribrothers = "original" | "1080p" | "720p" | "480p";
 
-/** Resposta de GET …/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial (somente leitura). */
-type RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialApiTranscribrothers = {
-  pipeline_identificador: string;
-  system_verificacao_sustentacao_tutorial_markdown_vs_transcricao: string;
-  system_verificacao_redundancia_secao_markdown_entre_secoes: string;
-  system_revisao_profunda_analista_plano_tutorial: string;
-  system_revisao_profunda_worker_item_plano_tutorial: string;
-  system_revisao_profunda_resumo_plano_para_editor_final: string;
-  instrucao_editor_final_revisao_profunda_consolidacao_markdown: string;
-};
-
 function normalizarRespostaConfigPublicaTranscribrothersDaApi(
   raw: Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>,
 ): ConfigPublicaTranscribrothers {
@@ -425,7 +427,7 @@ function obterTituloSugeridoIssueGitlabDeMarkdownTutorialTranscribrothers(
 }
 
 async function criarJobUploadArquivoLocal(
-  video: File | null,
+  videos: File[] | null,
   litellmModel: string,
   destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
   stagingIdRecbrothers?: string | null,
@@ -434,10 +436,16 @@ async function criarJobUploadArquivoLocal(
 ): Promise<JobStatus> {
   const fd = new FormData();
   const stagingId = (stagingIdRecbrothers || "").trim();
+  const listaVideos = (videos || []).filter(Boolean);
   if (stagingId) {
     fd.append("staging_id", stagingId);
-  } else if (video) {
-    fd.append("video", video, video.name);
+    for (const arquivo of listaVideos) {
+      fd.append("videos", arquivo, arquivo.name);
+    }
+  } else if (listaVideos.length > 0) {
+    for (const arquivo of listaVideos) {
+      fd.append("videos", arquivo, arquivo.name);
+    }
   } else {
     throw new Error("Informe o vídeo ou o identificador de importação RecBrothers.");
   }
@@ -864,17 +872,27 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 }: PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorialProps = {}) {
   const { pushToast, pushToastProgresso, atualizarToastProgresso, removerToast } =
     usarToastFeedbackAcoesUiTranscribrothers();
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const [modalIniciarTranscricaoAberto, setModalIniciarTranscricaoAberto] = useState(false);
   const [importacaoRecbrothersModalStepper, setImportacaoRecbrothersModalStepper] =
     useState<ImportacaoRecbrothersModalStepperTranscribrothers | null>(null);
   const [configApi, setConfigApi] = useState<ConfigPublicaTranscribrothers | null>(null);
   const [modeloLitellm, setModeloLitellm] = useState("");
+  const [modeloTtsPreferidoSalvo, setModeloTtsPreferidoSalvo] = useState<string | null>(() =>
+    carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers(),
+  );
   const [modelosExtrasNavegador, setModelosExtrasNavegador] = useState<string[]>([]);
   const [novoSlugModeloLitellm, setNovoSlugModeloLitellm] = useState("");
-  const [verificandoModeloLitellmProbe, setVerificandoModeloLitellmProbe] = useState(false);
-  const [resultadoProbeModeloLitellm, setResultadoProbeModeloLitellm] = useState<
+  const [verificandoModeloLitellmProbeOrigem, setVerificandoModeloLitellmProbeOrigem] = useState<
+    null | "selecionado" | "novo"
+  >(null);
+  const [resultadoProbeModeloLitellmSelecionado, setResultadoProbeModeloLitellmSelecionado] = useState<
     null | "ok" | "erro"
   >(null);
+  const [resultadoProbeNovoModeloLitellm, setResultadoProbeNovoModeloLitellm] = useState<null | "ok" | "erro">(
+    null,
+  );
   const [gerandoNarracaoTtsDocumento, setGerandoNarracaoTtsDocumento] = useState(false);
   const [gerandoVideoComNarracaoTts, setGerandoVideoComNarracaoTts] = useState(false);
   const [job, setJob] = useState<JobStatus | null>(null);
@@ -895,6 +913,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     useState(false);
   const colandoImagemClipboardParaInsercaoPreviewTutorialRef = useRef(false);
   const [capturandoFrameManualVideo, setCapturandoFrameManualVideo] = useState(false);
+  const [anexandoGravacaoComplementarVideoEntrada, setAnexandoGravacaoComplementarVideoEntrada] =
+    useState(false);
+  const refInputGravacaoComplementarVideoEntradaTranscribrothers = useRef<HTMLInputElement | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [baixandoMarkdownComImagens, setBaixandoMarkdownComImagens] = useState(false);
@@ -925,18 +946,30 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     useState("");
   const [regenerandoTutorialMarkdown, setRegenerandoTutorialMarkdown] = useState(false);
   const [painelConfiguracoesAberto, setPainelConfiguracoesAberto] = useState(false);
-  const [promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers, setPromptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers] =
-    useState<RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialApiTranscribrothers | null>(null);
-  const [carregandoPromptsFixosRevisaoEVerificacaoTutorial, setCarregandoPromptsFixosRevisaoEVerificacaoTutorial] =
-    useState(false);
-  const [erroCarregarPromptsFixosRevisaoEVerificacaoTutorial, setErroCarregarPromptsFixosRevisaoEVerificacaoTutorial] =
-    useState<string | null>(null);
+  const [painelConfiguracoesFechando, setPainelConfiguracoesFechando] = useState(false);
+  type AbaGavetaConfiguracoesTranscribrothers =
+    | "geral"
+    | "video_narrado"
+    | "transcricao"
+    | "integracoes";
+  const [abaGavetaConfiguracoes, setAbaGavetaConfiguracoes] =
+    useState<AbaGavetaConfiguracoesTranscribrothers>("geral");
   const [modalProgressoJobAberto, setModalProgressoJobAberto] = useState(false);
   const [modalGerarOutroFormatoAberto, setModalGerarOutroFormatoAberto] = useState(false);
   const [modalEscopoVideoNarradoAberto, setModalEscopoVideoNarradoAberto] = useState(false);
   const [carregandoGerarOutroFormato, setCarregandoGerarOutroFormato] = useState(false);
   const [passoPipelineModalStatusComPainelDescricaoAbertoId, setPassoPipelineModalStatusComPainelDescricaoAbertoId] =
     useState<string | null>(null);
+  const [rascunhosTextoCuesPendentesTimeoutTtsExperimental, setRascunhosTextoCuesPendentesTimeoutTtsExperimental] =
+    useState<Record<number, string>>({});
+  const [indicesCuesTimeoutTtsExperimentalEmProcessamento, setIndicesCuesTimeoutTtsExperimentalEmProcessamento] =
+    useState<Set<number>>(() => new Set());
+  const [indicesCuesTimeoutTtsExperimentalSugerindoIa, setIndicesCuesTimeoutTtsExperimentalSugerindoIa] =
+    useState<Set<number>>(() => new Set());
+  const [sugestoesReescritaCuesTimeoutTtsExperimental, setSugestoesReescritaCuesTimeoutTtsExperimental] =
+    useState<Record<number, string>>({});
+  const indicesCuesTimeoutTtsExperimentalEmProcessamentoRef = useRef<Set<number>>(new Set());
+  const indicesCuesTimeoutTtsExperimentalSugerindoIaRef = useRef<Set<number>>(new Set());
   const [modalTranscricaoOriginalAberta, setModalTranscricaoOriginalAberta] = useState(false);
   const [modalListaJobsServidorAberta, setModalListaJobsServidorAberta] = useState(false);
   const [modalEscolherVersaoHistoricoTutorialAberta, setModalEscolherVersaoHistoricoTutorialAberta] =
@@ -1018,8 +1051,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [tutorialPlanejamentoCapturaLitellmForm, setTutorialPlanejamentoCapturaLitellmForm] = useState(true);
   const [salvandoMmRuntime, setSalvandoMmRuntime] = useState(false);
   const [erroMmRuntime, setErroMmRuntime] = useState<string | null>(null);
-  const [auditorVerificacaoHabilitadoForm, setAuditorVerificacaoHabilitadoForm] = useState(true);
-  const [salvandoAuditorRuntimeSqlite, setSalvandoAuditorRuntimeSqlite] = useState(false);
   const [encodeResolucaoForm, setEncodeResolucaoForm] =
     useState<ResolucaoEncodeVideoNarradoUiTranscribrothers>("1080p");
   const [salvandoEncodeRuntimeSqlite, setSalvandoEncodeRuntimeSqlite] = useState(false);
@@ -1027,25 +1058,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [vozTtsNarracaoForm, setVozTtsNarracaoForm] = useState("Kore");
   const [salvandoVozTtsRuntimeSqlite, setSalvandoVozTtsRuntimeSqlite] = useState(false);
   const [erroVozTtsRuntimeSqlite, setErroVozTtsRuntimeSqlite] = useState<string | null>(null);
-  const [erroAuditorRuntimeSqlite, setErroAuditorRuntimeSqlite] = useState<string | null>(null);
   const [pastasWikiForm, setPastasWikiForm] = useState<string[]>(["workshop"]);
   const [pastaWikiPadraoForm, setPastaWikiPadraoForm] = useState("workshop");
   const [novaPastaWikiForm, setNovaPastaWikiForm] = useState("");
   const [salvandoPastasWikiRuntime, setSalvandoPastasWikiRuntime] = useState(false);
   const [validandoPastaWikiNova, setValidandoPastaWikiNova] = useState(false);
   const [erroPastasWikiRuntime, setErroPastasWikiRuntime] = useState<string | null>(null);
-  const [auditorRedundanciaSecaoHabilitadoForm, setAuditorRedundanciaSecaoHabilitadoForm] = useState(true);
-  const [correcaoAutomaticaRedundanciaSecaoHabilitadaForm, setCorrecaoAutomaticaRedundanciaSecaoHabilitadaForm] =
-    useState(true);
-  const [
-    correcaoAutomaticaRedundanciaSecaoIncluirAtencaoForm,
-    setCorrecaoAutomaticaRedundanciaSecaoIncluirAtencaoForm,
-  ] = useState(false);
-  const [salvandoAuditorRedundanciaSecaoRuntimeSqlite, setSalvandoAuditorRedundanciaSecaoRuntimeSqlite] =
-    useState(false);
-  const [erroAuditorRedundanciaSecaoRuntimeSqlite, setErroAuditorRedundanciaSecaoRuntimeSqlite] = useState<
-    string | null
-  >(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const textareaMarkdownEdicaoTutorialRef = useRef<HTMLTextAreaElement | null>(null);
   const refContainerPreviewTutorialMarkdown = useRef<HTMLDivElement | null>(null);
@@ -1104,52 +1122,39 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   }, []);
 
   useEffect(() => {
-    void fetch("/api/config/transcribrothers")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((raw: Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>) => {
-        const d = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+    void (async () => {
+      try {
+        const r = await fetch("/api/config/transcribrothers");
+        if (!r.ok) throw new Error(String(r.status));
+        let d = normalizarRespostaConfigPublicaTranscribrothersDaApi(
+          (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>,
+        );
+        const extrasLocais = carregarListaModelosLitellmExtrasSalvosNoNavegadorTranscribrothers();
+        setModelosExtrasNavegador(extrasLocais);
+        const faltandoNoServidor = extrasLocais.filter((m) => !d.litellm_models.includes(m));
+        for (const slug of faltandoNoServidor) {
+          try {
+            const rp = await fetch("/api/config/transcribrothers/modelos-litellm-extras-runtime", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ modelo: slug }),
+            });
+            if (!rp.ok) continue;
+            d = normalizarRespostaConfigPublicaTranscribrothersDaApi(
+              (await rp.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>,
+            );
+          } catch {
+            /* mantém extra só no navegador se o sync falhar */
+          }
+        }
         setConfigApi(d);
         const def = d.litellm_model_default || d.litellm_models[0] || "";
         setModeloLitellm((m) => (m ? m : def));
-      })
-      .catch(() => {
+      } catch {
         setModeloLitellm((m) => (m ? m : "openai/gpt-4o-mini"));
-      });
+      }
+    })();
   }, []);
-
-  useEffect(() => {
-    if (!painelConfiguracoesAberto) return;
-    let cancelado = false;
-    setCarregandoPromptsFixosRevisaoEVerificacaoTutorial(true);
-    setErroCarregarPromptsFixosRevisaoEVerificacaoTutorial(null);
-    void fetch(
-      "/api/config/transcribrothers/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial",
-    )
-      .then(async (r) => {
-        if (!r.ok) {
-          const t = await r.text();
-          throw new Error(t || `Erro HTTP ${r.status}`);
-        }
-        return (await r.json()) as RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialApiTranscribrothers;
-      })
-      .then((d) => {
-        if (!cancelado) setPromptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers(d);
-      })
-      .catch((e) => {
-        if (!cancelado) {
-          setPromptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers(null);
-          setErroCarregarPromptsFixosRevisaoEVerificacaoTutorial(
-            e instanceof Error ? e.message : String(e),
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelado) setCarregandoPromptsFixosRevisaoEVerificacaoTutorial(false);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [painelConfiguracoesAberto]);
 
   const modelosParaSelectLiteLLM = useMemo(() => {
     const base =
@@ -1158,6 +1163,16 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         : [modeloLitellm || "openai/gpt-4o-mini"];
     return mesclarModelosServidorComExtrasNavegadorTranscribrothers(base, modelosExtrasNavegador);
   }, [configApi, modelosExtrasNavegador, modeloLitellm]);
+
+  /** Preferência TTS do navegador (select da modal) → select geral se for TTS → primeiro -tts. */
+  const modeloTtsPreferidoUi = useMemo(
+    () =>
+      escolherModeloTtsDaListaDisponivelTranscribrothers(
+        modelosParaSelectLiteLLM,
+        modeloTtsPreferidoSalvo || modeloLitellm,
+      ),
+    [modelosParaSelectLiteLLM, modeloLitellm, modeloTtsPreferidoSalvo],
+  );
 
   useEffect(() => {
     if (!modeloLitellm.trim()) return;
@@ -1179,7 +1194,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setTutorialPlanejamentoCapturaLitellmForm(
       configApi.tutorial_planejamento_instantes_captura_frames_litellm_habilitado,
     );
-    setAuditorVerificacaoHabilitadoForm(configApi.verificacao_sustentacao_tutorial_habilitada_efetiva);
     const resEnc = String(configApi.encode_video_narrado_resolucao_efetiva || "1080p");
     setEncodeResolucaoForm(
       (["original", "1080p", "720p", "480p"].includes(resEnc)
@@ -1187,20 +1201,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         : "1080p") as ResolucaoEncodeVideoNarradoUiTranscribrothers,
     );
     setVozTtsNarracaoForm(String(configApi.voz_tts_narracao_efetiva || "Kore"));
-    setAuditorRedundanciaSecaoHabilitadoForm(configApi.verificacao_redundancia_secao_markdown_habilitada_efetiva);
-    setCorrecaoAutomaticaRedundanciaSecaoHabilitadaForm(
-      configApi.verificacao_redundancia_secao_correcao_automatica_habilitada_efetiva,
-    );
-    setCorrecaoAutomaticaRedundanciaSecaoIncluirAtencaoForm(
-      configApi.verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao_efetiva,
-    );
     setPastasWikiForm(
       configApi.gitlab_wiki_pastas_disponiveis.length > 0
         ? [...configApi.gitlab_wiki_pastas_disponiveis]
         : [configApi.gitlab_wiki_slug_prefixo_pasta || "workshop"],
     );
     setPastaWikiPadraoForm(configApi.gitlab_wiki_slug_prefixo_pasta || "workshop");
-    setErroAuditorRuntimeSqlite(null);
     setErroPastasWikiRuntime(null);
   }, [configApi]);
 
@@ -1297,9 +1303,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const aoRemoverAnotacaoImagemTutorial = useCallback(
     async (nomeArquivoOriginal: string) => {
       if (!job?.id) return;
-      if (!window.confirm("Remover a versão anotada desta imagem? A captura original será mantida.")) {
-        return;
-      }
+      const ok = await pedirConfirmacao({
+        titulo: "Remover anotação?",
+        mensagem: "Remover a versão anotada desta imagem? A captura original será mantida.",
+        rotuloConfirmar: "Remover",
+        varianteConfirmar: "destrutiva",
+      });
+      if (!ok) return;
       setProcessandoAnotacaoImagemTutorial(true);
       setErro(null);
       try {
@@ -1314,7 +1324,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         setProcessandoAnotacaoImagemTutorial(false);
       }
     },
-    [job?.id, pushToast],
+    [job?.id, pushToast, pedirConfirmacao],
   );
 
   const aoSincronizarMarkdownComImagemAnotada = useCallback(
@@ -1655,6 +1665,58 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     return true;
   }, [job]);
 
+  const jobPodeAnexarGravacaoComplementarVideoEntrada = useMemo(() => {
+    if (!job || jobEhProjetoEmBrancoTranscribrothers(job)) return false;
+    if (job.steps_json?.tipo_entrada_midia === "audio") return false;
+    return (
+      job.status === "completed" || job.status === "failed" || job.status === "cancelled"
+    );
+  }, [job]);
+
+  const chaveCacheBustPlayerVideoEntradaJob = useMemo(() => {
+    if (!job?.id) return "sem-job";
+    const steps = job.steps_json as Record<string, unknown> | undefined;
+    const bytes = typeof steps?.bytes_written === "number" ? steps.bytes_written : 0;
+    const hist = steps?.gravacoes_complementares_unificadas;
+    const n = Array.isArray(hist) ? hist.length : 0;
+    return `${job.id}-${bytes}-${n}`;
+  }, [job?.id, job?.steps_json]);
+
+  const anexarGravacaoComplementarVideoEntradaSelecionadaTranscribrothers = useCallback(
+    async (arquivo: File) => {
+      if (!job?.id) return;
+      setErro(null);
+      setAnexandoGravacaoComplementarVideoEntrada(true);
+      try {
+        const j = await anexarGravacaoComplementarVideoEntradaJobApiTranscribrothers(job.id, arquivo);
+        setJob(j as JobStatus);
+        setHistoricoVersaoTutorialSelecionadaId(null);
+        setModalProgressoJobAberto(true);
+        const modoConcat = j.steps_json?.ultimo_modo_concat_video_entrada;
+        const detalheModo =
+          modoConcat === "stream_copy"
+            ? " (cópia rápida, sem reencode)"
+            : modoConcat === "reencode"
+              ? " (com reencode — codecs/resoluções diferentes)"
+              : "";
+        pushToast(
+          `Vídeos unificados${detalheModo}. Retranscrevendo e regenerando o tutorial com a gravação completa.`,
+          "success",
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setAnexandoGravacaoComplementarVideoEntrada(false);
+        if (refInputGravacaoComplementarVideoEntradaTranscribrothers.current) {
+          refInputGravacaoComplementarVideoEntradaTranscribrothers.current.value = "";
+        }
+      }
+    },
+    [job?.id, pushToast],
+  );
+
   const pedidoPipelineVideoNarradoEmAndamentoRef = useRef(false);
 
   const gerarNarracaoTtsDoDocumentoMarkdownAtual = useCallback(async () => {
@@ -1662,10 +1724,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       pushToast("Não há documento Markdown para narrar.", "error");
       return;
     }
-    const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
-      modelosParaSelectLiteLLM,
-      modeloLitellm,
-    );
+    const modeloTts = modeloTtsPreferidoUi;
     if (!modeloTts) {
       pushToast(
         "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
@@ -1687,7 +1746,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     } finally {
       setGerandoNarracaoTtsDocumento(false);
     }
-  }, [job?.id, job?.result_markdown, modeloLitellm, modelosParaSelectLiteLLM, pushToast]);
+  }, [job?.id, job?.result_markdown, modeloTtsPreferidoUi, pushToast]);
 
   const ouvirOuBaixarNarracaoTtsDocumento = useCallback(() => {
     const url = urlAssetNarracaoTtsDocumento;
@@ -1832,10 +1891,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           return;
         }
       }
-      const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
-        modelosParaSelectLiteLLM,
-        modeloLitellm,
-      );
+      const modeloTts =
+        escolherModeloTtsDaListaDisponivelTranscribrothers(
+          modelosParaSelectLiteLLM,
+          escopo?.modeloTts || modeloTtsPreferidoUi,
+        ) || null;
       const modeloChat = escolherModeloChatDaListaDisponivelTranscribrothers(
         modelosParaSelectLiteLLM,
         modeloLitellm,
@@ -1849,7 +1909,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       }
       if (!modeloChat) {
         pushToast(
-          "Nenhum modelo de chat na lista para a limpeza IA. Selecione um modelo sem -tts em Configurações.",
+          "Nenhum modelo de chat na lista para preparar as legendas (IA). Selecione um modelo sem -tts em Configurações.",
           "error",
         );
         return;
@@ -1873,6 +1933,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         setConfigApi(cfgVoz);
         setVozTtsNarracaoForm(String(cfgVoz.voz_tts_narracao_efetiva || vozEscolhida));
 
+        const perfilTtsEscolhido = escopo?.perfilTts || "padrao";
+        const paralelismoTts = escopo?.paralelismoTtsExperimental ?? 3;
+        const temperaturaTts = escopo?.temperaturaTts ?? 0.4;
+        const ritmoTts = escopo?.ritmoTts || "normal";
+        const diretrizConteudoLegendas = escopo?.diretrizConteudoLegendas || "conservador";
         const j = await agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscribrothers(
           job.id,
           modeloTts,
@@ -1880,6 +1945,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           {
             markdownNarracao: escopo?.modo === "secoes" ? escopo.markdownNarracao : null,
             titulosSecoesEscopo: escopo?.modo === "secoes" ? escopo.titulosSecoes : null,
+            perfilTts: perfilTtsEscolhido,
+            paralelismoTtsExperimental: paralelismoTts,
+            temperaturaTts,
+            ritmoTts,
+            diretrizConteudoLegendas,
           },
         );
         pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
@@ -1891,8 +1961,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           escopo?.modo === "secoes" && escopo.titulosSecoes.length
             ? ` Escopo: ${escopo.titulosSecoes.length} tópico(s).`
             : "";
+        const perfilMsg =
+          perfilTtsEscolhido === "experimental_voz"
+            ? " motor experimental (voz)"
+            : " motor padrão";
         pushToast(
-          `Vídeo narrado na fila (${cfgVoz.voz_tts_narracao_efetiva}): limpeza IA (${modeloChat}) → narração TTS → MP4.${escopoMsg}`,
+          `Vídeo narrado na fila (${cfgVoz.voz_tts_narracao_efetiva}${perfilMsg}, temp. ${String(temperaturaTts).replace(".", ",")}, ritmo ${ritmoTts}, legendas ${diretrizConteudoLegendas}, ${paralelismoTts} em paralelo, TTS ${modeloTts}): preparação de legendas IA (${modeloChat}) → narração → MP4.${escopoMsg}`,
           "success",
         );
       } catch (e) {
@@ -1908,6 +1982,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       job?.id,
       job?.result_markdown,
       modeloLitellm,
+      modeloTtsPreferidoUi,
       modelosParaSelectLiteLLM,
       pushToast,
     ],
@@ -1915,10 +1990,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 
   const solicitarAtualizacaoNarracaoAPartirLegendasVttEditadasTranscribrothers = useCallback(async () => {
     if (!job?.id) return;
-    const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
-      modelosParaSelectLiteLLM,
-      modeloLitellm,
-    );
+    const modeloTts = modeloTtsPreferidoUi;
     if (!modeloTts) {
       pushToast(
         "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
@@ -1948,7 +2020,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     } finally {
       setRegenerandoTutorialMarkdown(false);
     }
-  }, [job?.id, modeloLitellm, modelosParaSelectLiteLLM, pushToast, fecharPaginaVideoNarradoTranscribrothers]);
+  }, [job?.id, modeloTtsPreferidoUi, pushToast, fecharPaginaVideoNarradoTranscribrothers]);
 
   const solicitarRemuxVideoNarradoAposEdicaoJanelasTranscribrothers = useCallback(async () => {
     if (!job?.id) return;
@@ -1985,12 +2057,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         forcar_regenerar_tts?: boolean;
       }>;
       janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
+      temperaturaTts?: number;
+      ritmoTts?: string;
     }) => {
       if (!job?.id) return;
-      const modeloTts = escolherModeloTtsDaListaDisponivelTranscribrothers(
-        modelosParaSelectLiteLLM,
-        modeloLitellm,
-      );
+      const modeloTts = modeloTtsPreferidoUi;
       if (!modeloTts) {
         pushToast(
           "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
@@ -2003,6 +2074,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       try {
         const j = await agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribrothers(job.id, {
           litellmModel: modeloTts,
+          temperaturaTts: payload.temperaturaTts,
+          ritmoTts: payload.ritmoTts,
           cues: payload.cues,
           janelas: payload.janelas,
         });
@@ -2022,7 +2095,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         setRegenerandoTutorialMarkdown(false);
       }
     },
-    [job?.id, modeloLitellm, modelosParaSelectLiteLLM, pushToast, fecharPaginaVideoNarradoTranscribrothers],
+    [job?.id, modeloTtsPreferidoUi, pushToast, fecharPaginaVideoNarradoTranscribrothers],
   );
 
   useEffect(() => {
@@ -2049,6 +2122,15 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     if (!pedidoPipelineVideoNarradoEmAndamentoRef.current || !job) return;
     const resumo = obterResumoPipelineVideoNarradoDocumentoDosStepsJsonTranscribrothers(job.steps_json);
     if (!resumo) return;
+    const fase =
+      typeof job.steps_json?.pipeline_fase === "string" ? job.steps_json.pipeline_fase : "";
+    if (
+      job.status === "completed" &&
+      fase === "video_narrado_aguardando_resolucao_tts_timeout"
+    ) {
+      setModalProgressoJobAberto(true);
+      return;
+    }
     if (job.status === "completed" && resumo.ok) {
       pedidoPipelineVideoNarradoEmAndamentoRef.current = false;
       pushToast(
@@ -2255,7 +2337,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   }
 
   async function iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(
-    arquivo: File,
+    arquivos: File[],
     destinoAposTranscricao: DestinoAposTranscricaoTranscribrothers,
     cliquesJsonOpcional?: File | null,
     pipelineCustomId?: string | null,
@@ -2266,7 +2348,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     try {
       const modeloParaEnviar = modeloLitellm.trim();
       const j = await criarJobUploadArquivoLocal(
-        stagingId ? null : arquivo,
+        arquivos,
         modeloParaEnviar,
         destinoAposTranscricao,
         stagingId,
@@ -2365,6 +2447,40 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     () => extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers(job?.steps_json),
     [job?.steps_json],
   );
+  const diagnosticoTtsExperimentalModalStatusJob = useMemo(
+    () => extrairDiagnosticoTtsExperimentalVozDoStepsJsonTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+  const cuesPendentesTimeoutTtsExperimentalModalStatusJob = useMemo(
+    () => extrairCuesPendentesTimeoutTtsExperimentalDoStepsJsonTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+  const aguardandoResolucaoTtsTimeoutExperimentalModalStatusJob = useMemo(
+    () => jobAguardandoResolucaoTtsTimeoutExperimentalTranscribrothers(job?.steps_json),
+    [job?.steps_json],
+  );
+
+  useEffect(() => {
+    const indicesAtivos = new Set(
+      cuesPendentesTimeoutTtsExperimentalModalStatusJob.map((c) => c.indice),
+    );
+    setRascunhosTextoCuesPendentesTimeoutTtsExperimental((prev) => {
+      const next: Record<number, string> = {};
+      for (const cue of cuesPendentesTimeoutTtsExperimentalModalStatusJob) {
+        next[cue.indice] =
+          prev[cue.indice] !== undefined ? prev[cue.indice] : cue.texto;
+      }
+      return next;
+    });
+    setSugestoesReescritaCuesTimeoutTtsExperimental((prev) => {
+      const next: Record<number, string> = {};
+      for (const [k, v] of Object.entries(prev)) {
+        const idx = Number(k);
+        if (indicesAtivos.has(idx)) next[idx] = v;
+      }
+      return next;
+    });
+  }, [cuesPendentesTimeoutTtsExperimentalModalStatusJob]);
 
   const segundosTotaisInferenciaTranscricaoTrechosListados = useMemo(() => {
     return registrosTempoInferenciaTranscricaoPorTrecho.reduce(
@@ -3602,64 +3718,285 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 
   const tituloModalStatusJob = useMemo(() => {
     if (!job) return "Status";
+    if (aguardandoResolucaoTtsTimeoutExperimentalModalStatusJob) {
+      return "Reenvie as cues com timeout";
+    }
     if (jobEmExecucao) return "Processando";
     if (job.status === "failed") return "Não foi possível concluir";
     if (job.status === "cancelled") return "Cancelado";
     if (job.status === "completed") return "Concluído";
     return "Status";
-  }, [job, jobEmExecucao]);
+  }, [job, jobEmExecucao, aguardandoResolucaoTtsTimeoutExperimentalModalStatusJob]);
+
+  const aplicarResultadoResolucaoCueTimeoutTtsExperimentalModalStatusJob = useCallback(
+    async (
+      res: {
+        ok: boolean;
+        mensagem: string;
+        pendentes_restantes: number;
+        pipeline_continuada: boolean;
+      },
+      indice: number,
+      fallbackOk: string,
+    ) => {
+      if (!job?.id) return;
+      if (!res.ok) {
+        pushToast(res.mensagem || "Não foi possível resolver a cue.", "error");
+        return;
+      }
+      pushToast(
+        res.pipeline_continuada
+          ? res.mensagem || "Retomando montagem do vídeo…"
+          : res.mensagem || `${fallbackOk} Ainda faltam ${res.pendentes_restantes}.`,
+        "success",
+      );
+      const j = await buscarJob(job.id);
+      setJob(j);
+      setModalProgressoJobAberto(true);
+      if (res.pipeline_continuada) {
+        pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
+      }
+    },
+    [job?.id, pushToast],
+  );
+
+  const marcarCueTimeoutTtsExperimentalEmProcessamento = useCallback((indice: number, ativo: boolean) => {
+    if (ativo) indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current.add(indice);
+    else indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current.delete(indice);
+    setIndicesCuesTimeoutTtsExperimentalEmProcessamento(
+      new Set(indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current),
+    );
+  }, []);
+
+  const marcarCueTimeoutTtsExperimentalSugerindoIa = useCallback((indice: number, ativo: boolean) => {
+    if (ativo) indicesCuesTimeoutTtsExperimentalSugerindoIaRef.current.add(indice);
+    else indicesCuesTimeoutTtsExperimentalSugerindoIaRef.current.delete(indice);
+    setIndicesCuesTimeoutTtsExperimentalSugerindoIa(
+      new Set(indicesCuesTimeoutTtsExperimentalSugerindoIaRef.current),
+    );
+  }, []);
+
+  const reenviarCuePendenteTimeoutTtsExperimentalModalStatusJob = useCallback(
+    async (indice: number) => {
+      if (!job?.id) return;
+      if (indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current.has(indice)) return;
+      const texto = (rascunhosTextoCuesPendentesTimeoutTtsExperimental[indice] || "").trim();
+      if (!texto) {
+        pushToast("Informe o texto da cue antes de reenviar.", "error");
+        return;
+      }
+      const cue = cuesPendentesTimeoutTtsExperimentalModalStatusJob.find((c) => c.indice === indice);
+      marcarCueTimeoutTtsExperimentalEmProcessamento(indice, true);
+      try {
+        const res = await resolverCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers(job.id, {
+          indice,
+          texto,
+          voz: cue?.voz || null,
+        });
+        await aplicarResultadoResolucaoCueTimeoutTtsExperimentalModalStatusJob(
+          res,
+          indice,
+          `Cue ${indice + 1} narrada.`,
+        );
+        setSugestoesReescritaCuesTimeoutTtsExperimental((prev) => {
+          if (!(indice in prev)) return prev;
+          const next = { ...prev };
+          delete next[indice];
+          return next;
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        pushToast(msg, "error");
+      } finally {
+        marcarCueTimeoutTtsExperimentalEmProcessamento(indice, false);
+      }
+    },
+    [
+      job?.id,
+      rascunhosTextoCuesPendentesTimeoutTtsExperimental,
+      cuesPendentesTimeoutTtsExperimentalModalStatusJob,
+      pushToast,
+      aplicarResultadoResolucaoCueTimeoutTtsExperimentalModalStatusJob,
+      marcarCueTimeoutTtsExperimentalEmProcessamento,
+    ],
+  );
+
+  const naoNarrarCuePendenteTimeoutTtsExperimentalModalStatusJob = useCallback(
+    async (indice: number, indiceCue: number) => {
+      if (!job?.id) return;
+      if (indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current.has(indice)) return;
+      const okConfirm = await pedirConfirmacao({
+        titulo: `Cue ${indiceCue} sem narração?`,
+        mensagem: `Cue ${indiceCue}: esta faixa ficará sem fala (silêncio curto). Continuar?`,
+        rotuloConfirmar: "Continuar sem fala",
+        varianteConfirmar: "neutra",
+      });
+      if (!okConfirm) return;
+      marcarCueTimeoutTtsExperimentalEmProcessamento(indice, true);
+      try {
+        const res = await descartarCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers(job.id, {
+          indice,
+        });
+        await aplicarResultadoResolucaoCueTimeoutTtsExperimentalModalStatusJob(
+          res,
+          indice,
+          `Cue ${indiceCue} sem narração.`,
+        );
+        setSugestoesReescritaCuesTimeoutTtsExperimental((prev) => {
+          if (!(indice in prev)) return prev;
+          const next = { ...prev };
+          delete next[indice];
+          return next;
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        pushToast(msg, "error");
+      } finally {
+        marcarCueTimeoutTtsExperimentalEmProcessamento(indice, false);
+      }
+    },
+    [
+      job?.id,
+      pushToast,
+      pedirConfirmacao,
+      aplicarResultadoResolucaoCueTimeoutTtsExperimentalModalStatusJob,
+      marcarCueTimeoutTtsExperimentalEmProcessamento,
+    ],
+  );
+
+  const sugerirReescritaCuePendenteTimeoutTtsExperimentalModalStatusJob = useCallback(
+    async (indice: number) => {
+      if (!job?.id) return;
+      if (
+        indicesCuesTimeoutTtsExperimentalEmProcessamentoRef.current.has(indice) ||
+        indicesCuesTimeoutTtsExperimentalSugerindoIaRef.current.has(indice)
+      ) {
+        return;
+      }
+      const texto = (rascunhosTextoCuesPendentesTimeoutTtsExperimental[indice] || "").trim();
+      if (!texto) {
+        pushToast("Informe o texto da cue antes de pedir sugestão.", "error");
+        return;
+      }
+      const modeloChat = escolherModeloChatDaListaDisponivelTranscribrothers(
+        modelosParaSelectLiteLLM,
+        modeloLitellm,
+      );
+      marcarCueTimeoutTtsExperimentalSugerindoIa(indice, true);
+      try {
+        const res = await sugerirReescritaCueTtsPendenteTimeoutExperimentalJobApiTranscribrothers(
+          job.id,
+          {
+            indice,
+            texto,
+            litellmModelChat: modeloChat,
+          },
+        );
+        if (!res.ok || !(res.sugestao || "").trim()) {
+          pushToast(res.mensagem || "A IA não devolveu sugestão.", "error");
+          return;
+        }
+        setSugestoesReescritaCuesTimeoutTtsExperimental((prev) => ({
+          ...prev,
+          [indice]: res.sugestao.trim(),
+        }));
+        pushToast(res.mensagem || "Sugestão pronta — revise antes de usar.", "success");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        pushToast(msg, "error");
+      } finally {
+        marcarCueTimeoutTtsExperimentalSugerindoIa(indice, false);
+      }
+    },
+    [
+      job?.id,
+      rascunhosTextoCuesPendentesTimeoutTtsExperimental,
+      modelosParaSelectLiteLLM,
+      modeloLitellm,
+      pushToast,
+      marcarCueTimeoutTtsExperimentalSugerindoIa,
+    ],
+  );
 
   const resumoErroModal = useMemo(() => {
     if (!job?.error_message) return "";
     return job.error_message.trim();
   }, [job?.error_message]);
 
-  function adicionarNovoModeloLitellmNaConfiguracao() {
+  async function adicionarNovoModeloLitellmNaConfiguracao() {
     const t = novoSlugModeloLitellm.trim();
-    if (!t) return;
+    if (!t || verificandoModeloLitellmProbeOrigem) return;
     const lista = adicionarModeloLitellmExtraAoArmazenamentoLocalNavegadorTranscribrothers(t);
     setModelosExtrasNavegador(lista);
     setModeloLitellm(t);
     setNovoSlugModeloLitellm("");
-    setResultadoProbeModeloLitellm(null);
+    setResultadoProbeNovoModeloLitellm(null);
+    try {
+      const r = await fetch("/api/config/transcribrothers/modelos-litellm-extras-runtime", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelo: t }),
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
+      pushToast("Modelo adicionado neste navegador e liberado no servidor para jobs.", "success");
+    } catch (e) {
+      pushToast(
+        e instanceof Error
+          ? `Modelo ficou só neste navegador (servidor recusou: ${e.message}). Jobs podem rejeitar até incluir em LITELLM_MODELOS_PROVISIONADOS.`
+          : "Modelo ficou só neste navegador; jobs podem rejeitar o slug.",
+        "error",
+      );
+    }
   }
 
-  async function verificarModeloLitellmSelecionadoNaGavetaTranscribrothers() {
+  async function verificarModeloLitellmNaGavetaTranscribrothers(origem: "selecionado" | "novo") {
+    if (verificandoModeloLitellmProbeOrigem) return;
     const modelo =
-      novoSlugModeloLitellm.trim() ||
-      (modelosParaSelectLiteLLM.includes(modeloLitellm)
-        ? modeloLitellm
-        : modelosParaSelectLiteLLM[0] || ""
-      ).trim();
+      origem === "novo"
+        ? novoSlugModeloLitellm.trim()
+        : (modelosParaSelectLiteLLM.includes(modeloLitellm)
+            ? modeloLitellm
+            : modelosParaSelectLiteLLM[0] || ""
+          ).trim();
     if (!modelo) {
-      pushToast("Informe ou selecione um modelo para testar.", "error");
+      pushToast(
+        origem === "novo"
+          ? "Digite o slug do modelo no campo Adicionar para testar."
+          : "Selecione um modelo na lista para testar.",
+        "error",
+      );
       return;
     }
-    setVerificandoModeloLitellmProbe(true);
-    setResultadoProbeModeloLitellm(null);
+    setVerificandoModeloLitellmProbeOrigem(origem);
+    if (origem === "novo") {
+      setResultadoProbeNovoModeloLitellm(null);
+    } else {
+      setResultadoProbeModeloLitellmSelecionado(null);
+    }
     try {
       const r = await verificarModeloLitellmChatCompletionsProbeApiTranscribrothers(modelo);
-      setResultadoProbeModeloLitellm(r.ok ? "ok" : "erro");
+      if (origem === "novo") {
+        setResultadoProbeNovoModeloLitellm(r.ok ? "ok" : "erro");
+      } else {
+        setResultadoProbeModeloLitellmSelecionado(r.ok ? "ok" : "erro");
+      }
       pushToast(r.mensagem, r.ok ? "success" : "error");
     } catch (e) {
-      setResultadoProbeModeloLitellm("erro");
+      if (origem === "novo") {
+        setResultadoProbeNovoModeloLitellm("erro");
+      } else {
+        setResultadoProbeModeloLitellmSelecionado("erro");
+      }
       pushToast(e instanceof Error ? e.message : String(e), "error");
     } finally {
-      setVerificandoModeloLitellmProbe(false);
+      setVerificandoModeloLitellmProbeOrigem(null);
     }
   }
-
-  const copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers = useCallback(
-    async (rotuloCurto: string, texto: string) => {
-      try {
-        await navigator.clipboard.writeText(texto);
-        pushToast(`${rotuloCurto} copiado para a área de transferência.`, "success");
-      } catch {
-        pushToast("Não foi possível copiar (permissão do navegador ou contexto inseguro sem HTTPS).", "error");
-      }
-    },
-    [pushToast],
-  );
 
   async function salvarTranscricaoMultimodalRuntimePersistidoSqliteTranscribrothers() {
     setErroMmRuntime(null);
@@ -3918,125 +4255,81 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }
   }
 
-  async function salvarVerificacaoSustentacaoTutorialRuntimePersistidoSqliteTranscribrothers() {
-    setErroAuditorRuntimeSqlite(null);
-    setSalvandoAuditorRuntimeSqlite(true);
-    try {
-      const r = await fetch("/api/config/transcribrothers/verificacao-sustentacao-tutorial-runtime", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          verificacao_sustentacao_tutorial_habilitada: auditorVerificacaoHabilitadoForm,
-        }),
-      });
-      if (!r.ok) {
-        const texto = await r.text();
-        throw new Error(texto || `Erro HTTP ${r.status}`);
-      }
-      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
-      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
-      pushToast("Preferência do Auditor gravada no servidor.", "success");
-    } catch (e) {
-      setErroAuditorRuntimeSqlite(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSalvandoAuditorRuntimeSqlite(false);
-    }
+  function abrirGavetaConfiguracoesTranscribrothers() {
+    setPainelConfiguracoesFechando(false);
+    setPainelConfiguracoesAberto(true);
   }
 
-  async function salvarVerificacaoRedundanciaSecaoMarkdownRuntimePersistidoSqliteTranscribrothers() {
-    setErroAuditorRedundanciaSecaoRuntimeSqlite(null);
-    setSalvandoAuditorRedundanciaSecaoRuntimeSqlite(true);
-    try {
-      const r = await fetch("/api/config/transcribrothers/verificacao-redundancia-secao-markdown-runtime", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          verificacao_redundancia_secao_markdown_habilitada: auditorRedundanciaSecaoHabilitadoForm,
-          verificacao_redundancia_secao_correcao_automatica_habilitada:
-            correcaoAutomaticaRedundanciaSecaoHabilitadaForm,
-          verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao:
-            correcaoAutomaticaRedundanciaSecaoIncluirAtencaoForm,
-        }),
-      });
-      if (!r.ok) {
-        const texto = await r.text();
-        throw new Error(texto || `Erro HTTP ${r.status}`);
-      }
-      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
-      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
-      pushToast("Preferência do auditor de redundância (seção) gravada.", "success");
-    } catch (e) {
-      setErroAuditorRedundanciaSecaoRuntimeSqlite(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSalvandoAuditorRedundanciaSecaoRuntimeSqlite(false);
+  function fecharGavetaConfiguracoesTranscribrothers() {
+    if (!painelConfiguracoesAberto || painelConfiguracoesFechando) return;
+    const reduzirMovimento =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduzirMovimento) {
+      setPainelConfiguracoesAberto(false);
+      setPainelConfiguracoesFechando(false);
+      return;
     }
+    setPainelConfiguracoesFechando(true);
   }
 
-  async function limparPreferenciaVerificacaoRedundanciaSecaoMarkdownRuntimeSqliteTranscribrothers() {
-    setErroAuditorRedundanciaSecaoRuntimeSqlite(null);
-    setSalvandoAuditorRedundanciaSecaoRuntimeSqlite(true);
-    try {
-      const r = await fetch("/api/config/transcribrothers/verificacao-redundancia-secao-markdown-runtime", {
-        method: "DELETE",
-      });
-      if (!r.ok) {
-        const texto = await r.text();
-        throw new Error(texto || `Erro HTTP ${r.status}`);
-      }
-      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
-      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
-      pushToast(
-        "Preferências de redundância restauradas: auditor volta ao .env; correção automática ao padrão do app.",
-        "success",
-      );
-    } catch (e) {
-      setErroAuditorRedundanciaSecaoRuntimeSqlite(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSalvandoAuditorRedundanciaSecaoRuntimeSqlite(false);
-    }
+  function concluirFechamentoGavetaConfiguracoesTranscribrothers() {
+    setPainelConfiguracoesAberto(false);
+    setPainelConfiguracoesFechando(false);
   }
 
-  async function limparPreferenciaVerificacaoSustentacaoTutorialRuntimeSqliteTranscribrothers() {
-    setErroAuditorRuntimeSqlite(null);
-    setSalvandoAuditorRuntimeSqlite(true);
-    try {
-      const r = await fetch("/api/config/transcribrothers/verificacao-sustentacao-tutorial-runtime", {
-        method: "DELETE",
-      });
-      if (!r.ok) {
-        const texto = await r.text();
-        throw new Error(texto || `Erro HTTP ${r.status}`);
-      }
-      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
-      setConfigApi(normalizarRespostaConfigPublicaTranscribrothersDaApi(raw));
-      pushToast("Preferência do Auditor removida: volta a valer só o .env.", "success");
-    } catch (e) {
-      setErroAuditorRuntimeSqlite(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSalvandoAuditorRuntimeSqlite(false);
-    }
-  }
+  useEffect(() => {
+    if (!painelConfiguracoesFechando) return;
+    const t = window.setTimeout(() => {
+      concluirFechamentoGavetaConfiguracoesTranscribrothers();
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [painelConfiguracoesFechando]);
+
+  const abasGavetaConfiguracoesTranscribrothers: {
+    id: AbaGavetaConfiguracoesTranscribrothers;
+    rotulo: string;
+  }[] = [
+    { id: "geral", rotulo: "Geral" },
+    { id: "video_narrado", rotulo: "Vídeo narrado" },
+    { id: "transcricao", rotulo: "Transcrição" },
+    { id: "integracoes", rotulo: "Integrações" },
+  ];
 
   const conteudoGavetaConfiguracoes = configApi ? (
     <>
       <h2 id="tb-drawer-titulo" className="tb-drawer-titulo">
         Configurações
       </h2>
-      <div className="tb-drawer-leadin">
-        <p className="tb-muted tb-drawer-intro-uma-linha">
-          Modelo do tutorial neste navegador; o restante vem do servidor.
-        </p>
-        <details className="tb-drawer-micro-ajuda">
-          <summary>Sobre</summary>
-          <div className="tb-drawer-micro-ajuda-corpo">
-            <p>
-              O modelo LiteLLM escolhido para gerar o markdown fica guardado no navegador. Lista de modelos, TLS,
-              limites de vídeo e parâmetros públicos vêm da API.
-            </p>
-          </div>
-        </details>
-      </div>
+      <p className="tb-muted tb-drawer-intro-uma-linha">
+        Ajuste por área. Modelo do tutorial fica neste navegador; preferências de servidor gravam no SQLite.
+      </p>
+      <nav className="tb-drawer-abas" aria-label="Seções das configurações">
+        {abasGavetaConfiguracoesTranscribrothers.map((aba) => (
+          <button
+            key={aba.id}
+            type="button"
+            role="tab"
+            aria-selected={abaGavetaConfiguracoes === aba.id}
+            className={`tb-drawer-aba${abaGavetaConfiguracoes === aba.id ? " tb-drawer-aba--ativa" : ""}`}
+            onClick={() => setAbaGavetaConfiguracoes(aba.id)}
+          >
+            {aba.rotulo}
+          </button>
+        ))}
+      </nav>
 
+      {abaGavetaConfiguracoes === "geral" ? (
+      <div className="tb-drawer-painel-aba" role="tabpanel" aria-label="Geral">
+      <details className="tb-drawer-micro-ajuda tb-drawer-micro-ajuda--campo">
+        <summary>Sobre esta aba</summary>
+        <div className="tb-drawer-micro-ajuda-corpo">
+          <p>
+            O modelo LiteLLM escolhido para gerar o markdown fica guardado no navegador. Ao Adicionar, o slug também
+            entra na allowlist do servidor (SQLite), para jobs como revisão profunda. O probe ✓ usa o proxy.
+          </p>
+        </div>
+      </details>
       <label className="tb-label tb-label-spaced" htmlFor="tb-drawer-modelo">
         Modelo (LiteLLM)
       </label>
@@ -4047,9 +4340,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           value={modelosParaSelectLiteLLM.includes(modeloLitellm) ? modeloLitellm : modelosParaSelectLiteLLM[0]}
           onChange={(e) => {
             setModeloLitellm(e.target.value);
-            setResultadoProbeModeloLitellm(null);
+            setResultadoProbeModeloLitellmSelecionado(null);
           }}
-          disabled={verificandoModeloLitellmProbe}
+          disabled={verificandoModeloLitellmProbeOrigem !== null}
         >
           {modelosParaSelectLiteLLM.map((m) => (
             <option key={m} value={m}>
@@ -4060,18 +4353,18 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         <button
           type="button"
           className={`tb-btn-probe-modelo${
-            resultadoProbeModeloLitellm === "ok"
+            resultadoProbeModeloLitellmSelecionado === "ok"
               ? " tb-btn-probe-modelo--ok"
-              : resultadoProbeModeloLitellm === "erro"
+              : resultadoProbeModeloLitellmSelecionado === "erro"
                 ? " tb-btn-probe-modelo--erro"
                 : ""
           }`}
-          title="Testar no proxy: chat (texto) ou TTS (áudio), conforme o slug do modelo"
-          aria-label="Testar modelo LiteLLM no proxy"
-          disabled={verificandoModeloLitellmProbe}
-          onClick={() => void verificarModeloLitellmSelecionadoNaGavetaTranscribrothers()}
+          title="Testar no proxy o modelo selecionado: chat (texto) ou TTS (áudio), conforme o slug"
+          aria-label="Testar modelo LiteLLM selecionado no proxy"
+          disabled={verificandoModeloLitellmProbeOrigem !== null}
+          onClick={() => void verificarModeloLitellmNaGavetaTranscribrothers("selecionado")}
         >
-          {verificandoModeloLitellmProbe ? (
+          {verificandoModeloLitellmProbeOrigem === "selecionado" ? (
             <span className="tb-btn-probe-modelo-spinner" aria-hidden="true" />
           ) : (
             <span aria-hidden="true">✓</span>
@@ -4085,7 +4378,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       <label className="tb-label tb-label-spaced" htmlFor="tb-drawer-novo-modelo">
         Adicionar modelo (salvo neste navegador)
       </label>
-      <div className="tb-row tb-row-drawer-add">
+      <div className="tb-row tb-row-drawer-add tb-row-drawer-modelo-probe">
         <input
           id="tb-drawer-novo-modelo"
           className="tb-input tb-input-inline"
@@ -4093,27 +4386,53 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           value={novoSlugModeloLitellm}
           onChange={(e) => {
             setNovoSlugModeloLitellm(e.target.value);
-            setResultadoProbeModeloLitellm(null);
+            setResultadoProbeNovoModeloLitellm(null);
           }}
           placeholder="ex.: gemini/gemini-2.0-flash"
-          disabled={verificandoModeloLitellmProbe}
+          disabled={verificandoModeloLitellmProbeOrigem !== null}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              adicionarNovoModeloLitellmNaConfiguracao();
+              void adicionarNovoModeloLitellmNaConfiguracao();
             }
           }}
         />
         <button
           type="button"
+          className={`tb-btn-probe-modelo${
+            resultadoProbeNovoModeloLitellm === "ok"
+              ? " tb-btn-probe-modelo--ok"
+              : resultadoProbeNovoModeloLitellm === "erro"
+                ? " tb-btn-probe-modelo--erro"
+                : ""
+          }`}
+          title="Testar no proxy o slug digitado, antes de adicionar à lista"
+          aria-label="Testar novo modelo LiteLLM no proxy"
+          disabled={
+            verificandoModeloLitellmProbeOrigem !== null || !novoSlugModeloLitellm.trim()
+          }
+          onClick={() => void verificarModeloLitellmNaGavetaTranscribrothers("novo")}
+        >
+          {verificandoModeloLitellmProbeOrigem === "novo" ? (
+            <span className="tb-btn-probe-modelo-spinner" aria-hidden="true" />
+          ) : (
+            <span aria-hidden="true">✓</span>
+          )}
+        </button>
+        <button
+          type="button"
           className="tb-linkbtn"
-          disabled={verificandoModeloLitellmProbe}
-          onClick={adicionarNovoModeloLitellmNaConfiguracao}
+          disabled={verificandoModeloLitellmProbeOrigem !== null || !novoSlugModeloLitellm.trim()}
+          onClick={() => void adicionarNovoModeloLitellmNaConfiguracao()}
         >
           Adicionar
         </button>
       </div>
+      </div>
+      ) : null}
 
+      {abaGavetaConfiguracoes === "transcricao" ? (
+      <div className="tb-drawer-painel-aba" role="tabpanel" aria-label="Transcrição">
       <div className="tb-drawer-secao-head">
         <h3 className="tb-drawer-subtitulo">Transcrição multimodal</h3>
         <details className="tb-drawer-micro-ajuda">
@@ -4267,10 +4586,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           disabled={salvandoMmRuntime}
           onClick={() => void salvarTranscricaoMultimodalRuntimePersistidoSqliteTranscribrothers()}
         >
-          {salvandoMmRuntime ? "Salvando…" : "Salvar no servidor"}
+          {salvandoMmRuntime ? "Salvando…" : "Salvar"}
         </button>
       </div>
+      </div>
+      ) : null}
 
+      {abaGavetaConfiguracoes === "video_narrado" ? (
+      <div className="tb-drawer-painel-aba" role="tabpanel" aria-label="Vídeo narrado">
       <div className="tb-drawer-secao-head">
         <h3 className="tb-drawer-subtitulo">Encode do vídeo narrado</h3>
         <details className="tb-drawer-micro-ajuda">
@@ -4330,7 +4653,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           disabled={salvandoEncodeRuntimeSqlite}
           onClick={() => void salvarEncodeVideoNarradoRuntimePersistidoSqliteTranscribrothers()}
         >
-          {salvandoEncodeRuntimeSqlite ? "Salvando…" : "Salvar encode no servidor"}
+          {salvandoEncodeRuntimeSqlite ? "Salvando…" : "Salvar"}
         </button>
         <button
           type="button"
@@ -4341,11 +4664,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           onClick={() => void limparPreferenciaEncodeVideoNarradoRuntimeSqliteTranscribrothers()}
           title="Volta ao padrão do app (1080p @ 30 fps)"
         >
-          Voltar ao padrão
+          Restaurar padrão
         </button>
       </div>
 
-      <div className="tb-drawer-secao-head">
+      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-bloco">
         <h3 className="tb-drawer-subtitulo">Voz da narração (TTS)</h3>
         <details className="tb-drawer-micro-ajuda">
           <summary>Sobre</summary>
@@ -4395,7 +4718,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           disabled={salvandoVozTtsRuntimeSqlite}
           onClick={() => void salvarVozTtsNarracaoRuntimePersistidoSqliteTranscribrothers()}
         >
-          {salvandoVozTtsRuntimeSqlite ? "Salvando…" : "Salvar voz no servidor"}
+          {salvandoVozTtsRuntimeSqlite ? "Salvando…" : "Salvar"}
         </button>
         <button
           type="button"
@@ -4406,149 +4729,15 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           onClick={() => void limparPreferenciaVozTtsNarracaoRuntimeSqliteTranscribrothers()}
           title={`Volta ao padrão do app (${configApi.voz_tts_narracao_padrao_app})`}
         >
-          Voltar ao padrão
+          Restaurar padrão
         </button>
       </div>
-
-      <hr className="tb-drawer-sep" />
-      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
-        <h3 className="tb-drawer-subtitulo">Auditor</h3>
-        <details className="tb-drawer-micro-ajuda">
-          <summary>Sobre</summary>
-          <div className="tb-drawer-micro-ajuda-corpo">
-            <p>
-              Verificação automática do tutorial face à transcrição. A preferência grava-se no <strong>SQLite</strong> e
-              prevalece sobre o <code>backend/.env</code> enquanto existir. <strong>Voltar ao .env</strong> apaga o
-              registro na base.
-            </p>
-          </div>
-        </details>
       </div>
-      {configApi.verificacao_sustentacao_tutorial_preferencia_sqlite_definida ? (
-        <p className="tb-drawer-badge-runtime-ativo">Preferência na base ativa (sobrepõe o .env).</p>
-      ) : (
-        <p className="tb-muted tb-drawer-dica-inline">
-          Sem preferência na base — segue o .env (
-          {configApi.verificacao_sustentacao_tutorial_habilitada_padrao_env ? "ligado" : "desligado"}).
-        </p>
-      )}
-      <label
-        className="tb-label tb-label-spaced tb-label-checkbox-mm-mono"
-        title={`Estado efetivo neste momento: ${configApi.verificacao_sustentacao_tutorial_habilitada_efetiva ? "ligado" : "desligado"}. Marque, salve, e novos jobs respeitam a preferência.`}
-      >
-        <input
-          type="checkbox"
-          checked={auditorVerificacaoHabilitadoForm}
-          onChange={(e) => setAuditorVerificacaoHabilitadoForm(e.target.checked)}
-        />{" "}
-        Executar Auditor após gerar o tutorial
-      </label>
-      <p className="tb-muted tb-drawer-dica-inline">
-        Efetivo agora:{" "}
-        <strong>{configApi.verificacao_sustentacao_tutorial_habilitada_efetiva ? "ligado" : "desligado"}</strong>
-      </p>
-      {erroAuditorRuntimeSqlite ? <p className="tb-drawer-erro-mm">{erroAuditorRuntimeSqlite}</p> : null}
-      <div className="tb-drawer-row-salvar-mm tb-drawer-row-salvar-auditor">
-        <button
-          type="button"
-          className="tb-btn-drawer-primario"
-          disabled={salvandoAuditorRuntimeSqlite}
-          onClick={() => void salvarVerificacaoSustentacaoTutorialRuntimePersistidoSqliteTranscribrothers()}
-        >
-          {salvandoAuditorRuntimeSqlite ? "Salvando…" : "Salvar preferência no servidor"}
-        </button>
-        <button
-          type="button"
-          className="tb-btn-drawer-secundario"
-          disabled={salvandoAuditorRuntimeSqlite || !configApi.verificacao_sustentacao_tutorial_preferencia_sqlite_definida}
-          onClick={() => void limparPreferenciaVerificacaoSustentacaoTutorialRuntimeSqliteTranscribrothers()}
-          title={
-            configApi.verificacao_sustentacao_tutorial_preferencia_sqlite_definida
-              ? "Remove o registro na base e volta ao comportamento definido só pelo .env"
-              : "Não há preferência gravada na base para remover"
-          }
-        >
-          Voltar ao .env
-        </button>
-      </div>
-
-      <hr className="tb-drawer-sep" />
-      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
-        <h3 className="tb-drawer-subtitulo">Redundância (edição por seção)</h3>
-      </div>
-      <p className="tb-muted tb-drawer-dica">
-        Compara a seção regenerada com as outras seções <code>##</code> do tutorial (só na edição por seção).
-      </p>
-      <label className="tb-drawer-checkbox">
-        <input
-          type="checkbox"
-          checked={auditorRedundanciaSecaoHabilitadoForm}
-          onChange={(e) => setAuditorRedundanciaSecaoHabilitadoForm(e.target.checked)}
-        />{" "}
-        Executar verificação de redundância
-      </label>
-      <p className="tb-muted tb-drawer-dica-inline">
-        Verificação efetiva:{" "}
-        <strong>
-          {configApi.verificacao_redundancia_secao_markdown_habilitada_efetiva ? "ligada" : "desligada"}
-        </strong>
-      </p>
-      <label className="tb-drawer-checkbox">
-        <input
-          type="checkbox"
-          checked={correcaoAutomaticaRedundanciaSecaoHabilitadaForm}
-          disabled={!auditorRedundanciaSecaoHabilitadoForm}
-          onChange={(e) => setCorrecaoAutomaticaRedundanciaSecaoHabilitadaForm(e.target.checked)}
-        />{" "}
-        Corrigir automaticamente quando houver redundância
-      </label>
-      <label className="tb-drawer-checkbox">
-        <input
-          type="checkbox"
-          checked={correcaoAutomaticaRedundanciaSecaoIncluirAtencaoForm}
-          disabled={
-            !auditorRedundanciaSecaoHabilitadoForm || !correcaoAutomaticaRedundanciaSecaoHabilitadaForm
-          }
-          onChange={(e) => setCorrecaoAutomaticaRedundanciaSecaoIncluirAtencaoForm(e.target.checked)}
-        />{" "}
-        Corrigir também em classificação «atenção» (não só «redundância»)
-      </label>
-      <p className="tb-muted tb-drawer-dica-inline">
-        Correção automática efetiva:{" "}
-        <strong>
-          {configApi.verificacao_redundancia_secao_correcao_automatica_habilitada_efetiva
-            ? "ligada"
-            : "desligada"}
-        </strong>
-        {configApi.verificacao_redundancia_secao_correcao_automatica_habilitada_efetiva
-          ? configApi.verificacao_redundancia_secao_correcao_automatica_incluir_classificacao_atencao_efetiva
-            ? " (inclui atenção)"
-            : " (só redundância)"
-          : null}
-      </p>
-      {erroAuditorRedundanciaSecaoRuntimeSqlite ? (
-        <p className="tb-drawer-erro-mm">{erroAuditorRedundanciaSecaoRuntimeSqlite}</p>
       ) : null}
-      <div className="tb-drawer-row-salvar-mm">
-        <button
-          type="button"
-          className="tb-btn-drawer-primario"
-          disabled={salvandoAuditorRedundanciaSecaoRuntimeSqlite}
-          onClick={() => void salvarVerificacaoRedundanciaSecaoMarkdownRuntimePersistidoSqliteTranscribrothers()}
-        >
-          {salvandoAuditorRedundanciaSecaoRuntimeSqlite ? "Salvando…" : "Salvar"}
-        </button>
-        <button
-          type="button"
-          className="tb-btn-drawer-secundario"
-          disabled={salvandoAuditorRedundanciaSecaoRuntimeSqlite}
-          onClick={() => void limparPreferenciaVerificacaoRedundanciaSecaoMarkdownRuntimeSqliteTranscribrothers()}
-        >
-          Restaurar padrões
-        </button>
-      </div>
-      <hr className="tb-drawer-sep" />
-      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
+
+      {abaGavetaConfiguracoes === "integracoes" ? (
+      <div className="tb-drawer-painel-aba" role="tabpanel" aria-label="Integrações">
+      <div className="tb-drawer-secao-head">
         <h3 className="tb-drawer-subtitulo">Wiki GitLab — pastas</h3>
         <details className="tb-drawer-micro-ajuda">
           <summary>Sobre</summary>
@@ -4639,212 +4828,23 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       <div className="tb-drawer-row-salvar-mm">
         <button
           type="button"
-          className="tb-primary"
+          className="tb-btn-drawer-primario"
           disabled={salvandoPastasWikiRuntime}
           onClick={() => void salvarPastasWikiGitlabRuntimePersistidoSqliteTranscribrothers()}
         >
-          {salvandoPastasWikiRuntime ? "Salvando…" : "Salvar pastas no servidor"}
+          {salvandoPastasWikiRuntime ? "Salvando…" : "Salvar"}
         </button>
         <button
           type="button"
-          className="tb-linkbtn"
+          className="tb-btn-drawer-secundario"
           disabled={salvandoPastasWikiRuntime || !configApi.gitlab_wiki_pastas_preferencia_sqlite_definida}
           onClick={() => void restaurarPastasWikiGitlabRuntimeParaEnvTranscribrothers()}
         >
-          Restaurar padrão do .env
+          Restaurar .env
         </button>
       </div>
-      <hr className="tb-drawer-sep" />
-      <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-sep">
-        <h3 className="tb-drawer-subtitulo">Prompts fixos</h3>
-        <details className="tb-drawer-micro-ajuda">
-          <summary>Sobre</summary>
-          <div className="tb-drawer-micro-ajuda-corpo">
-            <p>
-              A barra da modal segue o fluxo do job. <strong>Pipeline inicial</strong> (upload): Preparação → Rascunho
-              (se captura sob demanda) → Plano capturas (se planejamento LiteLLM) → Capturas → Gerador → Imagens →
-              Auditor. <strong>Regeneração</strong>: Gerador → Imagens → Auditor. <strong>Revisão profunda</strong>:
-              Planejador → Editores → Consolidador → Imagens → Auditor. Só entradas com texto fixo no código mostram{" "}
-              <strong>Copiar</strong>
-              ; as outras descrevem onde configurar (modelos, .env, catálogo de pipelines).
-            </p>
-          </div>
-        </details>
       </div>
-      {carregandoPromptsFixosRevisaoEVerificacaoTutorial ? (
-        <p className="tb-muted">Carregando prompts do servidor…</p>
-      ) : erroCarregarPromptsFixosRevisaoEVerificacaoTutorial ? (
-        <p className="tb-drawer-erro-mm">{erroCarregarPromptsFixosRevisaoEVerificacaoTutorial}</p>
-      ) : promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers ? (
-        <>
-          <p className="tb-muted tb-drawer-texto-compacto">
-            Build:{" "}
-            <code className="tb-code-inline">
-              {promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.pipeline_identificador || "—"}
-            </code>
-          </p>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Preparação — sem prompt fixo nesta lista</summary>
-            <p className="tb-muted tb-drawer-texto-compacto tb-drawer-prompt-fixo-somente-texto">
-              Download, FFmpeg, transcrição e capturas usam modelos e parâmetros do servidor (por exemplo{" "}
-              <code>transcricao_backend</code>, janelas multimodais, limites de screenshots). Não há um único arquivo
-              «system» editável aqui — corresponde ao primeiro bloco da pipeline, antes do texto do tutorial.
-            </p>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Gerador — prompts no catálogo / pedido no FAB</summary>
-            <p className="tb-muted tb-drawer-texto-compacto tb-drawer-prompt-fixo-somente-texto">
-              A geração inicial usa os prompts do agente no catálogo de pipelines (sistema ou custom). Ajustes pontuais
-              no documento já gerado ficam no painel de regeneração (FAB), não nesta lista de blocos fixos de revisão
-              profunda.
-            </p>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Planejador — analista, plano JSON (system)</summary>
-            <div className="tb-drawer-prompt-fixo-acoes">
-              <button
-                type="button"
-                className="tb-linkbtn"
-                onClick={() =>
-                  void copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers(
-                    "Planejador (analista)",
-                    promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_analista_plano_tutorial,
-                  )
-                }
-              >
-                Copiar
-              </button>
-            </div>
-            <pre className="tb-drawer-prompt-fixo-pre" tabIndex={0}>
-              {promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_analista_plano_tutorial}
-            </pre>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Editores — um passe por tópico (system)</summary>
-            <div className="tb-drawer-prompt-fixo-acoes">
-              <button
-                type="button"
-                className="tb-linkbtn"
-                onClick={() =>
-                  void copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers(
-                    "Editores (worker)",
-                    promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_worker_item_plano_tutorial,
-                  )
-                }
-              >
-                Copiar
-              </button>
-            </div>
-            <pre className="tb-drawer-prompt-fixo-pre" tabIndex={0}>
-              {promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_worker_item_plano_tutorial}
-            </pre>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Consolidador — resumo do plano para o modelo (system)</summary>
-            <div className="tb-drawer-prompt-fixo-acoes">
-              <button
-                type="button"
-                className="tb-linkbtn"
-                onClick={() =>
-                  void copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers(
-                    "Consolidador (resumo plano)",
-                    promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_resumo_plano_para_editor_final,
-                  )
-                }
-              >
-                Copiar
-              </button>
-            </div>
-            <pre className="tb-drawer-prompt-fixo-pre" tabIndex={0}>
-              {promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_revisao_profunda_resumo_plano_para_editor_final}
-            </pre>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">
-              Consolidador — instrução na mensagem user (consolidação final)
-            </summary>
-            <div className="tb-drawer-prompt-fixo-acoes">
-              <button
-                type="button"
-                className="tb-linkbtn"
-                onClick={() =>
-                  void copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers(
-                    "Consolidador (instrução user)",
-                    promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.instrucao_editor_final_revisao_profunda_consolidacao_markdown,
-                  )
-                }
-              >
-                Copiar
-              </button>
-            </div>
-            <pre className="tb-drawer-prompt-fixo-pre" tabIndex={0}>
-              {
-                promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.instrucao_editor_final_revisao_profunda_consolidacao_markdown
-              }
-            </pre>
-          </details>
-          <details className="tb-drawer-prompt-fixo-details">
-            <summary className="tb-drawer-prompt-fixo-summary">Auditor — verificação tutorial vs transcrição (system)</summary>
-            <div className="tb-drawer-prompt-fixo-acoes">
-              <button
-                type="button"
-                className="tb-linkbtn"
-                onClick={() =>
-                  void copiarTextoPromptFixoServidorParaClipboardComToastTranscribrothers(
-                    "Auditor (verificação)",
-                    promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers
-                      .system_verificacao_sustentacao_tutorial_markdown_vs_transcricao,
-                  )
-                }
-              >
-                Copiar
-              </button>
-            </div>
-            <pre className="tb-drawer-prompt-fixo-pre" tabIndex={0}>
-              {promptsFixosRevisaoEVerificacaoTutorialApiTranscribrothers.system_verificacao_sustentacao_tutorial_markdown_vs_transcricao}
-            </pre>
-          </details>
-        </>
       ) : null}
-
-      <hr className="tb-drawer-sep" />
-      <h3 className="tb-drawer-subtitulo">Servidor (somente leitura)</h3>
-      <ul className="tb-drawer-lista-servidor">
-        <li>
-          Proxy LiteLLM: <strong>{configApi.litellm_usa_endpoint_customizado ? "ativo" : "não detectado"}</strong>
-        </li>
-        <li>
-          TLS: verificação <strong>{configApi.litellm_http_verify_ssl ? "ativada" : "desativada"}</strong>
-          {configApi.litellm_ssl_ca_bundle_configurado ? "; CA customizada" : null}
-        </li>
-        <li>
-          Transcrição: <code>{configApi.transcricao_backend}</code>
-          {configApi.transcricao_modelo_multimodal_padrao ? (
-            <>
-              {" "}
-              (multimodal padrão: <code>{configApi.transcricao_modelo_multimodal_padrao}</code>)
-            </>
-          ) : null}
-        </li>
-        <li>
-          Screenshots: máx.{" "}
-          <strong>
-            {configApi.tutorial_max_frames_total > 0
-              ? `${configApi.tutorial_max_frames_total} por job`
-              : "só limite por minuto"}
-          </strong>
-          ; largura PNG{" "}
-          <strong>
-            {configApi.tutorial_frame_max_width_px > 0
-              ? `${configApi.tutorial_frame_max_width_px}px`
-              : "original"}
-          </strong>
-        </li>
-      </ul>
-      <p className="tb-muted tb-drawer-rodape">
-        TLS, whitelist de modelos no select e limites de screenshots continuam no <code>backend/.env</code> com reinício do
-        servidor.
-      </p>
     </>
   ) : (
     <p className="tb-muted">Carregando configuração do servidor…</p>
@@ -4967,6 +4967,200 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             continuem compatíveis.
           </p>
         ) : null}
+        {cuesPendentesTimeoutTtsExperimentalModalStatusJob.length > 0 ? (
+          <div className="tb-modal-limpeza-legendas-ia tb-modal-cues-pendentes-timeout-tts-experimental">
+            <p className="tb-modal-limpeza-legendas-ia-mensagem">
+              <strong>
+                {cuesPendentesTimeoutTtsExperimentalModalStatusJob.length} cue(s) com timeout
+              </strong>
+              {" — "}
+              edite e reenvie em paralelo, peça <strong>Sugestão IA</strong> (sem aplicar sozinha) ou{" "}
+              <strong>Não narrar</strong>. Quando a lista zerar, a montagem continua automaticamente.
+            </p>
+            <ul className="tb-modal-limpeza-legendas-ia-lista">
+              {cuesPendentesTimeoutTtsExperimentalModalStatusJob.map((cue) => {
+                const processando = indicesCuesTimeoutTtsExperimentalEmProcessamento.has(cue.indice);
+                const sugerindo = indicesCuesTimeoutTtsExperimentalSugerindoIa.has(cue.indice);
+                const sugestao = sugestoesReescritaCuesTimeoutTtsExperimental[cue.indice];
+                return (
+                  <li
+                    key={`pendente-timeout-${cue.indice}`}
+                    className="tb-modal-limpeza-legendas-ia-item"
+                  >
+                    <strong>
+                      Cue {cue.indiceCue}
+                      {cue.voz ? ` · ${cue.voz}` : ""}
+                    </strong>
+                    <textarea
+                      className="tb-input"
+                      rows={3}
+                      value={rascunhosTextoCuesPendentesTimeoutTtsExperimental[cue.indice] ?? cue.texto}
+                      disabled={processando}
+                      onChange={(e) =>
+                        setRascunhosTextoCuesPendentesTimeoutTtsExperimental((prev) => ({
+                          ...prev,
+                          [cue.indice]: e.target.value,
+                        }))
+                      }
+                      aria-label={`Texto da cue ${cue.indiceCue} para reenvio TTS`}
+                    />
+                    <div
+                      className="tb-row"
+                      style={{ marginTop: "0.4rem", gap: "0.5rem", flexWrap: "wrap" }}
+                    >
+                      <button
+                        type="button"
+                        className="tb-btn-header tb-btn-header-primario"
+                        disabled={processando}
+                        onClick={() =>
+                          void reenviarCuePendenteTimeoutTtsExperimentalModalStatusJob(cue.indice)
+                        }
+                      >
+                        {processando ? "Processando…" : "Reenviar TTS"}
+                      </button>
+                      <button
+                        type="button"
+                        className="tb-btn-header tb-btn-header-secundario"
+                        disabled={processando || sugerindo}
+                        onClick={() =>
+                          void sugerirReescritaCuePendenteTimeoutTtsExperimentalModalStatusJob(
+                            cue.indice,
+                          )
+                        }
+                      >
+                        {sugerindo ? "Sugerindo…" : "Sugestão IA"}
+                      </button>
+                      <button
+                        type="button"
+                        className="tb-btn-header tb-btn-header-secundario"
+                        disabled={processando}
+                        onClick={() =>
+                          void naoNarrarCuePendenteTimeoutTtsExperimentalModalStatusJob(
+                            cue.indice,
+                            cue.indiceCue,
+                          )
+                        }
+                      >
+                        Não narrar
+                      </button>
+                    </div>
+                    {sugestao ? (
+                      <div
+                        className="tb-muted"
+                        style={{
+                          marginTop: "0.55rem",
+                          padding: "0.55rem 0.65rem",
+                          border: "1px solid var(--tb-borda, #ccc)",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        <div style={{ marginBottom: "0.35rem" }}>
+                          <strong>Sugestão da IA</strong> — ainda não aplicada
+                        </div>
+                        <div style={{ whiteSpace: "pre-wrap" }}>{sugestao}</div>
+                        <div
+                          className="tb-row"
+                          style={{ marginTop: "0.45rem", gap: "0.5rem", flexWrap: "wrap" }}
+                        >
+                          <button
+                            type="button"
+                            className="tb-btn-header tb-btn-header-primario"
+                            disabled={processando}
+                            onClick={() => {
+                              setRascunhosTextoCuesPendentesTimeoutTtsExperimental((prev) => ({
+                                ...prev,
+                                [cue.indice]: sugestao,
+                              }));
+                              pushToast(
+                                `Sugestão copiada para o texto da cue ${cue.indiceCue}.`,
+                                "success",
+                              );
+                            }}
+                          >
+                            Usar sugestão
+                          </button>
+                          <button
+                            type="button"
+                            className="tb-btn-header tb-btn-header-secundario"
+                            disabled={processando}
+                            onClick={() =>
+                              setSugestoesReescritaCuesTimeoutTtsExperimental((prev) => {
+                                const next = { ...prev };
+                                delete next[cue.indice];
+                                return next;
+                              })
+                            }
+                          >
+                            Descartar sugestão
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+        {diagnosticoTtsExperimentalModalStatusJob ? (
+          <details
+            className="tb-modal-limpeza-legendas-ia tb-modal-limpeza-legendas-ia-details"
+            defaultOpen={
+              Boolean(diagnosticoTtsExperimentalModalStatusJob.falha) ||
+              diagnosticoTtsExperimentalModalStatusJob.quantidadeCuesPuladas > 0 ||
+              cuesPendentesTimeoutTtsExperimentalModalStatusJob.length > 0 ||
+              job.steps_json?.pipeline_fase === "video_narrado_gerando_tts" ||
+              job.status === "failed"
+            }
+          >
+            <summary className="tb-modal-limpeza-legendas-ia-summary">
+              Diagnóstico TTS experimental
+              <span className="tb-modal-limpeza-legendas-ia-summary-meta">
+                {" "}
+                (
+                {diagnosticoTtsExperimentalModalStatusJob.quantidadeCuesOk}/
+                {diagnosticoTtsExperimentalModalStatusJob.quantidadeCuesTotal} ok
+                {diagnosticoTtsExperimentalModalStatusJob.quantidadeCuesPuladas > 0
+                  ? ` · ${diagnosticoTtsExperimentalModalStatusJob.quantidadeCuesPuladas} pulada(s)`
+                  : ""}
+                {diagnosticoTtsExperimentalModalStatusJob.quantidadeTimeouts > 0
+                  ? ` · ${diagnosticoTtsExperimentalModalStatusJob.quantidadeTimeouts} timeout(s)`
+                  : ""}
+                {diagnosticoTtsExperimentalModalStatusJob.timeoutReadSegundos != null
+                  ? ` · read ${diagnosticoTtsExperimentalModalStatusJob.timeoutReadSegundos}s`
+                  : ""}
+                )
+              </span>
+            </summary>
+            {diagnosticoTtsExperimentalModalStatusJob.falha ? (
+              <p className="tb-muted tb-modal-limpeza-legendas-ia-mensagem">
+                Falha na cue {diagnosticoTtsExperimentalModalStatusJob.falha.indiceCue}:{" "}
+                {diagnosticoTtsExperimentalModalStatusJob.falha.motivo}
+                {diagnosticoTtsExperimentalModalStatusJob.falha.erroCurto
+                  ? ` — ${diagnosticoTtsExperimentalModalStatusJob.falha.erroCurto}`
+                  : ""}
+              </p>
+            ) : null}
+            {diagnosticoTtsExperimentalModalStatusJob.cuesPuladas.length > 0 ? (
+              <ul className="tb-modal-limpeza-legendas-ia-lista">
+                {diagnosticoTtsExperimentalModalStatusJob.cuesPuladas.map((p) => (
+                  <li key={`pulada-${p.indiceCue}-${p.motivo}`} className="tb-modal-limpeza-legendas-ia-item">
+                    <strong>Cue {p.indiceCue}</strong> · {p.motivo}
+                    {p.ultimoErro ? ` — ${p.ultimoErro}` : ""}
+                    {p.textoPreview ? (
+                      <div className="tb-muted">«{p.textoPreview}»</div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {diagnosticoTtsExperimentalModalStatusJob.resumoTexto ? (
+              <pre className="tb-pre tb-pre-modal" style={{ maxHeight: "14rem", overflow: "auto" }}>
+                {diagnosticoTtsExperimentalModalStatusJob.resumoTexto}
+              </pre>
+            ) : null}
+          </details>
+        ) : null}
         {resumoLimpezaLegendasIaModalStatusJob ? (
           <details
             className="tb-modal-limpeza-legendas-ia tb-modal-limpeza-legendas-ia-details"
@@ -4977,7 +5171,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             }
           >
             <summary className="tb-modal-limpeza-legendas-ia-summary">
-              Limpeza IA das legendas
+              Preparação IA das legendas
               <span className="tb-modal-limpeza-legendas-ia-summary-meta">
                 {" "}
                 (
@@ -4990,6 +5184,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             {resumoLimpezaLegendasIaModalStatusJob.mensagem ? (
               <p className="tb-muted tb-modal-limpeza-legendas-ia-mensagem">
                 {resumoLimpezaLegendasIaModalStatusJob.mensagem}
+              </p>
+            ) : null}
+            {resumoLimpezaLegendasIaModalStatusJob.diretrizConteudoRotulo ? (
+              <p className="tb-muted">
+                Diretriz: {resumoLimpezaLegendasIaModalStatusJob.diretrizConteudoRotulo}
               </p>
             ) : null}
             {resumoLimpezaLegendasIaModalStatusJob.modelo ? (
@@ -5384,21 +5583,21 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
               <button
                 type="button"
                 className="tb-btn-header tb-btn-header-secundario"
+                title="Abrir um projeto já existente neste servidor"
+                onClick={() => setModalListaJobsServidorAberta(true)}
+              >
+                <IconeJobsHeaderToolbarTranscribrothers />
+                <span>Abrir projeto</span>
+              </button>
+              <button
+                type="button"
+                className="tb-btn-header tb-btn-header-secundario"
                 title="Criar documento Markdown sem vídeo nem transcrição"
                 disabled={carregando}
                 onClick={() => void iniciarProjetoEmBrancoSemVideoTranscribrothers()}
               >
                 <IconeProjetoEmBrancoHeaderToolbarTranscribrothers />
                 <span>{carregando ? "A criar…" : "Projeto em branco"}</span>
-              </button>
-              <button
-                type="button"
-                className="tb-btn-header tb-btn-header-secundario"
-                title="Abrir um projeto já existente neste servidor"
-                onClick={() => setModalListaJobsServidorAberta(true)}
-              >
-                <IconeJobsHeaderToolbarTranscribrothers />
-                <span>Abrir projeto</span>
               </button>
               {onAbrirCatalogoPipelines ? (
                 <button
@@ -5460,7 +5659,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                 className="tb-btn-header tb-btn-header-icone"
                 aria-label="Abrir configurações"
                 aria-expanded={painelConfiguracoesAberto}
-                onClick={() => setPainelConfiguracoesAberto(true)}
+                onClick={() => abrirGavetaConfiguracoesTranscribrothers()}
               >
                 <IconeEngrenagemConfiguracaoTranscribrothers />
               </button>
@@ -5478,9 +5677,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           setModalIniciarTranscricaoAberto(false);
           setImportacaoRecbrothersModalStepper(null);
         }}
-        onIniciar={(arquivo, destino, cliquesJsonOpcional, pipelineCustomId) => {
+        onIniciar={(arquivos, destino, cliquesJsonOpcional, pipelineCustomId) => {
           void iniciarPipelineTranscricaoComArquivoLocalTranscribrothers(
-            arquivo,
+            arquivos,
             destino,
             cliquesJsonOpcional,
             pipelineCustomId,
@@ -5515,32 +5714,67 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         carregando={regenerandoTutorialMarkdown}
         vozInicial={configApi?.voz_tts_narracao_efetiva || vozTtsNarracaoForm || "Kore"}
         vozesDisponiveis={configApi?.voz_tts_narracao_vozes_disponiveis ?? []}
-        litellmModelTts={escolherModeloTtsDaListaDisponivelTranscribrothers(
-          modelosParaSelectLiteLLM,
-          modeloLitellm,
-        )}
+        perfilTtsInicial={
+          typeof job?.steps_json?.pipeline_video_narrado_perfil_tts === "string"
+            ? job.steps_json.pipeline_video_narrado_perfil_tts
+            : "padrao"
+        }
+        paralelismoTtsExperimentalInicial={
+          typeof job?.steps_json?.pipeline_video_narrado_paralelismo_tts_experimental === "number"
+            ? job.steps_json.pipeline_video_narrado_paralelismo_tts_experimental
+            : 3
+        }
+        temperaturaTtsInicial={
+          typeof job?.steps_json?.pipeline_video_narrado_temperatura_tts === "number"
+            ? job.steps_json.pipeline_video_narrado_temperatura_tts
+            : null
+        }
+        ritmoTtsInicial={
+          typeof job?.steps_json?.pipeline_video_narrado_ritmo_tts === "string"
+            ? job.steps_json.pipeline_video_narrado_ritmo_tts
+            : null
+        }
+        diretrizConteudoLegendasInicial={
+          typeof job?.steps_json?.pipeline_video_narrado_diretriz_conteudo_legendas === "string"
+            ? job.steps_json.pipeline_video_narrado_diretriz_conteudo_legendas
+            : null
+        }
+        modelosLitellmDisponiveis={modelosParaSelectLiteLLM}
+        litellmModelTtsInicial={modeloTtsPreferidoUi}
         onFechar={() => setModalEscopoVideoNarradoAberto(false)}
         onConfirmar={(escopo) => {
+          if (escopo.modeloTts) setModeloTtsPreferidoSalvo(escopo.modeloTts);
           void solicitarPipelineVideoNarradoAPartirDocumentoTranscribrothers(escopo);
         }}
       />
 
       {painelConfiguracoesAberto
         ? createPortal(
-            <div className="tb-drawer-root" role="presentation">
+            <div
+              className={`tb-drawer-root${painelConfiguracoesFechando ? " tb-drawer-root--fechando" : ""}`}
+              role="presentation"
+            >
               <button
                 type="button"
                 className="tb-drawer-backdrop"
                 aria-label="Fechar configurações"
-                onClick={() => setPainelConfiguracoesAberto(false)}
+                onClick={() => fecharGavetaConfiguracoesTranscribrothers()}
               />
-              <aside className="tb-drawer-panel" aria-labelledby="tb-drawer-titulo">
+              <aside
+                className="tb-drawer-panel"
+                aria-labelledby="tb-drawer-titulo"
+                onAnimationEnd={(e) => {
+                  if (!painelConfiguracoesFechando) return;
+                  if (e.target !== e.currentTarget) return;
+                  concluirFechamentoGavetaConfiguracoesTranscribrothers();
+                }}
+              >
                 <div className="tb-drawer-top">
                   <button
                     type="button"
                     className="tb-drawer-fechar"
                     aria-label="Fechar configurações"
-                    onClick={() => setPainelConfiguracoesAberto(false)}
+                    onClick={() => fecharGavetaConfiguracoesTranscribrothers()}
                   >
                     ×
                   </button>
@@ -6132,9 +6366,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                                       const msgConfirmacao = emAndamento
                                         ? `O job ${row.id} está em "${row.status}". Apagar vai cancelar o pipeline (se ainda estiver rodando) e remover registro e pasta no servidor. Continuar?`
                                         : `Apagar o job ${row.id} no servidor e a pasta em disco? Esta ação não pode ser desfeita.`;
-                                      if (typeof window !== "undefined" && !window.confirm(msgConfirmacao)) {
-                                        return;
-                                      }
+                                      const ok = await pedirConfirmacao({
+                                        titulo: "Apagar job?",
+                                        mensagem: msgConfirmacao,
+                                        rotuloConfirmar: "Apagar",
+                                        varianteConfirmar: "destrutiva",
+                                      });
+                                      if (!ok) return;
                                       setApagandoJobServidorId(row.id);
                                       try {
                                         const r = await fetch(`/api/jobs/${row.id}`, { method: "DELETE" });
@@ -6189,14 +6427,46 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           {!jobEhProjetoEmBrancoAtual ? (
           <div className="tb-card tb-grid-col-video">
             <div className="tb-md-header tb-md-header--coluna-video">
-              <div className="tb-md-header-titulo-linha">
+              <div className="tb-md-header-titulo-linha tb-md-header-titulo-linha--coluna-video">
                 <h2 id="tb-video-titulo">Vídeo</h2>
+                {jobPodeAnexarGravacaoComplementarVideoEntrada ? (
+                  <div className="tb-coluna-video-acoes-anexar">
+                    <input
+                      ref={refInputGravacaoComplementarVideoEntradaTranscribrothers}
+                      type="file"
+                      accept="video/*"
+                      className="tb-sr-only"
+                      aria-hidden
+                      tabIndex={-1}
+                      onChange={(ev) => {
+                        const arquivo = ev.target.files?.[0];
+                        if (!arquivo) return;
+                        void anexarGravacaoComplementarVideoEntradaSelecionadaTranscribrothers(arquivo);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="tb-linkbtn tb-coluna-video-btn-anexar-complementar"
+                      disabled={anexandoGravacaoComplementarVideoEntrada}
+                      title="Junta esta gravação ao vídeo atual e reprocessa transcrição e tutorial"
+                      onClick={() => {
+                        refInputGravacaoComplementarVideoEntradaTranscribrothers.current?.click();
+                      }}
+                    >
+                      {anexandoGravacaoComplementarVideoEntrada
+                        ? "Unificando…"
+                        : "Anexar gravação complementar"}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="tb-video-sticky-inner">
               <ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers
-                key={jobId}
+                key={chaveCacheBustPlayerVideoEntradaJob}
                 jobId={jobId}
+                urlVideoSrc={`/api/jobs/${encodeURIComponent(jobId)}/video?v=${encodeURIComponent(chaveCacheBustPlayerVideoEntradaJob)}`}
+                keyVideo={chaveCacheBustPlayerVideoEntradaJob}
                 duracaoVideoSegundosDoJob={
                   lerDuracaoVideoSegundosStepsJsonJobTranscribrothers(
                     job?.steps_json as Record<string, unknown> | undefined,
@@ -7233,6 +7503,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           }
         }}
       />
+      {elementoDialogoConfirmacao}
 
       {job?.id ? (
         <ComponenteModalGaleriaAssetsImagensTranscricaoTutorialTranscribrothers
@@ -7263,10 +7534,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           urlVideoMp4={urlDownloadVideoComNarracaoTts}
           urlLegendasVtt={urlAssetLegendasVttAlinhadas}
           urlNarracaoWav={urlAssetNarracaoTtsDocumento}
-          litellmModelTts={escolherModeloTtsDaListaDisponivelTranscribrothers(
-            modelosParaSelectLiteLLM,
-            modeloLitellm,
-          )}
+          litellmModelTts={modeloTtsPreferidoUi}
+          modelosLitellmDisponiveis={modelosParaSelectLiteLLM}
+          onModeloTtsPreferidoAlterado={(m) => setModeloTtsPreferidoSalvo(m)}
+          temperaturaTtsInicial={
+            typeof job?.steps_json?.pipeline_video_narrado_temperatura_tts === "number"
+              ? job.steps_json.pipeline_video_narrado_temperatura_tts
+              : null
+          }
+          ritmoTtsInicial={
+            typeof job?.steps_json?.pipeline_video_narrado_ritmo_tts === "string"
+              ? job.steps_json.pipeline_video_narrado_ritmo_tts
+              : null
+          }
+          litellmModelChat={modeloLitellm}
           regenerando={regenerandoTutorialMarkdown}
           jobTemVideoEntrada={jobTemVideoEntradaParaMuxNarracao}
           vozPadraoJob={

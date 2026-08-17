@@ -48,7 +48,7 @@ def test_resolver_aceita_menos_cues_quando_janelas_acompanham(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    cues, indices_tts = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    cues, indices_tts, mapa_reuso = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["a", "c"],
         textos_tts_desejados=["", ""],
@@ -64,4 +64,6 @@ def test_resolver_aceita_menos_cues_quando_janelas_acompanham(tmp_path: Path) ->
     assert cues[0].texto == "a"
     assert cues[0].sem_narracao is False
     assert cues[1].sem_narracao is True
-    assert indices_tts == [0]  # só a que ainda tem fala
+    # Sem WAV no disco: "a" não reutiliza e precisa de TTS.
+    assert indices_tts == [0]
+    assert mapa_reuso == {}

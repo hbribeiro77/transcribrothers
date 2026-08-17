@@ -142,3 +142,63 @@ def test_post_gerar_video_edicoes_modal_aceita_cue_sem_narracao() -> None:
                 )
         assert r.status_code == 200, r.text
         assert mock_agendar.call_args.kwargs["cues_brutas"][0]["sem_narracao"] is True
+
+
+def test_post_gerar_video_edicoes_modal_aceita_job_cancelado() -> None:
+    with TestClient(app) as client:
+        criado = client.post("/api/jobs/projeto-em-branco")
+        job_id = criado.json()["id"]
+        data_dir = Path(app.state.data_dir)
+        work = data_dir / "jobs" / job_id
+        assets = work / "assets_exportados_para_markdown"
+        assets.mkdir(parents=True, exist_ok=True)
+        (work / "wavs_narracao_por_cue").mkdir(parents=True, exist_ok=True)
+        (work / "video_entrada_arquivo_local.mp4").write_bytes(b"fake")
+        (assets / NOME_ARQUIVO_LEGENDAS_DOCUMENTO_ALINHADAS_VTT_TRANSCRIBROTHERS).write_text(
+            "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\noi\n",
+            encoding="utf-8",
+        )
+        (work / "manifest_cues_narracao_janelas_video.json").write_text(
+            '{"versao":1,"quantidade_cues":1,"cues":[{"texto":"oi","inicio_video_segundos":0,'
+            '"fim_video_segundos":1,"origem_ancora":"markdown_t","casado":true}]}\n',
+            encoding="utf-8",
+        )
+
+        async def _cancelled() -> None:
+            async with app.state.session_factory() as session:
+                row = await session.get(JobPipelineTranscribrothers, job_id)
+                assert row is not None
+                row.status = "cancelled"
+                row.error_message = "Cancelado pelo usuário."
+                row.steps_json = {
+                    **dict(row.steps_json or {}),
+                    "cancelamento_pipeline_solicitado": True,
+                }
+                await session.commit()
+
+        asyncio.run(_cancelled())
+
+        with patch(
+            "transcribrothers_backend.main.agendar_gerar_video_com_edicoes_do_modal_narrado_em_task_assincrona"
+        ) as mock_agendar:
+            with patch(
+                "transcribrothers_backend.main.resolver_modelo_tts_para_narracao_documento_transcribrothers",
+                return_value="gemini/gemini-2.5-flash-preview-tts",
+            ):
+                r = client.post(
+                    f"/api/jobs/{job_id}/gerar-video-com-edicoes-do-modal-narrado",
+                    json={
+                        "litellm_model": "gemini/gemini-2.5-flash-preview-tts",
+                        "cues": [
+                            {
+                                "inicio_segundos": 0.5,
+                                "fim_segundos": 1.5,
+                                "texto": "oi de novo",
+                            },
+                        ],
+                    },
+                )
+        assert r.status_code == 200, r.text
+        assert mock_agendar.called
+        assert r.json()["status"] == "generating_tutorial"
+        assert "cancelamento_pipeline_solicitado" not in (r.json().get("steps_json") or {})

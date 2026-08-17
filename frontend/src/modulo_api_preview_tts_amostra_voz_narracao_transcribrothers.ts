@@ -19,6 +19,9 @@ async function _lerErroHttpApiTranscribrothers(r: Response): Promise<never> {
 export async function gerarPreviewTtsAmostraVozNarracaoApiTranscribrothers(opts: {
   voz: string;
   litellmModel?: string | null;
+  perfilTts?: string | null;
+  temperaturaTts?: number | null;
+  ritmoTts?: string | null;
 }): Promise<Blob> {
   const r = await fetch("/api/preview-tts-amostra-voz-narracao", {
     method: "POST",
@@ -26,6 +29,9 @@ export async function gerarPreviewTtsAmostraVozNarracaoApiTranscribrothers(opts:
     body: JSON.stringify({
       voz: (opts.voz || "").trim() || "Kore",
       litellm_model: (opts.litellmModel || "").trim() || null,
+      perfil_tts: (opts.perfilTts || "").trim() || null,
+      temperatura_tts: typeof opts.temperaturaTts === "number" ? opts.temperaturaTts : null,
+      ritmo_tts: (opts.ritmoTts || "").trim() || null,
     }),
   });
   if (!r.ok) {

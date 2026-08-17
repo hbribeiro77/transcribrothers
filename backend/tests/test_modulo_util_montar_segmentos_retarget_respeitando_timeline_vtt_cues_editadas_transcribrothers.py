@@ -50,7 +50,7 @@ def test_ajustar_wav_corta_quando_slot_menor(tmp_path: Path) -> None:
     assert abs(_duracao_wav(saida) - 0.8) < 0.03
 
 
-def test_monta_segmentos_densos_sem_gaps_na_ordem_da_timeline_vtt(tmp_path: Path) -> None:
+def test_monta_segmentos_densos_respeita_slot_vtt_nao_a_janela(tmp_path: Path) -> None:
     wav0 = tmp_path / "w0.wav"
     wav1 = tmp_path / "w1.wav"
     _gravar_wav_pcm16_mono_segundos(wav0, 1.2)
@@ -59,15 +59,15 @@ def test_monta_segmentos_densos_sem_gaps_na_ordem_da_timeline_vtt(tmp_path: Path
     cues = [
         CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers(
             inicio_vtt_segundos=1.0,
-            fim_vtt_segundos=2.0,
+            fim_vtt_segundos=2.0,  # slot 1.0s
             inicio_video_segundos=10.0,
-            fim_video_segundos=12.0,
+            fim_video_segundos=12.0,  # janela 2s — não deve esticar o segmento
             caminho_wav=wav0,
             texto="primeira",
         ),
         CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers(
             inicio_vtt_segundos=3.5,
-            fim_vtt_segundos=4.5,
+            fim_vtt_segundos=4.5,  # slot 1.0s
             inicio_video_segundos=20.0,
             fim_video_segundos=22.0,
             caminho_wav=wav1,
@@ -78,12 +78,54 @@ def test_monta_segmentos_densos_sem_gaps_na_ordem_da_timeline_vtt(tmp_path: Path
         cues=cues,
         diretorio_wavs_preparados=dir_prep,
     )
-    # Só as 2 cues, sem gaps — como o play do modal (cue → cue).
     assert len(resultado.segmentos) == 2
-    assert abs(_duracao_wav(resultado.segmentos[0].caminho_wav) - 1.2) < 0.03
+    assert abs(_duracao_wav(resultado.segmentos[0].caminho_wav) - 1.0) < 0.03
     assert resultado.segmentos[0].inicio_video_segundos == 10.0
     assert resultado.segmentos[0].fim_video_segundos == 12.0
-    assert abs(_duracao_wav(resultado.segmentos[1].caminho_wav) - 0.8) < 0.03
+    assert abs(_duracao_wav(resultado.segmentos[1].caminho_wav) - 1.0) < 0.03
     assert resultado.textos_na_ordem == ["primeira", "segunda"]
-    assert abs(resultado.duracoes_audio_na_ordem[0] - 1.2) < 0.03
-    assert abs(resultado.duracoes_audio_na_ordem[1] - 0.8) < 0.03
+    assert abs(resultado.duracoes_audio_na_ordem[0] - 1.0) < 0.03
+    assert abs(resultado.duracoes_audio_na_ordem[1] - 1.0) < 0.03
+
+
+def test_monta_segmentos_estica_wav_quando_slot_vtt_maior_que_fala(tmp_path: Path) -> None:
+    wav0 = tmp_path / "w0.wav"
+    _gravar_wav_pcm16_mono_segundos(wav0, 1.0)
+    dir_prep = tmp_path / "prep"
+    cues = [
+        CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers(
+            inicio_vtt_segundos=0.0,
+            fim_vtt_segundos=48.0,
+            inicio_video_segundos=0.0,
+            fim_video_segundos=48.0,
+            caminho_wav=wav0,
+            texto="hold longo",
+        ),
+    ]
+    resultado = montar_lista_segmentos_retarget_a_partir_cues_vtt_janelas_e_wavs_transcribrothers(
+        cues=cues,
+        diretorio_wavs_preparados=dir_prep,
+    )
+    assert abs(resultado.duracoes_audio_na_ordem[0] - 48.0) < 0.05
+
+
+def test_monta_segmentos_encurta_quando_slot_vtt_menor_que_wav_e_janela(tmp_path: Path) -> None:
+    """Ajustar ao áudio: slot 8s, janela ainda 48s, WAV longo → MP4 segue o slot."""
+    wav0 = tmp_path / "w0.wav"
+    _gravar_wav_pcm16_mono_segundos(wav0, 48.0)
+    dir_prep = tmp_path / "prep"
+    cues = [
+        CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers(
+            inicio_vtt_segundos=0.0,
+            fim_vtt_segundos=8.0,
+            inicio_video_segundos=0.0,
+            fim_video_segundos=48.0,
+            caminho_wav=wav0,
+            texto="encolhida",
+        ),
+    ]
+    resultado = montar_lista_segmentos_retarget_a_partir_cues_vtt_janelas_e_wavs_transcribrothers(
+        cues=cues,
+        diretorio_wavs_preparados=dir_prep,
+    )
+    assert abs(resultado.duracoes_audio_na_ordem[0] - 8.0) < 0.05

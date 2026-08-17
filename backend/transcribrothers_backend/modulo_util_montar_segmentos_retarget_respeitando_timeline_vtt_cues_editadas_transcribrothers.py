@@ -26,6 +26,7 @@ class CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers:
     fim_video_segundos: float
     caminho_wav: Path
     texto: str = ""
+    caminho_video_fonte: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -100,8 +101,13 @@ def montar_lista_segmentos_retarget_a_partir_cues_vtt_janelas_e_wavs_transcribro
 ) -> ResultadoMontagemSegmentosEdicoesModalTranscribrothers:
     """
     Montagem densa (como o play do modal): só as cues, na ordem da timeline VTT,
-    sem preencher gaps com silêncio. Cada segmento usa o WAV da cue (duração natural)
-    e a janela de tela correspondente.
+    sem preencher gaps com silêncio.
+
+    Duração de cada segmento = duração do **slot VTT** no editor (o que o preview
+    mostra). O WAV é cortado ou preenchido com silêncio para caber nesse slot.
+    Assim «Ajustar ao áudio» / «Ajustar à tela» no editor refletem o MP4 gerado.
+    A janela de tela só define de onde cortar a imagem — não estica o trecho sozinha
+    (ao mudar a origem, a UI deve alinhar o slot à janela).
     """
     if not cues:
         raise ValueError("Nenhuma cue para montar o vídeo narrado.")
@@ -118,22 +124,53 @@ def montar_lista_segmentos_retarget_a_partir_cues_vtt_janelas_e_wavs_transcribro
     for ordem, (indice_original, cue) in enumerate(ordenadas):
         if not cue.caminho_wav.is_file():
             raise FileNotFoundError(f"WAV da cue {indice_original + 1} não encontrado.")
-        caminho_copiado = (
+        caminho_base = (
             diretorio_wavs_preparados / f"cue_densa_{ordem:04d}_idx_{indice_original:04d}.wav"
         )
-        shutil.copy2(cue.caminho_wav, caminho_copiado)
-        dur = obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho_copiado)
-        if dur <= _EPS_GAP_SEGUNDOS:
+        shutil.copy2(cue.caminho_wav, caminho_base)
+        dur_wav = obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho_base)
+        if dur_wav <= _EPS_GAP_SEGUNDOS:
             raise RuntimeError(f"WAV da cue {indice_original + 1} sem duração útil.")
+
+        dur_vtt = max(
+            0.0,
+            float(cue.fim_vtt_segundos) - float(cue.inicio_vtt_segundos),
+        )
+        dur_janela = max(
+            0.0,
+            float(cue.fim_video_segundos) - float(cue.inicio_video_segundos),
+        )
+        # Slot da timeline é a verdade do editor; se inválido, cai na janela/WAV.
+        if dur_vtt >= _EPS_GAP_SEGUNDOS:
+            dur_alvo = dur_vtt
+        elif dur_janela >= _EPS_GAP_SEGUNDOS:
+            dur_alvo = dur_janela
+        else:
+            dur_alvo = dur_wav
+
+        caminho_final = caminho_base
+        if abs(dur_alvo - dur_wav) > _EPS_GAP_SEGUNDOS:
+            caminho_final = (
+                diretorio_wavs_preparados
+                / f"cue_densa_{ordem:04d}_idx_{indice_original:04d}_slot.wav"
+            )
+            ajustar_wav_pcm16_mono_para_duracao_alvo_segundos_transcribrothers(
+                caminho_wav_entrada=caminho_base,
+                duracao_alvo_segundos=dur_alvo,
+                caminho_wav_saida=caminho_final,
+            )
+            dur_wav = obter_duracao_wav_pcm16_mono_segundos_transcribrothers(caminho_final)
+
         segmentos.append(
             SegmentoVideoNarradoRetargetTranscribrothers(
-                caminho_wav=caminho_copiado,
+                caminho_wav=caminho_final,
                 inicio_video_segundos=float(cue.inicio_video_segundos),
                 fim_video_segundos=float(cue.fim_video_segundos),
+                caminho_video_fonte=cue.caminho_video_fonte,
             )
         )
         textos.append((cue.texto or "").strip() or f"Cue {indice_original + 1}")
-        duracoes.append(dur)
+        duracoes.append(dur_wav)
 
     return ResultadoMontagemSegmentosEdicoesModalTranscribrothers(
         segmentos=segmentos,

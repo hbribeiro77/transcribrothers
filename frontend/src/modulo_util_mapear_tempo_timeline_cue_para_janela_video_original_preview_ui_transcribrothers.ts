@@ -46,3 +46,15 @@ export function mapearTempoJanelaVideoOriginalParaTimelineCuePreviewUiTranscribr
 export function urlVideoEntradaJobParaPreviewUiTranscribrothers(jobId: string): string {
   return `/api/jobs/${encodeURIComponent(jobId)}/video`;
 }
+
+/** URL do player de preview conforme a fonte da cue (`entrada` ou id da biblioteca). */
+export function urlVideoFonteTelaCueParaPreviewUiTranscribrothers(
+  jobId: string,
+  idFonteVideo?: string | null,
+): string {
+  const id = (idFonteVideo || "").trim();
+  if (!id || id === "entrada") {
+    return urlVideoEntradaJobParaPreviewUiTranscribrothers(jobId);
+  }
+  return `/api/jobs/${encodeURIComponent(jobId)}/biblioteca-midias-tela/arquivo/${encodeURIComponent(id)}`;
+}

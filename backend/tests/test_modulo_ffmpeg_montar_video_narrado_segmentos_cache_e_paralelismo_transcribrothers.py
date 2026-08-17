@@ -67,6 +67,44 @@ def test_chave_cache_muda_quando_wav_muda(tmp_path: Path) -> None:
     assert antes != depois
 
 
+def test_chave_cache_estavel_quando_wav_so_muda_de_caminho(tmp_path: Path) -> None:
+    """Excluir/reordenar cue não pode invalidar cache só porque o path do WAV mudou."""
+    import os
+    import shutil
+
+    video = tmp_path / "v.mp4"
+    wav_a = tmp_path / "prep" / "cue_densa_0005_idx_0005.wav"
+    wav_b = tmp_path / "prep" / "cue_densa_0004_idx_0004.wav"
+    _tocar(video, b"video")
+    _tocar(wav_a, b"RIFF" + b"\x00" * 80)
+    shutil.copy2(wav_a, wav_b)
+    # Garante mtime idêntico (Windows às vezes arredonda no copy).
+    mtime = wav_a.stat().st_mtime_ns
+    os.utime(wav_b, ns=(mtime, mtime))
+
+    seg_a = SegmentoVideoNarradoRetargetTranscribrothers(
+        caminho_wav=wav_a,
+        inicio_video_segundos=10.0,
+        fim_video_segundos=12.0,
+    )
+    seg_b = SegmentoVideoNarradoRetargetTranscribrothers(
+        caminho_wav=wav_b,
+        inicio_video_segundos=10.0,
+        fim_video_segundos=12.0,
+    )
+    chave_a = calcular_chave_cache_segmento_retarget_audio_transcribrothers(
+        caminho_video=video,
+        segmento=seg_a,
+        duracao_audio_segundos=2.0,
+    )
+    chave_b = calcular_chave_cache_segmento_retarget_audio_transcribrothers(
+        caminho_video=video,
+        segmento=seg_b,
+        duracao_audio_segundos=2.0,
+    )
+    assert chave_a == chave_b
+
+
 @pytest.mark.asyncio
 async def test_montar_reusa_cache_e_nao_chama_ffmpeg_de_novo(tmp_path: Path) -> None:
     video = tmp_path / "entrada.mp4"

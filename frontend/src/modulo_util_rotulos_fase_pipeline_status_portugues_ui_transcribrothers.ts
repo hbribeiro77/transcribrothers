@@ -65,8 +65,10 @@ const PIPELINE_FASE_PARA_ROTULO_PORTUGUES: Record<string, string> = {
   video_narrado_agendado: "Vídeo narrado: na fila…",
   video_narrado_alinhando_legendas: "Vídeo narrado: alinhando legendas…",
   video_narrado_validando_legendas: "Vídeo narrado: validando legendas…",
-  video_narrado_limpando_legendas_ia: "Vídeo narrado: limpeza IA das legendas…",
+  video_narrado_limpando_legendas_ia: "Vídeo narrado: preparando legendas (IA)…",
   video_narrado_gerando_tts: "Vídeo narrado: gerando narração…",
+  video_narrado_aguardando_resolucao_tts_timeout:
+    "Vídeo narrado: reenvie as cues com timeout…",
   video_narrado_mux_ffmpeg: "Vídeo narrado: montando MP4…",
   video_narrado_atualizando_legendas_editadas: "Vídeo narrado: atualizando legendas editadas…",
   video_narrado_gerando_com_edicoes_modal: "Vídeo narrado: gerando com edições do modal…",
@@ -210,6 +212,15 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
     }
   }
 
+  if (fase === "video_narrado_aguardando_resolucao_tts_timeout") {
+    const pendentes = steps.video_narrado_tts_cues_pendentes_timeout;
+    const n = Array.isArray(pendentes) ? pendentes.length : null;
+    if (n !== null && n > 0) {
+      return `${n} cue(s) com timeout — edite e reenvie no painel abaixo`;
+    }
+    return "Aguardando reenvio manual das cues com timeout…";
+  }
+
   if (fase === "video_narrado_gerando_tts") {
     const i = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cue_indice);
     const t = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cue_total);
@@ -218,7 +229,24 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
         ? steps.video_narrado_tts_cue_preview.trim()
         : "";
     const puladas = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_cues_puladas);
+    const perfilTts =
+      typeof steps.pipeline_video_narrado_perfil_tts === "string"
+        ? steps.pipeline_video_narrado_perfil_tts.trim()
+        : "";
     const partes: string[] = [];
+    if (perfilTts === "experimental_voz") {
+      partes.push("motor experimental (voz)");
+    } else if (perfilTts === "padrao") {
+      partes.push("motor padrão");
+    }
+    const paraExp = numeroDeStepsJsonTranscribrothers(
+      steps.pipeline_video_narrado_paralelismo_tts_experimental,
+    );
+    const paraProg = numeroDeStepsJsonTranscribrothers(steps.video_narrado_tts_paralelismo);
+    const para = paraExp ?? paraProg;
+    if (para !== null && para > 0) {
+      partes.push(`${para} em paralelo`);
+    }
     if (i !== null && t !== null && t > 0) {
       partes.push(`Trecho ${i} de ${t}`);
     }
@@ -227,6 +255,20 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
     }
     if (puladas !== null && puladas > 0) {
       partes.push(`${puladas} pulado(s)`);
+    }
+    if (perfilTts === "experimental_voz") {
+      const diag = steps.video_narrado_tts_diagnostico_experimental;
+      if (diag && typeof diag === "object") {
+        const d = diag as Record<string, unknown>;
+        const timeouts = numeroDeStepsJsonTranscribrothers(d.quantidade_timeouts);
+        if (timeouts !== null && timeouts > 0) {
+          partes.push(`${timeouts} timeout(s)`);
+        }
+        const p50 = numeroDeStepsJsonTranscribrothers(d.latencia_ok_ms_p50);
+        if (p50 !== null && p50 > 0) {
+          partes.push(`p50 ${Math.round(p50 / 1000)}s`);
+        }
+      }
     }
     if (partes.length > 0) return partes.join(" · ");
     return "Sintetizando narração trecho a trecho (pode levar vários minutos)…";
@@ -243,7 +285,7 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
         : "";
     const partes: string[] = [];
     if (resumo) partes.push(resumo);
-    else partes.push("Removendo lixo de Markdown/âncoras nas legendas com modelo de chat…");
+    else partes.push("Preparando legendas para narração (limpeza + forma narrável) com modelo de chat…");
     if (modelo) partes.push(`modelo: ${modelo}`);
     return partes.join(" · ");
   }
@@ -300,6 +342,13 @@ export function obterDescricaoLegivelProgressoJobPipelinePortuguesTranscribrothe
   pipelineFase: unknown,
 ): string {
   const terminal = status === "completed" || status === "failed" || status === "cancelled";
+  // Pausa interativa do TTS experimental: status completed, mas a fase ainda importa.
+  if (
+    typeof pipelineFase === "string" &&
+    pipelineFase.trim() === "video_narrado_aguardando_resolucao_tts_timeout"
+  ) {
+    return PIPELINE_FASE_PARA_ROTULO_PORTUGUES[pipelineFase];
+  }
   if (terminal) {
     const porStatus = STATUS_JOB_PARA_ROTULO_PORTUGUES[status];
     if (porStatus) return porStatus;

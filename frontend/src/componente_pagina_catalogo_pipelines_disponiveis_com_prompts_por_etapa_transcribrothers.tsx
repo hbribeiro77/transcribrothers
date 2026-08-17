@@ -34,6 +34,7 @@ import {
   ordenarTodasPipelinesCustomUsuarioCatalogoTranscribrothers,
 } from "./modulo_util_ordenar_e_filtrar_pipelines_custom_executaveis_catalogo_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 import type {
   AgenteCatalogoApiTranscribrothers,
   PipelineCatalogoApiTranscribrothers,
@@ -429,6 +430,8 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
   onVoltarParaProjeto,
 }: ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTranscribrothersProps) {
   const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [catalogo, setCatalogo] = useState<RespostaCatalogoPipelinesApiTranscribrothers | null>(null);
@@ -493,7 +496,13 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
 
   const excluirPipeline = useCallback(
     async (id: string) => {
-      if (!window.confirm("Excluir esta pipeline custom? Agentes órfãos também serão removidos.")) return;
+      const ok = await pedirConfirmacao({
+        titulo: "Excluir pipeline?",
+        mensagem: "Excluir esta pipeline custom? Agentes órfãos também serão removidos.",
+        rotuloConfirmar: "Excluir",
+        varianteConfirmar: "destrutiva",
+      });
+      if (!ok) return;
       setAcaoEmAndamento(true);
       try {
         const d = await excluirPipelineCustomApiTranscribrothers(id);
@@ -505,7 +514,7 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
         setAcaoEmAndamento(false);
       }
     },
-    [aplicarCatalogo, pushToast],
+    [aplicarCatalogo, pushToast, pedirConfirmacao],
   );
 
   const duplicarAgente = useCallback(
@@ -526,7 +535,13 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
 
   const excluirAgente = useCallback(
     async (id: string) => {
-      if (!window.confirm("Excluir este agente custom?")) return;
+      const ok = await pedirConfirmacao({
+        titulo: "Excluir agente?",
+        mensagem: "Excluir este agente custom?",
+        rotuloConfirmar: "Excluir",
+        varianteConfirmar: "destrutiva",
+      });
+      if (!ok) return;
       setAcaoEmAndamento(true);
       try {
         const d = await excluirAgenteCustomApiTranscribrothers(id);
@@ -538,7 +553,7 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
         setAcaoEmAndamento(false);
       }
     },
-    [aplicarCatalogo, pushToast],
+    [aplicarCatalogo, pushToast, pedirConfirmacao],
   );
 
   const agentesPorId = useMemo(() => {
@@ -760,6 +775,7 @@ export function ComponentePaginaCatalogoPipelinesDisponiveisComPromptsPorEtapaTr
           </>
         ) : null}
       </main>
+      {elementoDialogoConfirmacao}
     </div>
   );
 }

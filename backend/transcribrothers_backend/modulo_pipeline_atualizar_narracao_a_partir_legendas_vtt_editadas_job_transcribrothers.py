@@ -29,6 +29,9 @@ from transcribrothers_backend.modulo_ffmpeg_substituir_audio_video_por_narracao_
     CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS,
     NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
 )
+from transcribrothers_backend.modulo_diagnostico_tts_perfil_experimental_voz_transcribrothers import (
+    aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers,
+)
 from transcribrothers_backend.modulo_gerar_narracao_tts_markdown_job_via_litellm_transcribrothers import (
     CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS,
     NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS,
@@ -354,6 +357,31 @@ async def executar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_backgr
             session_factory
         )
         steps["pipeline_video_narrado_voz_tts"] = voz_tts
+        from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+            CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS,
+            CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS,
+            CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS,
+            PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+            normalizar_perfil_tts_narracao_transcribrothers,
+            normalizar_ritmo_tts_narracao_transcribrothers,
+            normalizar_temperatura_tts_narracao_transcribrothers,
+        )
+
+        perfil_tts_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
+            steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS)
+            or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = perfil_tts_efetivo
+        temperatura_tts_efetiva = normalizar_temperatura_tts_narracao_transcribrothers(
+            steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS)
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+            temperatura_tts_efetiva
+        )
+        ritmo_tts_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(
+            steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS)
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = ritmo_tts_efetivo
         resultado_tts = await gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_transcribrothers(
             trechos=[c.texto for c in cues_finais],
             modelo=modelo_tts,
@@ -364,6 +392,13 @@ async def executar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_backgr
             indices_a_regenerar=set(indices_sujos),
             preservar_indices_da_entrada=True,
             voz=voz_tts,
+            perfil_tts=perfil_tts_efetivo,
+            temperatura=temperatura_tts_efetiva,
+            ritmo=ritmo_tts_efetivo,
+        )
+        aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers(
+            steps,
+            resultado_tts.diagnostico_experimental,
         )
         if not resultado_tts.ok:
             raise RuntimeError(resultado_tts.mensagem)
@@ -466,6 +501,8 @@ async def executar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_backgr
             diretorio_saida=work,
             atualizar_progresso=_progresso_mux,
             preferencias_encode=prefs_encode,
+            # Atualização parcial de legendas/TTS: só reencode segmentos com fingerprint novo.
+            forcar_montagem_por_segmentos_com_cache=True,
         )
         url_mp4 = f"/api/jobs/{job_id}/video-com-narracao-tts?v={stamp_cache}"
         steps[CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS] = {

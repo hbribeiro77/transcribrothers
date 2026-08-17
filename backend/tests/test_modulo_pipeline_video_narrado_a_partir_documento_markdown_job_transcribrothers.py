@@ -126,6 +126,7 @@ async def test_orquestrador_pipeline_video_narrado_sucesso_com_ancoras_markdown(
     trechos = mock_tts.await_args.kwargs["trechos"]
     assert len(trechos) >= 2
     mock_ffmpeg.assert_awaited_once()
+    assert mock_ffmpeg.await_args.kwargs.get("forcar_montagem_por_segmentos_com_cache") is True
     segmentos = mock_ffmpeg.await_args.kwargs["segmentos"]
     assert len(segmentos) == len(trechos)
     assert segmentos[0].caminho_wav.name.startswith("cue_narracao_")
@@ -363,3 +364,5 @@ async def test_pipeline_full_ignora_vtt_editado_sujo_e_chama_limpeza_ia(
 
     url_mp4 = row.steps_json.get("video_com_narracao_tts", {}).get("url_download", "")
     assert "?v=" in url_mp4
+    mock_ffmpeg.assert_awaited_once()
+    assert mock_ffmpeg.await_args.kwargs.get("forcar_montagem_por_segmentos_com_cache") is True

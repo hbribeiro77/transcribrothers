@@ -63,7 +63,7 @@ def test_texto_efetivo_usa_override_quando_preenchido() -> None:
 def test_override_texto_tts_marca_cue_para_regenerar_tts(tmp_path: Path) -> None:
     work = tmp_path / "job"
     _gravar_manifest(work, texto="Configure o DNS", texto_tts="")
-    cues, indices = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["Configure o DNS"],
         textos_tts_desejados=["Configure o dê-êne-ésse"],
@@ -84,7 +84,7 @@ def test_so_legenda_muda_com_override_igual_nao_marca_tts(tmp_path: Path) -> Non
         texto="DNS antigo",
         texto_tts="dê-êne-ésse",
     )
-    cues, indices = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["Configure o DNS"],
         textos_tts_desejados=["dê-êne-ésse"],
@@ -101,7 +101,7 @@ def test_so_legenda_muda_com_override_igual_nao_marca_tts(tmp_path: Path) -> Non
 def test_sem_override_mudanca_de_legenda_ainda_marca_tts(tmp_path: Path) -> None:
     work = tmp_path / "job"
     _gravar_manifest(work, texto="frase A", texto_tts="")
-    _cues, indices = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+    _cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
         work=work,
         textos_desejados=["frase B"],
         textos_tts_desejados=[""],

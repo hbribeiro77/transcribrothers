@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import shutil
 import traceback
 import wave
 from datetime import datetime, timezone
@@ -26,6 +27,13 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
 from transcribrothers_backend.modulo_configuracao_ambiente_transcribrothers import (
     ConfiguracaoAmbienteTranscribrothers,
 )
+from transcribrothers_backend.modulo_controle_cancelamento_pipeline_jobs_transcribrothers import (
+    limpar_marcacao_cancelamento_pipeline_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_pipeline_job_transcricao_tutorial import (
+    PipelineCanceladoPeloUsuarioTranscribrothers,
+    _levantar_se_cancelamento_pipeline_solicitado,
+)
 from transcribrothers_backend.modulo_ffmpeg_extrair_audio_e_capturar_frames_por_timestamps import (
     ErroFfmpegTranscribrothers,
 )
@@ -34,6 +42,9 @@ from transcribrothers_backend.modulo_ffmpeg_montar_video_narrado_por_segmentos_r
 )
 from transcribrothers_backend.modulo_ffmpeg_substituir_audio_video_por_narracao_tts_wav_transcribrothers import (
     CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS,
+)
+from transcribrothers_backend.modulo_diagnostico_tts_perfil_experimental_voz_transcribrothers import (
+    aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers,
 )
 from transcribrothers_backend.modulo_gerar_narracao_tts_markdown_job_via_litellm_transcribrothers import (
     CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS,
@@ -54,7 +65,6 @@ from transcribrothers_backend.modulo_persistencia_manifest_cues_narracao_janelas
     carregar_manifest_cues_narracao_janelas_video_do_work_transcribrothers,
     cues_janela_a_partir_manifest_transcribrothers,
     gravar_manifest_cues_narracao_janelas_video_no_work_transcribrothers,
-    indices_cues_com_texto_diferente_do_manifest_transcribrothers,
     normalizar_texto_cue_para_comparacao_narracao_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_texto_efetivo_para_tts_cue_legenda_ou_override_transcribrothers import (
@@ -77,6 +87,12 @@ from transcribrothers_backend.modulo_util_montar_segmentos_retarget_respeitando_
     CueEdicaoModalNarradoParaMontagemTimelineVttTranscribrothers,
     gravar_wav_silencio_pcm16_mono_segundos_transcribrothers,
     montar_lista_segmentos_retarget_a_partir_cues_vtt_janelas_e_wavs_transcribrothers,
+)
+from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_transcribrothers import (
+    resolver_caminho_video_fonte_por_id_no_work_transcribrothers,
+)
+from transcribrothers_backend.modulo_montar_mapa_duracao_segundos_por_id_fonte_video_cues_job_transcribrothers import (
+    montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers,
 )
 from transcribrothers_backend.modulo_validar_cues_janelas_video_antes_narracao_tts_transcribrothers import (
     validar_cues_janelas_video_antes_narracao_tts_transcribrothers,
@@ -104,10 +120,17 @@ async def _atualizar_steps_job_transcribrothers(
     error: str | None = None,
     limpar_mensagem_erro: bool = False,
 ) -> None:
+    # Interrompe cedo se o usuário pediu cancelamento (ex.: durante TTS em paralelo).
+    if status != StatusJobTranscribrothers.cancelled:
+        _levantar_se_cancelamento_pipeline_solicitado(job_id)
     async with session_factory() as session:
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             return
+        # Não reabre job já cancelado (corrida com POST /cancel forçando status).
+        if row.status == StatusJobTranscribrothers.cancelled.value:
+            if status is None or status != StatusJobTranscribrothers.cancelled:
+                raise PipelineCanceladoPeloUsuarioTranscribrothers()
         if status is not None:
             row.status = status.value
         if limpar_mensagem_erro:
@@ -175,6 +198,152 @@ def _normalizar_voz_tts_efetiva_para_cue_transcribrothers(voz: str, voz_padrao: 
             return VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
 
 
+def _chave_reuso_wav_cue_narracao_transcribrothers(
+    *,
+    texto_legenda: str,
+    texto_tts: str,
+    voz: str,
+    voz_padrao: str,
+) -> tuple[str, str]:
+    texto_efetivo = texto_efetivo_para_tts_cue_narracao_transcribrothers(
+        texto_legenda=texto_legenda,
+        texto_tts=texto_tts,
+    )
+    texto_norm = normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto_efetivo)
+    voz_norm = _normalizar_voz_tts_efetiva_para_cue_transcribrothers(voz, voz_padrao)
+    return (texto_norm, voz_norm)
+
+
+def _montar_mapa_reuso_e_indices_tts_por_texto_e_voz_transcribrothers(
+    *,
+    work: Path,
+    manifest: list[Any],
+    cues_finais: list[CueNarracaoComJanelaVideoTranscribrothers],
+    voz_padrao: str,
+) -> tuple[list[int], dict[int, int]]:
+    """
+    Casa cues novas com o manifesto antigo por (texto efetivo TTS, voz).
+
+    - Preferência por identidade (mesmo índice) quando a chave bate.
+    - Em lista estável, identidade sem WAV no disco ainda conta como reuso
+      (mesmo comportamento do dirty por índice: não força TTS).
+    - Match cruzado (reordenar / inserir / excluir) só reusa se o WAV antigo existir.
+    """
+    lista_estavel = len(manifest) == len(cues_finais)
+    chaves_manifest: list[tuple[str, str] | None] = []
+    tem_wav: list[bool] = []
+    for i, m in enumerate(manifest):
+        if bool(getattr(m, "sem_narracao", False)):
+            chaves_manifest.append(None)
+            tem_wav.append(False)
+            continue
+        chave = _chave_reuso_wav_cue_narracao_transcribrothers(
+            texto_legenda=str(getattr(m, "texto", "") or ""),
+            texto_tts=str(getattr(m, "texto_tts", "") or ""),
+            voz=str(getattr(m, "voz_tts", "") or ""),
+            voz_padrao=voz_padrao,
+        )
+        chaves_manifest.append(chave)
+        tem_wav.append(
+            obter_caminho_wav_narracao_por_cue_se_existir_transcribrothers(work, i) is not None
+        )
+
+    usados_antigos: set[int] = set()
+    mapa_reuso: dict[int, int] = {}
+    indices_tts: list[int] = []
+
+    # 1) Identidade: mesmo índice + mesma chave.
+    for novo_i, cue in enumerate(cues_finais):
+        if cue.sem_narracao:
+            continue
+        if novo_i >= len(manifest):
+            continue
+        chave_antiga = chaves_manifest[novo_i]
+        if chave_antiga is None:
+            continue
+        chave_nova = _chave_reuso_wav_cue_narracao_transcribrothers(
+            texto_legenda=cue.texto,
+            texto_tts=str(getattr(cue, "texto_tts", "") or ""),
+            voz=str(getattr(cue, "voz_tts", "") or ""),
+            voz_padrao=voz_padrao,
+        )
+        if chave_antiga != chave_nova:
+            continue
+        if tem_wav[novo_i] or lista_estavel:
+            usados_antigos.add(novo_i)
+            mapa_reuso[novo_i] = novo_i
+
+    # 2) Match cruzado só com WAV no disco (insert/delete/reorder).
+    for novo_i, cue in enumerate(cues_finais):
+        if cue.sem_narracao or novo_i in mapa_reuso:
+            continue
+        chave_nova = _chave_reuso_wav_cue_narracao_transcribrothers(
+            texto_legenda=cue.texto,
+            texto_tts=str(getattr(cue, "texto_tts", "") or ""),
+            voz=str(getattr(cue, "voz_tts", "") or ""),
+            voz_padrao=voz_padrao,
+        )
+        match: int | None = None
+        for antigo_i, chave_antiga in enumerate(chaves_manifest):
+            if chave_antiga is None or antigo_i in usados_antigos:
+                continue
+            if not tem_wav[antigo_i]:
+                continue
+            if chave_antiga == chave_nova:
+                match = antigo_i
+                break
+        if match is None:
+            indices_tts.append(novo_i)
+        else:
+            usados_antigos.add(match)
+            mapa_reuso[novo_i] = match
+
+    return indices_tts, mapa_reuso
+
+
+# Nome legado (testes / imports internos).
+_montar_mapa_reuso_e_indices_tts_quando_lista_mudou_transcribrothers = (
+    _montar_mapa_reuso_e_indices_tts_por_texto_e_voz_transcribrothers
+)
+
+
+def remapar_arquivos_wav_narracao_por_mapa_indices_transcribrothers(
+    work: Path,
+    mapa_novo_para_antigo: dict[int, int],
+) -> None:
+    """
+    Copia WAVs dos índices antigos para os novos via temporários (evita colisão ao deslocar).
+    Entradas com novo==antigo também são regravadas de forma segura se outro slot as sobrescreveria.
+    """
+    if not mapa_novo_para_antigo:
+        return
+    # Já estão no lugar certo — evita cópia desnecessária na lista estável.
+    if all(novo == antigo for novo, antigo in mapa_novo_para_antigo.items()):
+        return
+    from transcribrothers_backend.modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers import (
+        diretorio_wavs_narracao_por_cue_do_work_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_validar_e_ajustar_janelas_video_cues_sem_sobreposicao_transcribrothers import (
+        resolver_caminho_wav_narracao_por_indice_cue_transcribrothers,
+    )
+
+    dir_wavs = diretorio_wavs_narracao_por_cue_do_work_transcribrothers(work)
+    dir_wavs.mkdir(parents=True, exist_ok=True)
+    temps: dict[int, Path] = {}
+    for novo, antigo in sorted(mapa_novo_para_antigo.items()):
+        src = obter_caminho_wav_narracao_por_cue_se_existir_transcribrothers(work, antigo)
+        if src is None:
+            continue
+        tmp = dir_wavs / f"cue_narracao_remap_tmp_{novo:04d}.wav"
+        shutil.copy2(src, tmp)
+        temps[novo] = tmp
+    for novo, tmp in temps.items():
+        dest = resolver_caminho_wav_narracao_por_indice_cue_transcribrothers(dir_wavs, novo)
+        if dest.exists():
+            dest.unlink()
+        shutil.move(str(tmp), str(dest))
+
+
 def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
     *,
     work: Path,
@@ -184,15 +353,13 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
     voz_padrao: str,
     janelas_brutas: list[dict[str, Any]] | None,
     textos_tts_desejados: list[str] | None = None,
-) -> tuple[list[CueNarracaoComJanelaVideoTranscribrothers], list[int]]:
+) -> tuple[list[CueNarracaoComJanelaVideoTranscribrothers], list[int], dict[int, int]]:
     """
-    Retorna cues com janelas + índices que precisam de TTS novo.
+    Retorna cues com janelas, índices que precisam de TTS novo e mapa novo→antigo para reuso de WAV.
 
-    Se a quantidade de cues mudou (ex.: exclusão no modal) e há janelas no payload,
-    reconstrói a lista a partir do payload (TTS novo em todas as cues com narração).
-
-    Dirty de TTS compara o texto efetivo de fala (override ``texto_tts`` ou legenda),
-    não a legenda sozinha — assim dá para ajustar a legenda sem regenerar áudio.
+    Sempre casa por (texto efetivo TTS + voz) — inclusive com quantidade estável —
+    para reusar WAV ao reordenar, editar uma cue ou encolher/crescer a lista.
+    A legenda pode mudar sem regenerar TTS se o override ``texto_tts`` (fala) for o mesmo.
     """
     manifest = carregar_manifest_cues_narracao_janelas_video_do_work_transcribrothers(work)
     if manifest is None:
@@ -253,103 +420,78 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                     sem_narracao=bool(sem_narracao),
                     voz_tts=voz,
                     texto_tts=texto_tts,
+                    id_fonte_video=str(janela.get("id_fonte_video") or "").strip(),
                 )
             )
-        # Remapeamento de índices: regenera TTS de tudo que ainda tem fala.
-        indices_tts = [i for i, c in enumerate(cues_finais) if not c.sem_narracao]
-        return cues_finais, indices_tts
-
-    cues_base = cues_janela_a_partir_manifest_transcribrothers(manifest)
-    textos_tts_efetivos_desejados = [
-        texto_efetivo_para_tts_cue_narracao_transcribrothers(
-            texto_legenda=texto,
-            texto_tts=texto_tts,
-        )
-        for texto, texto_tts in zip(textos_desejados, textos_tts_norm, strict=True)
-    ]
-    textos_tts_efetivos_manifest = [
-        texto_efetivo_para_tts_cue_narracao_transcribrothers(
-            texto_legenda=m.texto,
-            texto_tts=str(getattr(m, "texto_tts", "") or ""),
-        )
-        for m in manifest
-    ]
-    indices_texto_sujo = indices_cues_com_texto_diferente_do_manifest_transcribrothers(
-        textos_manifest=textos_tts_efetivos_manifest,
-        textos_desejados=textos_tts_efetivos_desejados,
-    )
-
-    if janelas_brutas is not None:
-        if len(janelas_brutas) != len(cues_base):
-            raise RuntimeError(
-                "A quantidade de tempos de tela não bate com as cues "
-                f"({len(janelas_brutas)} vs {len(cues_base)})."
-            )
-        cues_finais = []
-        for cue, texto, texto_tts, janela, sem_narracao, voz in zip(
-            cues_base,
-            textos_desejados,
-            textos_tts_norm,
-            janelas_brutas,
-            flags_sem_narracao,
-            vozes_norm,
-            strict=True,
-        ):
-            try:
-                ini = float(janela["inicio_video_segundos"])
-                fim = float(janela["fim_video_segundos"])
-            except (KeyError, TypeError, ValueError) as exc:
-                raise RuntimeError("Tempos de tela inválidos no payload.") from exc
-            if fim + 1e-9 < ini:
-                raise RuntimeError("Tempos de tela: fim anterior ao início.")
-            cues_finais.append(
+    else:
+        cues_base = cues_janela_a_partir_manifest_transcribrothers(manifest)
+        if janelas_brutas is not None:
+            if len(janelas_brutas) != len(cues_base):
+                raise RuntimeError(
+                    "A quantidade de tempos de tela não bate com as cues "
+                    f"({len(janelas_brutas)} vs {len(cues_base)})."
+                )
+            cues_finais = []
+            for cue, texto, texto_tts, janela, sem_narracao, voz in zip(
+                cues_base,
+                textos_desejados,
+                textos_tts_norm,
+                janelas_brutas,
+                flags_sem_narracao,
+                vozes_norm,
+                strict=True,
+            ):
+                try:
+                    ini = float(janela["inicio_video_segundos"])
+                    fim = float(janela["fim_video_segundos"])
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise RuntimeError("Tempos de tela inválidos no payload.") from exc
+                if fim + 1e-9 < ini:
+                    raise RuntimeError("Tempos de tela: fim anterior ao início.")
+                cues_finais.append(
+                    CueNarracaoComJanelaVideoTranscribrothers(
+                        texto=normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto),
+                        inicio_video_segundos=ini,
+                        fim_video_segundos=fim,
+                        origem_ancora=cue.origem_ancora,
+                        casado=cue.casado,
+                        sem_narracao=bool(sem_narracao),
+                        voz_tts=voz,
+                        texto_tts=texto_tts,
+                        id_fonte_video=str(janela.get("id_fonte_video") or "").strip()
+                        or str(getattr(cue, "id_fonte_video", "") or "").strip(),
+                    )
+                )
+        else:
+            cues_finais = [
                 CueNarracaoComJanelaVideoTranscribrothers(
                     texto=normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto),
-                    inicio_video_segundos=ini,
-                    fim_video_segundos=fim,
+                    inicio_video_segundos=cue.inicio_video_segundos,
+                    fim_video_segundos=cue.fim_video_segundos,
                     origem_ancora=cue.origem_ancora,
                     casado=cue.casado,
                     sem_narracao=bool(sem_narracao),
                     voz_tts=voz,
                     texto_tts=texto_tts,
+                    id_fonte_video=str(getattr(cue, "id_fonte_video", "") or "").strip(),
                 )
-            )
-    else:
-        cues_finais = [
-            CueNarracaoComJanelaVideoTranscribrothers(
-                texto=normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto),
-                inicio_video_segundos=cue.inicio_video_segundos,
-                fim_video_segundos=cue.fim_video_segundos,
-                origem_ancora=cue.origem_ancora,
-                casado=cue.casado,
-                sem_narracao=bool(sem_narracao),
-                voz_tts=voz,
-                texto_tts=texto_tts,
-            )
-            for cue, texto, texto_tts, sem_narracao, voz in zip(
-                cues_base,
-                textos_desejados,
-                textos_tts_norm,
-                flags_sem_narracao,
-                vozes_norm,
-                strict=True,
-            )
-        ]
+                for cue, texto, texto_tts, sem_narracao, voz in zip(
+                    cues_base,
+                    textos_desejados,
+                    textos_tts_norm,
+                    flags_sem_narracao,
+                    vozes_norm,
+                    strict=True,
+                )
+            ]
 
-    indices_tts: list[int] = []
-    for i, cue in enumerate(cues_finais):
-        if cue.sem_narracao:
-            continue
-        era_muda = bool(manifest[i].sem_narracao)
-        texto_mudou = i in indices_texto_sujo
-        voz_manifest = _normalizar_voz_tts_efetiva_para_cue_transcribrothers(
-            str(getattr(manifest[i], "voz_tts", "") or ""),
-            voz_padrao,
-        )
-        voz_mudou = voz_manifest != cue.voz_tts
-        if era_muda or texto_mudou or voz_mudou:
-            indices_tts.append(i)
-    return cues_finais, indices_tts
+    indices_tts, mapa_reuso = _montar_mapa_reuso_e_indices_tts_por_texto_e_voz_transcribrothers(
+        work=work,
+        manifest=manifest,
+        cues_finais=cues_finais,
+        voz_padrao=voz_padrao,
+    )
+    return cues_finais, indices_tts, mapa_reuso
 
 
 async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
@@ -373,6 +515,9 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             steps = dict(row.steps_json or {})
 
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_GERANDO_COM_EDICOES_MODAL
+        # Evita painel/barra de limpeza IA de uma corrida «Gerar nova narração» anterior.
+        steps["pipeline_origem_corrida"] = "edicoes_modal"
+        steps.pop("limpeza_legendas_ia_antes_tts", None)
         await _atualizar_steps_job_transcribrothers(
             session_factory,
             job_id,
@@ -382,6 +527,21 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
         )
 
         cues_vtt = validar_e_normalizar_cues_legendas_editadas_para_vtt_transcribrothers(cues_brutas)
+
+        # Valida janelas × manifesto ANTES de gravar o VTT (evita disco inconsistente).
+        manifest_antes = carregar_manifest_cues_narracao_janelas_video_do_work_transcribrothers(
+            work
+        )
+        if (
+            manifest_antes is not None
+            and len(manifest_antes) != len(cues_vtt)
+            and (janelas_brutas is None or len(janelas_brutas) != len(cues_vtt))
+        ):
+            raise RuntimeError(
+                "Ao excluir ou alterar a quantidade de cues, envie os tempos de tela "
+                f"de cada cue restante ({len(cues_vtt)} janela(s))."
+            )
+
         resultado_salvar = salvar_legendas_documento_alinhadas_vtt_editadas_no_job_transcribrothers(
             job_id=job_id,
             diretorio_assets=assets,
@@ -418,7 +578,8 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
         )
         voz_padrao_job = voz_padrao_job or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
         vozes_desejadas = [str(getattr(c, "voz_tts", "") or "") for c in cues_vtt]
-        cues_janela, indices_sujos = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+        cues_janela, indices_sujos, mapa_reuso_wav = (
+            _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
             work=work,
             textos_desejados=textos,
             textos_tts_desejados=textos_tts,
@@ -426,12 +587,15 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             vozes_desejadas=vozes_desejadas,
             voz_padrao=voz_padrao_job,
             janelas_brutas=janelas_brutas,
+            )
         )
         # Regenerar forçado na UI (botão «Regenerar») mesmo sem mudança de texto/voz.
         for i, c in enumerate(cues_vtt):
             if bool(getattr(c, "forcar_regenerar_tts", False)) and not c.sem_narracao:
                 if i not in indices_sujos:
                     indices_sujos.append(i)
+                # Não reutilizar WAV antigo se a UI pediu regenerar neste índice.
+                mapa_reuso_wav.pop(i, None)
         indices_sujos = sorted(set(indices_sujos))
 
         video = _localizar_arquivo_video_entrada_no_diretorio_job(work)
@@ -443,6 +607,7 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
 
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_VALIDANDO_LEGENDAS
         steps["video_narrado_edicoes_modal_cues_sujas"] = len(indices_sujos)
+        steps["video_narrado_edicoes_modal_wavs_reusados"] = len(mapa_reuso_wav)
         await _atualizar_steps_job_transcribrothers(session_factory, job_id, steps=steps)
 
         resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
@@ -452,9 +617,18 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             quantidade_casadas=sum(1 for c in cues_janela if c.casado),
             quantidade_interpoladas=sum(1 for c in cues_janela if not c.casado),
         )
+        mapa_duracao_fontes = (
+            await montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers(
+                work=work,
+                cues_ou_ids_fonte=cues_janela,
+                caminho_video_entrada=video,
+                duracao_video_entrada_segundos=duracao_video,
+            )
+        )
         validacao = validar_cues_janelas_video_antes_narracao_tts_transcribrothers(
             resultado_cues,
             duracao_video_segundos=duracao_video,
+            duracao_por_id_fonte_video=mapa_duracao_fontes,
         )
         if not validacao.ok:
             raise RuntimeError(
@@ -464,6 +638,8 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
 
         dir_wavs_cue = work / _NOME_SUBPASTA_WAVS_POR_CUE
         dir_wavs_cue.mkdir(parents=True, exist_ok=True)
+        # Desloca WAVs no disco quando a lista cresceu/encolheu (insert/delete).
+        remapar_arquivos_wav_narracao_por_mapa_indices_transcribrothers(work, mapa_reuso_wav)
         caminho_wav_concat = assets / NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS
         caminhos_wav_por_cue: list[Path | None] = [None] * len(cues_janela)
 
@@ -510,10 +686,40 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             await _atualizar_steps_job_transcribrothers(session_factory, job_id, steps=steps)
 
             async def _progresso_tts(sub: dict[str, Any]) -> None:
+                _levantar_se_cancelamento_pipeline_solicitado(job_id)
                 steps.update(sub)
                 await _atualizar_steps_job_transcribrothers(session_factory, job_id, steps=steps)
 
             steps["pipeline_video_narrado_voz_tts"] = voz_padrao_job
+            from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS,
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS,
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS,
+                PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+                normalizar_perfil_tts_narracao_transcribrothers,
+                normalizar_ritmo_tts_narracao_transcribrothers,
+                normalizar_temperatura_tts_narracao_transcribrothers,
+            )
+
+            perfil_tts_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
+                steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS)
+                or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+            )
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = (
+                perfil_tts_efetivo
+            )
+            temperatura_tts_efetiva = normalizar_temperatura_tts_narracao_transcribrothers(
+                steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS)
+            )
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+                temperatura_tts_efetiva
+            )
+            ritmo_tts_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(
+                steps.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS)
+            )
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = (
+                ritmo_tts_efetivo
+            )
             # Mesmo sem cues a regenerar via LiteLLM, chama com set vazio para reutilizar
             # WAVs (incl. promovidos) e remontar o WAV concatenado do documento.
             resultado_tts = await gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_transcribrothers(
@@ -527,6 +733,14 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
                 preservar_indices_da_entrada=True,
                 voz=voz_padrao_job,
                 vozes_por_cue=vozes_por_cue,
+                perfil_tts=perfil_tts_efetivo,
+                temperatura=temperatura_tts_efetiva,
+                ritmo=ritmo_tts_efetivo,
+                levantar_se_cancelado=lambda: _levantar_se_cancelamento_pipeline_solicitado(job_id),
+            )
+            aplicar_diagnostico_tts_experimental_nos_steps_json_transcribrothers(
+                steps,
+                resultado_tts.diagnostico_experimental,
             )
             if not resultado_tts.ok:
                 raise RuntimeError(resultado_tts.mensagem)
@@ -589,6 +803,11 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
                 fim_video_segundos=j.fim_video_segundos,
                 caminho_wav=wav,
                 texto=c.texto,
+                caminho_video_fonte=resolver_caminho_video_fonte_por_id_no_work_transcribrothers(
+                    work=work,
+                    id_fonte_video=str(getattr(j, "id_fonte_video", "") or ""),
+                    caminho_video_entrada=video,
+                ),
             )
             for c, j, wav in zip(cues_vtt, cues_janela, caminhos_wav_por_cue_ok, strict=True)
         ]
@@ -651,6 +870,7 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
         await _atualizar_steps_job_transcribrothers(session_factory, job_id, steps=steps)
 
         async def _progresso_mux(sub: dict[str, Any]) -> None:
+            _levantar_se_cancelamento_pipeline_solicitado(job_id)
             steps.update(sub)
             await _atualizar_steps_job_transcribrothers(session_factory, job_id, steps=steps)
 
@@ -670,6 +890,8 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             diretorio_saida=work,
             atualizar_progresso=_progresso_mux,
             preferencias_encode=prefs_encode,
+            # Edições do modal: reusa MP4 por cue inalterada (cache) e concatena.
+            forcar_montagem_por_segmentos_com_cache=True,
         )
         url_mp4 = f"/api/jobs/{job_id}/video-com-narracao-tts?v={stamp_cache}"
         steps[CHAVE_STEPS_JSON_VIDEO_COM_NARRACAO_TTS_TRANSCRIBROTHERS] = {
@@ -712,6 +934,22 @@ async def executar_gerar_video_com_edicoes_do_modal_narrado_em_background(
             steps=steps,
             status=StatusJobTranscribrothers.completed,
             limpar_mensagem_erro=True,
+        )
+    except PipelineCanceladoPeloUsuarioTranscribrothers:
+        limpar_marcacao_cancelamento_pipeline_job_transcribrothers(job_id)
+        steps["pipeline_fase"] = "cancelado_pelo_usuario"
+        steps[CHAVE_STEPS_JSON_PIPELINE_VIDEO_NARRADO_DOCUMENTO_TRANSCRIBROTHERS] = {
+            "ok": False,
+            "mensagem": "Cancelado pelo usuário.",
+            "edicoes_modal_narrado": True,
+            "cancelado_em": datetime.now(timezone.utc).isoformat(),
+        }
+        await _atualizar_steps_job_transcribrothers(
+            session_factory,
+            job_id,
+            steps=steps,
+            status=StatusJobTranscribrothers.cancelled,
+            error="Cancelado pelo usuário.",
         )
     except (RuntimeError, ValueError, OSError, ErroFfmpegTranscribrothers) as exc:
         texto_erro = str(exc)

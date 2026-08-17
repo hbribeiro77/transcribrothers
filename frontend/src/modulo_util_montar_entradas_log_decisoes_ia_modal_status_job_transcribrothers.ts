@@ -27,7 +27,7 @@ const ROTULOS_ETAPA_LOG_DECISOES_IA_PT_BR: Record<string, string> = {
   correcao_redundancia_secao_markdown: "Correção automática de redundância",
   regeneracao_secao_markdown: "Edição parcial — seção",
   regeneracao_zona_escopo_secao: "Edição parcial — trecho",
-  limpeza_legendas_ia_antes_tts: "Limpeza IA das legendas (antes do TTS)",
+  limpeza_legendas_ia_antes_tts: "Preparação IA das legendas (antes do TTS)",
   chat_completions: "Chamada ao modelo",
 };
 

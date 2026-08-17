@@ -1,4 +1,4 @@
-"""Guarda-corpo e merge da limpeza IA de textos de cues (sem chamar o proxy)."""
+"""Guarda-corpo e merge da preparação IA de textos de cues (sem chamar o proxy)."""
 
 from __future__ import annotations
 
@@ -14,6 +14,17 @@ def test_aceita_remover_lixo_de_borda() -> None:
     original = ")., triagem com IA e redesenho de interfaces foram os focos principais."
     proposto = "triagem com IA e redesenho de interfaces foram os focos principais."
     assert texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(original, proposto)
+
+
+def test_aceita_adaptacao_narravel_curta_rotulo_com_dois_pontos() -> None:
+    assert texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(
+        "Remova o grupo:",
+        "Remova o grupo.",
+    )
+    assert texto_limpo_ia_e_aceitavel_contra_original_transcribrothers(
+        "Não é Nome Social:",
+        "Não é nome social.",
+    )
 
 
 def test_rejeita_vazio_e_encolhimento_agressivo() -> None:
@@ -45,6 +56,24 @@ def test_mesclar_aplica_limpeza_e_mantem_rejeitados() -> None:
     assert finais[1] == "texto bom"
     assert finais[2] == "lote"
     assert alterados == [0, 2]
+    assert rejeitados == []
+
+
+def test_mesclar_aceita_adaptacao_narravel_moderada() -> None:
+    originais = ["Remova o grupo:", "frase ok"]
+    resposta = {
+        "cues": [
+            {"indice": 0, "texto": "Remova o grupo."},
+            {"indice": 1, "texto": "frase ok"},
+        ]
+    }
+    finais, alterados, rejeitados = mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
+        originais,
+        resposta,
+    )
+    assert finais[0] == "Remova o grupo."
+    assert finais[1] == "frase ok"
+    assert alterados == [0]
     assert rejeitados == []
 
 

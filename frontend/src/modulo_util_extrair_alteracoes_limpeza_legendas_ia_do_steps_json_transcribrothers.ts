@@ -1,5 +1,10 @@
 /** Extrai o resumo e o antes/depois da limpeza IA de legendas em `steps_json`. */
 
+import {
+  normalizarDiretrizConteudoLegendasTranscribrothers,
+  rotuloDiretrizConteudoLegendasParaUiTranscribrothers,
+} from "./modulo_diretriz_conteudo_legendas_narracao_transcribrothers.ts";
+
 export type AlteracaoLimpezaLegendaIaUiTranscribrothers = {
   indice: number;
   antes: string;
@@ -15,12 +20,17 @@ export type ResumoLimpezaLegendasIaStepsJsonTranscribrothers = {
   quantidadeCues: number;
   quantidadeAlteradas: number;
   usouFallbackOriginais: boolean;
+  diretrizConteudo: string;
+  diretrizConteudoRotulo: string;
   alteracoes: AlteracaoLimpezaLegendaIaUiTranscribrothers[];
 };
 
 export function extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers(
   steps: Record<string, unknown> | null | undefined,
 ): ResumoLimpezaLegendasIaStepsJsonTranscribrothers | null {
+  // Corrida do modal «edições» não usa limpeza IA — não reexibir resumo antigo.
+  if (steps?.pipeline_origem_corrida === "edicoes_modal") return null;
+  if (steps?.pipeline_fase === "video_narrado_gerando_com_edicoes_modal") return null;
   const raw = steps?.limpeza_legendas_ia_antes_tts;
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -40,6 +50,13 @@ export function extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers(
   const modelosTentados = Array.isArray(o.modelos_tentados)
     ? o.modelos_tentados.filter((m): m is string => typeof m === "string" && m.trim().length > 0)
     : [];
+  const diretrizRaw =
+    typeof o.diretriz_conteudo === "string"
+      ? o.diretriz_conteudo
+      : typeof steps?.pipeline_video_narrado_diretriz_conteudo_legendas === "string"
+        ? steps.pipeline_video_narrado_diretriz_conteudo_legendas
+        : "";
+  const diretrizConteudo = normalizarDiretrizConteudoLegendasTranscribrothers(diretrizRaw);
   return {
     ok: typeof o.ok === "boolean" ? o.ok : null,
     status: typeof o.status === "string" ? o.status : "",
@@ -55,6 +72,8 @@ export function extrairResumoLimpezaLegendasIaDoStepsJsonTranscribrothers(
         ? o.quantidade_alteradas
         : alteracoes.length,
     usouFallbackOriginais: o.usou_fallback_originais === true,
+    diretrizConteudo,
+    diretrizConteudoRotulo: rotuloDiretrizConteudoLegendasParaUiTranscribrothers(diretrizConteudo),
     alteracoes,
   };
 }

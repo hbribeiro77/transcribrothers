@@ -26,6 +26,29 @@ from transcribrothers_backend.modulo_util_filtrar_trechos_narraveis_para_tts_tra
     preview_trecho_tts_para_progresso_ui_transcribrothers,
     texto_e_narravel_para_tts_transcribrothers,
 )
+from transcribrothers_backend.modulo_diagnostico_tts_perfil_experimental_voz_transcribrothers import (
+    CHAVE_STEPS_JSON_DIAGNOSTICO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS,
+    TTS_TIMEOUT_READ_EXPERIMENTAL_VOZ_SEGUNDOS,
+    CuePuladaTtsExperimentalVozTranscribrothers,
+    DiagnosticoTtsPerfilExperimentalVozTranscribrothers,
+    FalhaFatalTtsExperimentalVozTranscribrothers,
+    TentativaTtsExperimentalVozTranscribrothers,
+    agora_monotonic_ms_transcribrothers,
+    classificar_resultado_erro_tts_experimental_transcribrothers,
+    erro_curto_diagnostico_tts_experimental_transcribrothers,
+    preview_texto_diagnostico_tts_experimental_transcribrothers,
+    ultima_tentativa_da_cue_diagnostico_tts_experimental_transcribrothers,
+)
+from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+    PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS,
+    PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    montar_conteudo_mensagem_user_tts_pelo_perfil_narracao_transcribrothers,
+    normalizar_paralelismo_tts_cues_experimental_transcribrothers,
+    normalizar_perfil_tts_narracao_transcribrothers,
+    normalizar_ritmo_tts_narracao_transcribrothers,
+    normalizar_temperatura_tts_narracao_transcribrothers,
+    temperatura_tts_pelo_perfil_narracao_transcribrothers,
+)
 from transcribrothers_backend.modulo_verificar_modelo_litellm_chat_completions_probe_transcribrothers import (
     modelo_litellm_parece_tts_pelo_slug_transcribrothers,
 )
@@ -180,29 +203,15 @@ def _extrair_pcm16_base64_da_mensagem_chat_tts_transcribrothers(message: dict[st
     raise ValueError("Resposta TTS sem payload de áudio pcm16 (base64).")
 
 
-async def _sintetizar_pcm16_trecho_tts_via_litellm_transcribrothers(
+async def _post_chat_completions_tts_extrair_pcm16_via_litellm_transcribrothers(
     *,
-    texto: str,
-    modelo: str,
+    corpo: dict[str, Any],
     api_key: str,
     base_v1: str,
     httpx_verify: bool | str,
-    voz: str,
 ) -> bytes:
-    """Uma tentativa: prompt = só o texto a narrar (modelo TTS costuma falhar com instruções longas)."""
-    texto_narrar = (texto or "").strip()
-    if not texto_narrar:
-        raise ValueError("Trecho TTS vazio.")
+    """HTTP compartilhado; o corpo (prompt/temperatura) vem do motor do perfil."""
     url_chat = f"{base_v1}/chat/completions"
-    corpo = {
-        "model": modelo,
-        # Prompt mínimo: Gemini TTS responde melhor com o texto puro a ser falado.
-        "messages": [{"role": "user", "content": texto_narrar}],
-        "modalities": ["audio"],
-        "audio": {"voice": (voz or _TTS_VOICE).strip() or _TTS_VOICE, "format": _TTS_AUDIO_FORMAT},
-        "allowed_openai_params": ["audio", "modalities"],
-        "temperature": 0.4,
-    }
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -254,6 +263,369 @@ async def _sintetizar_pcm16_trecho_tts_via_litellm_transcribrothers(
     return pcm
 
 
+def _temperatura_efetiva_corpo_tts_transcribrothers(
+    *,
+    perfil: str,
+    temperatura: float | None,
+) -> float:
+    if temperatura is None:
+        return float(temperatura_tts_pelo_perfil_narracao_transcribrothers(perfil))
+    return float(normalizar_temperatura_tts_narracao_transcribrothers(temperatura))
+
+
+def _montar_corpo_chat_completions_tts_motor_padrao_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    voz: str,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> dict[str, Any]:
+    """Motor sagrado: texto puro (+ tag de ritmo se ≠ normal). Não misturar experimentos aqui."""
+    texto_narrar = montar_conteudo_mensagem_user_tts_pelo_perfil_narracao_transcribrothers(
+        PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+        texto,
+        ritmo=ritmo,
+    )
+    if not texto_narrar:
+        raise ValueError("Trecho TTS vazio.")
+    return {
+        "model": modelo,
+        "messages": [{"role": "user", "content": texto_narrar}],
+        "modalities": ["audio"],
+        "audio": {
+            "voice": (voz or _TTS_VOICE).strip() or _TTS_VOICE,
+            "format": _TTS_AUDIO_FORMAT,
+        },
+        "allowed_openai_params": ["audio", "modalities"],
+        "temperature": _temperatura_efetiva_corpo_tts_transcribrothers(
+            perfil=PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+            temperatura=temperatura,
+        ),
+    }
+
+
+def _montar_corpo_chat_completions_tts_motor_experimental_voz_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    voz: str,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> dict[str, Any]:
+    """
+    Motor experimental (voz): isolado do padrão.
+    Envelope com notas do diretor (Pace conforme ritmo; ver módulo de perfil).
+    """
+    texto_narrar = montar_conteudo_mensagem_user_tts_pelo_perfil_narracao_transcribrothers(
+        PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS,
+        texto,
+        ritmo=ritmo,
+    )
+    if not texto_narrar:
+        raise ValueError("Trecho TTS vazio.")
+    return {
+        "model": modelo,
+        "messages": [{"role": "user", "content": texto_narrar}],
+        "modalities": ["audio"],
+        "audio": {
+            "voice": (voz or _TTS_VOICE).strip() or _TTS_VOICE,
+            "format": _TTS_AUDIO_FORMAT,
+        },
+        "allowed_openai_params": ["audio", "modalities"],
+        "temperature": _temperatura_efetiva_corpo_tts_transcribrothers(
+            perfil=PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS,
+            temperatura=temperatura,
+        ),
+    }
+
+
+async def _sintetizar_pcm16_trecho_tts_motor_padrao_via_litellm_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    api_key: str,
+    base_v1: str,
+    httpx_verify: bool | str,
+    voz: str,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> bytes:
+    corpo = _montar_corpo_chat_completions_tts_motor_padrao_transcribrothers(
+        texto=texto,
+        modelo=modelo,
+        voz=voz,
+        temperatura=temperatura,
+        ritmo=ritmo,
+    )
+    return await _post_chat_completions_tts_extrair_pcm16_via_litellm_transcribrothers(
+        corpo=corpo,
+        api_key=api_key,
+        base_v1=base_v1,
+        httpx_verify=httpx_verify,
+    )
+
+
+async def _post_chat_completions_tts_experimental_voz_extrair_pcm16_via_litellm_transcribrothers(
+    *,
+    corpo: dict[str, Any],
+    api_key: str,
+    base_v1: str,
+    httpx_verify: bool | str,
+) -> bytes:
+    """
+    HTTP só do motor experimental: timeout read 30s.
+    O motor sagrado NÃO usa esta função (continua em _post_... 180s).
+    """
+    url_chat = f"{base_v1}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    timeout = httpx.Timeout(
+        connect=_TTS_TIMEOUT_CONNECT_SEGUNDOS,
+        read=TTS_TIMEOUT_READ_EXPERIMENTAL_VOZ_SEGUNDOS,
+        write=TTS_TIMEOUT_READ_EXPERIMENTAL_VOZ_SEGUNDOS,
+        pool=_TTS_TIMEOUT_CONNECT_SEGUNDOS,
+    )
+    async with httpx.AsyncClient(timeout=timeout, verify=httpx_verify) as client:
+        http = await client.post(url_chat, headers=headers, json=corpo)
+    if http.status_code >= 400:
+        trecho = (http.text or "").strip().replace("\n", " ")[:400]
+        msg = (
+            f"Proxy rejeitou a narração TTS (HTTP {http.status_code})"
+            + (f" — {trecho}" if trecho else "")
+        )
+        if _http_status_proxy_tts_e_retryavel_transcribrothers(http.status_code):
+            raise ErroTtsRespostaVaziaRetryavelTranscribrothers(msg)
+        raise RuntimeError(msg)
+    try:
+        body = http.json()
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Resposta TTS não é JSON válido (HTTP {http.status_code})."
+        ) from exc
+    if not isinstance(body, dict):
+        raise RuntimeError("Resposta TTS inválida (corpo não é objeto JSON).")
+    choices = body.get("choices")
+    if not isinstance(choices, list) or not choices:
+        preview = (http.text or "").strip().replace("\n", " ")[:280]
+        raise ErroTtsRespostaVaziaRetryavelTranscribrothers(
+            "Resposta TTS sem choices (proxy/modelo devolveu lista vazia ou ausente)."
+            + (f" Corpo: {preview}" if preview else "")
+        )
+    first = choices[0]
+    if not isinstance(first, dict):
+        raise RuntimeError("Resposta TTS com choice inválida.")
+    message = first.get("message")
+    if not isinstance(message, dict):
+        raise ErroTtsRespostaVaziaRetryavelTranscribrothers("Resposta TTS sem message na choice.")
+    try:
+        pcm = _extrair_pcm16_base64_da_mensagem_chat_tts_transcribrothers(message)
+    except ValueError as exc:
+        raise ErroTtsRespostaVaziaRetryavelTranscribrothers(str(exc)) from exc
+    if not pcm:
+        raise ErroTtsRespostaVaziaRetryavelTranscribrothers("Áudio TTS vazio.")
+    return pcm
+
+
+async def _sintetizar_pcm16_trecho_tts_motor_experimental_voz_via_litellm_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    api_key: str,
+    base_v1: str,
+    httpx_verify: bool | str,
+    voz: str,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> bytes:
+    corpo = _montar_corpo_chat_completions_tts_motor_experimental_voz_transcribrothers(
+        texto=texto,
+        modelo=modelo,
+        voz=voz,
+        temperatura=temperatura,
+        ritmo=ritmo,
+    )
+    return await _post_chat_completions_tts_experimental_voz_extrair_pcm16_via_litellm_transcribrothers(
+        corpo=corpo,
+        api_key=api_key,
+        base_v1=base_v1,
+        httpx_verify=httpx_verify,
+    )
+
+
+async def _sintetizar_pcm16_trecho_tts_experimental_com_retry_e_diagnostico_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    api_key: str,
+    base_v1: str,
+    httpx_verify: bool | str,
+    voz: str,
+    indice_cue: int,
+    diagnostico: DiagnosticoTtsPerfilExperimentalVozTranscribrothers,
+    lock_diagnostico: asyncio.Lock,
+    max_tentativas: int = _TTS_MAX_TENTATIVAS_POR_TRECHO,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> bytes:
+    """Retry + telemetria só do experimental. Não chamar no perfil padrão."""
+    tentativas = max(1, int(max_tentativas))
+    ultimo_erro: Exception | None = None
+    preview = preview_texto_diagnostico_tts_experimental_transcribrothers(texto)
+    chars_content = len(
+        montar_conteudo_mensagem_user_tts_pelo_perfil_narracao_transcribrothers(
+            PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS,
+            texto,
+            ritmo=ritmo,
+        )
+    )
+    voz_efetiva = (voz or _TTS_VOICE).strip() or _TTS_VOICE
+    for tentativa in range(1, tentativas + 1):
+        t0 = agora_monotonic_ms_transcribrothers()
+        try:
+            pcm = await _sintetizar_pcm16_trecho_tts_motor_experimental_voz_via_litellm_transcribrothers(
+                texto=texto,
+                modelo=modelo,
+                api_key=api_key,
+                base_v1=base_v1,
+                httpx_verify=httpx_verify,
+                voz=voz_efetiva,
+                temperatura=temperatura,
+                ritmo=ritmo,
+            )
+            lat = int(max(0.0, agora_monotonic_ms_transcribrothers() - t0))
+            async with lock_diagnostico:
+                diagnostico.registrar_tentativa(
+                    TentativaTtsExperimentalVozTranscribrothers(
+                        indice_cue=indice_cue,
+                        tentativa=tentativa,
+                        latencia_ms=lat,
+                        resultado="ok",
+                        http_status=200,
+                        texto_preview=preview,
+                        voz=voz_efetiva,
+                        chars_content=chars_content,
+                    )
+                )
+            return pcm
+        except ErroTtsRespostaVaziaRetryavelTranscribrothers as exc:
+            lat = int(max(0.0, agora_monotonic_ms_transcribrothers() - t0))
+            resultado = classificar_resultado_erro_tts_experimental_transcribrothers(exc)
+            async with lock_diagnostico:
+                diagnostico.registrar_tentativa(
+                    TentativaTtsExperimentalVozTranscribrothers(
+                        indice_cue=indice_cue,
+                        tentativa=tentativa,
+                        latencia_ms=lat,
+                        resultado=resultado,
+                        erro_curto=erro_curto_diagnostico_tts_experimental_transcribrothers(exc),
+                        texto_preview=preview,
+                        voz=voz_efetiva,
+                        chars_content=chars_content,
+                    )
+                )
+            ultimo_erro = exc
+            if tentativa >= tentativas:
+                break
+            await asyncio.sleep(_TTS_BACKOFF_BASE_ENTRE_TENTATIVAS_SEGUNDOS * tentativa)
+        except httpx.TimeoutException as exc:
+            lat = int(max(0.0, agora_monotonic_ms_transcribrothers() - t0))
+            async with lock_diagnostico:
+                diagnostico.registrar_tentativa(
+                    TentativaTtsExperimentalVozTranscribrothers(
+                        indice_cue=indice_cue,
+                        tentativa=tentativa,
+                        latencia_ms=lat,
+                        resultado="timeout",
+                        erro_curto=(
+                            f"Timeout read {TTS_TIMEOUT_READ_EXPERIMENTAL_VOZ_SEGUNDOS:.0f}s"
+                        ),
+                        texto_preview=preview,
+                        voz=voz_efetiva,
+                        chars_content=chars_content,
+                    )
+                )
+            ultimo_erro = exc
+            # Timeout no experimental: sem retry automático (reenvio manual na UI).
+            break
+        except (RuntimeError, KeyError, IndexError, TypeError, ValueError) as exc:
+            lat = int(max(0.0, agora_monotonic_ms_transcribrothers() - t0))
+            resultado = classificar_resultado_erro_tts_experimental_transcribrothers(exc)
+            async with lock_diagnostico:
+                diagnostico.registrar_tentativa(
+                    TentativaTtsExperimentalVozTranscribrothers(
+                        indice_cue=indice_cue,
+                        tentativa=tentativa,
+                        latencia_ms=lat,
+                        resultado=resultado,
+                        erro_curto=erro_curto_diagnostico_tts_experimental_transcribrothers(exc),
+                        texto_preview=preview,
+                        voz=voz_efetiva,
+                        chars_content=chars_content,
+                    )
+                )
+                diagnostico.registrar_falha(
+                    FalhaFatalTtsExperimentalVozTranscribrothers(
+                        indice_cue=indice_cue,
+                        texto_preview=preview,
+                        motivo=resultado,
+                        tentativa=tentativa,
+                        erro_curto=erro_curto_diagnostico_tts_experimental_transcribrothers(exc),
+                        latencia_ms=lat,
+                    )
+                )
+            raise
+    assert ultimo_erro is not None
+    if isinstance(ultimo_erro, httpx.TimeoutException):
+        raise ultimo_erro
+    if isinstance(ultimo_erro, ErroTtsRespostaVaziaRetryavelTranscribrothers):
+        raise ErroTtsRespostaVaziaRetryavelTranscribrothers(
+            f"Após {tentativas} tentativa(s): {ultimo_erro}"
+        ) from ultimo_erro
+    raise RuntimeError(
+        f"Após {tentativas} tentativa(s): {ultimo_erro}"
+    ) from ultimo_erro
+
+
+async def _sintetizar_pcm16_trecho_tts_via_litellm_transcribrothers(
+    *,
+    texto: str,
+    modelo: str,
+    api_key: str,
+    base_v1: str,
+    httpx_verify: bool | str,
+    voz: str,
+    perfil_tts: str = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    temperatura: float | None = None,
+    ritmo: object = None,
+) -> bytes:
+    """Uma tentativa: despacha ao motor do perfil (padrão sagrado vs experimental)."""
+    perfil = normalizar_perfil_tts_narracao_transcribrothers(perfil_tts)
+    if perfil == PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS:
+        return await _sintetizar_pcm16_trecho_tts_motor_experimental_voz_via_litellm_transcribrothers(
+            texto=texto,
+            modelo=modelo,
+            api_key=api_key,
+            base_v1=base_v1,
+            httpx_verify=httpx_verify,
+            voz=voz,
+            temperatura=temperatura,
+            ritmo=ritmo,
+        )
+    return await _sintetizar_pcm16_trecho_tts_motor_padrao_via_litellm_transcribrothers(
+        texto=texto,
+        modelo=modelo,
+        api_key=api_key,
+        base_v1=base_v1,
+        httpx_verify=httpx_verify,
+        voz=voz,
+        temperatura=temperatura,
+        ritmo=ritmo,
+    )
+
+
 async def _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
     *,
     texto: str,
@@ -262,11 +634,15 @@ async def _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
     base_v1: str,
     httpx_verify: bool | str,
     voz: str,
+    perfil_tts: str = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
     max_tentativas: int = _TTS_MAX_TENTATIVAS_POR_TRECHO,
+    temperatura: float | None = None,
+    ritmo: object = None,
 ) -> bytes:
     """Retry com backoff em choices vazio, HTTP 5xx/429 e timeout."""
     tentativas = max(1, int(max_tentativas))
     ultimo_erro: Exception | None = None
+    perfil = normalizar_perfil_tts_narracao_transcribrothers(perfil_tts)
     for tentativa in range(1, tentativas + 1):
         try:
             return await _sintetizar_pcm16_trecho_tts_via_litellm_transcribrothers(
@@ -276,6 +652,9 @@ async def _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
                 base_v1=base_v1,
                 httpx_verify=httpx_verify,
                 voz=voz,
+                perfil_tts=perfil,
+                temperatura=temperatura,
+                ritmo=ritmo,
             )
         except ErroTtsRespostaVaziaRetryavelTranscribrothers as exc:
             ultimo_erro = exc
@@ -691,6 +1070,35 @@ class ResultadoNarracaoTtsWavsPorCueTranscribrothers:
     quantidade_cues_reutilizadas: int = 0
     previews_cues_puladas: tuple[str, ...] = ()
     quantidade_trechos_descartados_antes_tts: int = 0
+    # Preenchido só no perfil experimental_voz (padrão sagrado deixa None).
+    diagnostico_experimental: dict[str, Any] | None = None
+    # Experimental: cues com timeout (1 tentativa) aguardando reenvio manual na UI.
+    cues_pendentes_timeout: tuple[dict[str, Any], ...] = ()
+
+
+def _com_diagnostico_experimental_no_resultado_tts_transcribrothers(
+    resultado: ResultadoNarracaoTtsWavsPorCueTranscribrothers,
+    diagnostico: DiagnosticoTtsPerfilExperimentalVozTranscribrothers | None,
+) -> ResultadoNarracaoTtsWavsPorCueTranscribrothers:
+    if diagnostico is None:
+        return resultado
+    return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+        ok=resultado.ok,
+        mensagem=resultado.mensagem,
+        nome_arquivo_concatenado=resultado.nome_arquivo_concatenado,
+        caminhos_wav_por_cue=resultado.caminhos_wav_por_cue,
+        duracoes_por_cue_segundos=resultado.duracoes_por_cue_segundos,
+        modelo=resultado.modelo,
+        texto_caracteres=resultado.texto_caracteres,
+        quantidade_cues=resultado.quantidade_cues,
+        quantidade_pedidos_tts=resultado.quantidade_pedidos_tts,
+        quantidade_cues_puladas=resultado.quantidade_cues_puladas,
+        quantidade_cues_reutilizadas=resultado.quantidade_cues_reutilizadas,
+        previews_cues_puladas=resultado.previews_cues_puladas,
+        quantidade_trechos_descartados_antes_tts=resultado.quantidade_trechos_descartados_antes_tts,
+        diagnostico_experimental=diagnostico.para_steps_json(),
+        cues_pendentes_timeout=resultado.cues_pendentes_timeout,
+    )
 
 
 async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_transcribrothers(
@@ -702,10 +1110,15 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
     caminho_wav_concatenado: Path,
     voz: str = _TTS_VOICE,
     vozes_por_cue: list[str] | None = None,
+    perfil_tts: str = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    temperatura: float | None = None,
+    ritmo: object = None,
     max_chars_trecho: int = _TTS_MAX_CHARS_TRECHO_CUE_PIPELINE,
     atualizar_progresso: AtualizarProgressoNarracaoTtsCueTranscribrothers | None = None,
     indices_a_regenerar: set[int] | frozenset[int] | None = None,
     preservar_indices_da_entrada: bool = False,
+    paralelismo_cues: int | None = None,
+    levantar_se_cancelado: Callable[[], None] | None = None,
 ) -> ResultadoNarracaoTtsWavsPorCueTranscribrothers:
     """
     Narra cada cue num WAV próprio (para retarget A) e também concatena tudo num WAV único.
@@ -776,16 +1189,63 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
     pedidos = 0
     texto_total_chars = 0
     previews_puladas: list[str] = []
+    pendentes_timeout: list[dict[str, Any]] = []
     reutilizadas = 0
     cues_concluidas = 0
     total_cues = len(cues_texto)
     regenerar_todas = indices_a_regenerar is None
     indices_regen = frozenset(indices_a_regenerar or ())
-    paralelismo = max(1, int(_TTS_PARALELISMO_CUES))
-    semaforo_tts = asyncio.Semaphore(paralelismo)
     lock_estado = asyncio.Lock()
     abortar_demasiadas_puladas: ResultadoNarracaoTtsWavsPorCueTranscribrothers | None = None
     voz_padrao = (voz or _TTS_VOICE).strip() or _TTS_VOICE
+    try:
+        perfil_tts_norm = normalizar_perfil_tts_narracao_transcribrothers(perfil_tts)
+    except ValueError as exc:
+        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+            ok=False,
+            mensagem=str(exc),
+            modelo=modelo_norm,
+            texto_caracteres=sum(len(t) for t in cues_texto),
+            quantidade_cues=len(cues_texto),
+            quantidade_trechos_descartados_antes_tts=len(descartados),
+        )
+    temperatura_efetiva = (
+        normalizar_temperatura_tts_narracao_transcribrothers(temperatura)
+        if temperatura is not None
+        else temperatura_tts_pelo_perfil_narracao_transcribrothers(perfil_tts_norm)
+    )
+    ritmo_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(ritmo)
+    usa_diagnostico_experimental = (
+        perfil_tts_norm == PERFIL_TTS_NARRACAO_EXPERIMENTAL_VOZ_TRANSCRIBROTHERS
+    )
+    # Ambos os perfis: paralelismo 1–9 da UI/steps (padrão 3).
+    try:
+        paralelismo = normalizar_paralelismo_tts_cues_experimental_transcribrothers(
+            paralelismo_cues if paralelismo_cues is not None else _TTS_PARALELISMO_CUES
+        )
+    except ValueError as exc:
+        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+            ok=False,
+            mensagem=str(exc),
+            modelo=modelo_norm,
+            texto_caracteres=sum(len(t) for t in cues_texto),
+            quantidade_cues=len(cues_texto),
+            quantidade_trechos_descartados_antes_tts=len(descartados),
+        )
+    semaforo_tts = asyncio.Semaphore(paralelismo)
+    diagnostico_experimental: DiagnosticoTtsPerfilExperimentalVozTranscribrothers | None = (
+        DiagnosticoTtsPerfilExperimentalVozTranscribrothers(
+            quantidade_cues_total=total_cues,
+        )
+        if usa_diagnostico_experimental
+        else None
+    )
+    lock_diagnostico = asyncio.Lock()
+    limite_timeout_read_msg = (
+        TTS_TIMEOUT_READ_EXPERIMENTAL_VOZ_SEGUNDOS
+        if usa_diagnostico_experimental
+        else _TTS_TIMEOUT_READ_SEGUNDOS
+    )
     if vozes_por_cue is not None and len(vozes_por_cue) != len(cues_texto):
         return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
             ok=False,
@@ -805,33 +1265,93 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
         candidata = str(vozes_por_cue[indice_zero_based] or "").strip()
         return candidata or voz_padrao
 
+    def _anexar_diagnostico(
+        resultado: ResultadoNarracaoTtsWavsPorCueTranscribrothers,
+    ) -> ResultadoNarracaoTtsWavsPorCueTranscribrothers:
+        com_pendentes = ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+            ok=resultado.ok,
+            mensagem=resultado.mensagem,
+            nome_arquivo_concatenado=resultado.nome_arquivo_concatenado,
+            caminhos_wav_por_cue=resultado.caminhos_wav_por_cue,
+            duracoes_por_cue_segundos=resultado.duracoes_por_cue_segundos,
+            modelo=resultado.modelo,
+            texto_caracteres=resultado.texto_caracteres,
+            quantidade_cues=resultado.quantidade_cues,
+            quantidade_pedidos_tts=resultado.quantidade_pedidos_tts,
+            quantidade_cues_puladas=resultado.quantidade_cues_puladas,
+            quantidade_cues_reutilizadas=resultado.quantidade_cues_reutilizadas,
+            previews_cues_puladas=resultado.previews_cues_puladas,
+            quantidade_trechos_descartados_antes_tts=(
+                resultado.quantidade_trechos_descartados_antes_tts
+            ),
+            diagnostico_experimental=resultado.diagnostico_experimental,
+            cues_pendentes_timeout=tuple(pendentes_timeout),
+        )
+        return _com_diagnostico_experimental_no_resultado_tts_transcribrothers(
+            com_pendentes,
+            diagnostico_experimental,
+        )
+
+    async def _registrar_pulada_experimental(
+        *,
+        indice_cue: int,
+        texto_cue: str,
+        motivo: str,
+    ) -> None:
+        if diagnostico_experimental is None:
+            return
+        preview = preview_texto_diagnostico_tts_experimental_transcribrothers(texto_cue)
+        async with lock_diagnostico:
+            ultima = ultima_tentativa_da_cue_diagnostico_tts_experimental_transcribrothers(
+                diagnostico_experimental,
+                indice_cue,
+            )
+            diagnostico_experimental.registrar_pulada(
+                CuePuladaTtsExperimentalVozTranscribrothers(
+                    indice_cue=indice_cue,
+                    texto_preview=preview,
+                    motivo=motivo if ultima is None else (ultima.resultado or motivo),
+                    tentativas=ultima.tentativa if ultima is not None else 0,
+                    ultimo_erro=ultima.erro_curto if ultima is not None else "",
+                    latencia_ms_ultima=ultima.latencia_ms if ultima is not None else 0,
+                )
+            )
+
     async def _emitir_progresso(
         *,
         indice_cue: int,
         texto_cue: str,
         fase_cue: str,
     ) -> None:
+        if levantar_se_cancelado is not None:
+            levantar_se_cancelado()
         if atualizar_progresso is None:
             return
-        await atualizar_progresso(
-            {
-                "video_narrado_tts_cue_indice": indice_cue,
-                "video_narrado_tts_cue_total": total_cues,
-                "video_narrado_tts_cue_preview": preview_trecho_tts_para_progresso_ui_transcribrothers(
-                    texto_cue
-                ),
-                "video_narrado_tts_cue_fase": fase_cue,
-                "video_narrado_tts_pedidos_feitos": pedidos,
-                "video_narrado_tts_cues_puladas": len(previews_puladas),
-                "video_narrado_tts_cues_reutilizadas": reutilizadas,
-                "video_narrado_tts_trechos_descartados": len(descartados),
-                "video_narrado_tts_paralelismo": paralelismo,
-            }
-        )
+        payload: dict[str, Any] = {
+            "video_narrado_tts_cue_indice": indice_cue,
+            "video_narrado_tts_cue_total": total_cues,
+            "video_narrado_tts_cue_preview": preview_trecho_tts_para_progresso_ui_transcribrothers(
+                texto_cue
+            ),
+            "video_narrado_tts_cue_fase": fase_cue,
+            "video_narrado_tts_pedidos_feitos": pedidos,
+            "video_narrado_tts_cues_puladas": len(previews_puladas),
+            "video_narrado_tts_cues_reutilizadas": reutilizadas,
+            "video_narrado_tts_trechos_descartados": len(descartados),
+            "video_narrado_tts_paralelismo": paralelismo,
+        }
+        if diagnostico_experimental is not None:
+            async with lock_diagnostico:
+                payload[CHAVE_STEPS_JSON_DIAGNOSTICO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS] = (
+                    diagnostico_experimental.para_steps_json()
+                )
+        await atualizar_progresso(payload)
 
     async def _processar_uma_cue_transcribrothers(indice_cue: int, texto_cue: str) -> None:
         nonlocal pedidos, texto_total_chars, reutilizadas, cues_concluidas
         nonlocal abortar_demasiadas_puladas
+        if levantar_se_cancelado is not None:
+            levantar_se_cancelado()
         if abortar_demasiadas_puladas is not None:
             return
         idx0 = indice_cue - 1
@@ -894,6 +1414,7 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
             )
             pcm_cue = bytearray()
             pulou_cue = False
+            timeout_pendente_cue = False
             pedidos_nesta_cue = 0
             for pedaco in pedacos:
                 if abortar_demasiadas_puladas is not None:
@@ -906,14 +1427,56 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                     pedidos += 1
                 pedidos_nesta_cue += 1
                 try:
-                    pcm = await _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
-                        texto=pedaco,
-                        modelo=modelo_norm,
-                        api_key=api_key,
-                        base_v1=base_v1,
-                        httpx_verify=httpx_verify,
-                        voz=_voz_da_cue(idx0),
+                    if diagnostico_experimental is not None:
+                        # Experimental: 1 tentativa (timeout → pendente manual, sem retry).
+                        pcm = await _sintetizar_pcm16_trecho_tts_experimental_com_retry_e_diagnostico_transcribrothers(
+                            texto=pedaco,
+                            modelo=modelo_norm,
+                            api_key=api_key,
+                            base_v1=base_v1,
+                            httpx_verify=httpx_verify,
+                            voz=_voz_da_cue(idx0),
+                            indice_cue=indice_cue,
+                            diagnostico=diagnostico_experimental,
+                            lock_diagnostico=lock_diagnostico,
+                            max_tentativas=1,
+                            temperatura=temperatura_efetiva,
+                            ritmo=ritmo_efetivo,
+                        )
+                    else:
+                        # Padrão sagrado: mesma função de sempre (timeout 180s + retries).
+                        pcm = await _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
+                            texto=pedaco,
+                            modelo=modelo_norm,
+                            api_key=api_key,
+                            base_v1=base_v1,
+                            httpx_verify=httpx_verify,
+                            voz=_voz_da_cue(idx0),
+                            perfil_tts=perfil_tts_norm,
+                            temperatura=temperatura_efetiva,
+                            ritmo=ritmo_efetivo,
+                        )
+                except httpx.TimeoutException:
+                    if diagnostico_experimental is None:
+                        raise
+                    pcm_cue = bytearray(
+                        _pcm16_silencio_mono_segundos_transcribrothers(
+                            _TTS_SILENCIO_CUE_PULADA_SEGUNDOS
+                        )
                     )
+                    async with lock_estado:
+                        pendentes_timeout.append(
+                            {
+                                "indice": idx0,
+                                "indice_cue": indice_cue,
+                                "texto": texto_cue,
+                                "voz": _voz_da_cue(idx0),
+                                "motivo": "timeout",
+                            }
+                        )
+                    timeout_pendente_cue = True
+                    pulou_cue = True  # silêncio provisório; fora de previews_puladas
+                    break
                 except ErroTtsRespostaVaziaRetryavelTranscribrothers:
                     pcm_cue = bytearray(
                         _pcm16_silencio_mono_segundos_transcribrothers(
@@ -924,6 +1487,11 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                         previews_puladas.append(
                             preview_trecho_tts_para_progresso_ui_transcribrothers(texto_cue)
                         )
+                    await _registrar_pulada_experimental(
+                        indice_cue=indice_cue,
+                        texto_cue=texto_cue,
+                        motivo="choices_vazio",
+                    )
                     pulou_cue = True
                     break
                 except (RuntimeError, KeyError, IndexError, TypeError, ValueError) as exc:
@@ -944,6 +1512,11 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                         previews_puladas.append(
                             preview_trecho_tts_para_progresso_ui_transcribrothers(texto_cue)
                         )
+                    await _registrar_pulada_experimental(
+                        indice_cue=indice_cue,
+                        texto_cue=texto_cue,
+                        motivo="sem_pcm",
+                    )
                     pulou_cue = True
 
             _gravar_pcm16_mono_como_wav_transcribrothers(caminho_cue, bytes(pcm_cue))
@@ -962,7 +1535,16 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                         previews_puladas.append(
                             preview_trecho_tts_para_progresso_ui_transcribrothers(texto_cue)
                         )
+                    await _registrar_pulada_experimental(
+                        indice_cue=indice_cue,
+                        texto_cue=texto_cue,
+                        motivo="audio_curto",
+                    )
                     pulou_cue = True
+
+            if not pulou_cue and diagnostico_experimental is not None:
+                async with lock_diagnostico:
+                    diagnostico_experimental.marcar_cue_ok()
 
             async with lock_estado:
                 caminhos[idx0] = caminho_cue
@@ -977,29 +1559,39 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                     and fracao_pulada > _TTS_FRACAO_MAXIMA_CUES_PULADAS
                     and len(previews_puladas) >= 3
                 ):
-                    abortar_demasiadas_puladas = ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-                        ok=False,
-                        mensagem=(
-                            f"Demasiadas cues sem áudio TTS "
-                            f"({len(previews_puladas)}/{total_cues} puladas). "
-                            "Verifique o modelo/proxy ou o texto do documento."
-                        ),
-                        modelo=modelo_norm,
-                        texto_caracteres=texto_total_chars,
-                        quantidade_cues=total_cues,
-                        quantidade_pedidos_tts=pedidos,
-                        quantidade_cues_puladas=len(previews_puladas),
-                        previews_cues_puladas=tuple(previews_puladas[:12]),
-                        quantidade_trechos_descartados_antes_tts=len(descartados),
+                    abortar_demasiadas_puladas = _anexar_diagnostico(
+                        ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                            ok=False,
+                            mensagem=(
+                                f"Demasiadas cues sem áudio TTS "
+                                f"({len(previews_puladas)}/{total_cues} puladas). "
+                                "Verifique o modelo/proxy ou o texto do documento."
+                            ),
+                            modelo=modelo_norm,
+                            texto_caracteres=texto_total_chars,
+                            quantidade_cues=total_cues,
+                            quantidade_pedidos_tts=pedidos,
+                            quantidade_cues_puladas=len(previews_puladas),
+                            previews_cues_puladas=tuple(previews_puladas[:12]),
+                            quantidade_trechos_descartados_antes_tts=len(descartados),
+                        )
                     )
 
+            if timeout_pendente_cue:
+                fase_emit = "timeout_pendente"
+            elif pulou_cue:
+                fase_emit = "pulada"
+            else:
+                fase_emit = "ok"
             await _emitir_progresso(
                 indice_cue=progresso_indice,
                 texto_cue=texto_cue,
-                fase_cue="pulada" if pulou_cue else "ok",
+                fase_cue=fase_emit,
             )
 
     try:
+        if levantar_se_cancelado is not None:
+            levantar_se_cancelado()
         await asyncio.gather(
             *[
                 _processar_uma_cue_transcribrothers(indice_cue, texto_cue)
@@ -1007,11 +1599,29 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
             ]
         )
         if abortar_demasiadas_puladas is not None:
-            return abortar_demasiadas_puladas
+            return _anexar_diagnostico(abortar_demasiadas_puladas)
         if any(c is None for c in caminhos):
-            return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+            return _anexar_diagnostico(
+                ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                    ok=False,
+                    mensagem="Narração TTS incompleta: algumas cues não foram geradas.",
+                    modelo=modelo_norm,
+                    texto_caracteres=texto_total_chars,
+                    quantidade_cues=total_cues,
+                    quantidade_pedidos_tts=pedidos,
+                    quantidade_cues_puladas=len(previews_puladas),
+                    previews_cues_puladas=tuple(previews_puladas[:12]),
+                    quantidade_trechos_descartados_antes_tts=len(descartados),
+                )
+            )
+    except httpx.TimeoutException:
+        return _anexar_diagnostico(
+            ResultadoNarracaoTtsWavsPorCueTranscribrothers(
                 ok=False,
-                mensagem="Narração TTS incompleta: algumas cues não foram geradas.",
+                mensagem=(
+                    f"Tempo esgotado na narração TTS "
+                    f"(limite {limite_timeout_read_msg:.0f}s)."
+                ),
                 modelo=modelo_norm,
                 texto_caracteres=texto_total_chars,
                 quantidade_cues=total_cues,
@@ -1020,41 +1630,34 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                 previews_cues_puladas=tuple(previews_puladas[:12]),
                 quantidade_trechos_descartados_antes_tts=len(descartados),
             )
-    except httpx.TimeoutException:
-        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-            ok=False,
-            mensagem=f"Tempo esgotado na narração TTS (limite {_TTS_TIMEOUT_READ_SEGUNDOS:.0f}s).",
-            modelo=modelo_norm,
-            texto_caracteres=texto_total_chars,
-            quantidade_cues=total_cues,
-            quantidade_pedidos_tts=pedidos,
-            quantidade_cues_puladas=len(previews_puladas),
-            previews_cues_puladas=tuple(previews_puladas[:12]),
-            quantidade_trechos_descartados_antes_tts=len(descartados),
         )
     except httpx.HTTPError as exc:
-        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-            ok=False,
-            mensagem=f"Falha de rede no proxy TTS: {exc}",
-            modelo=modelo_norm,
-            texto_caracteres=texto_total_chars,
-            quantidade_cues=total_cues,
-            quantidade_pedidos_tts=pedidos,
-            quantidade_cues_puladas=len(previews_puladas),
-            previews_cues_puladas=tuple(previews_puladas[:12]),
-            quantidade_trechos_descartados_antes_tts=len(descartados),
+        return _anexar_diagnostico(
+            ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                ok=False,
+                mensagem=f"Falha de rede no proxy TTS: {exc}",
+                modelo=modelo_norm,
+                texto_caracteres=texto_total_chars,
+                quantidade_cues=total_cues,
+                quantidade_pedidos_tts=pedidos,
+                quantidade_cues_puladas=len(previews_puladas),
+                previews_cues_puladas=tuple(previews_puladas[:12]),
+                quantidade_trechos_descartados_antes_tts=len(descartados),
+            )
         )
     except (RuntimeError, KeyError, IndexError, TypeError, ValueError) as exc:
-        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-            ok=False,
-            mensagem=str(exc),
-            modelo=modelo_norm,
-            texto_caracteres=texto_total_chars,
-            quantidade_cues=total_cues,
-            quantidade_pedidos_tts=pedidos,
-            quantidade_cues_puladas=len(previews_puladas),
-            previews_cues_puladas=tuple(previews_puladas[:12]),
-            quantidade_trechos_descartados_antes_tts=len(descartados),
+        return _anexar_diagnostico(
+            ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                ok=False,
+                mensagem=str(exc),
+                modelo=modelo_norm,
+                texto_caracteres=texto_total_chars,
+                quantidade_cues=total_cues,
+                quantidade_pedidos_tts=pedidos,
+                quantidade_cues_puladas=len(previews_puladas),
+                previews_cues_puladas=tuple(previews_puladas[:12]),
+                quantidade_trechos_descartados_antes_tts=len(descartados),
+            )
         )
 
     caminhos_ok = [c for c in caminhos if c is not None]
@@ -1073,22 +1676,29 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
         msg += f" {reutilizadas} cue(s) reutilizada(s) sem novo TTS."
     if previews_puladas:
         msg += f" {len(previews_puladas)} cue(s) pulada(s) (silêncio)."
+    if pendentes_timeout:
+        msg += (
+            f" {len(pendentes_timeout)} cue(s) com timeout — "
+            "aguardando reenvio manual na interface."
+        )
     if descartados:
         msg += f" {len(descartados)} trecho(s) descartado(s) antes do TTS."
-    return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-        ok=True,
-        mensagem=msg,
-        nome_arquivo_concatenado=caminho_wav_concatenado.name,
-        caminhos_wav_por_cue=tuple(caminhos_ok),
-        duracoes_por_cue_segundos=tuple(duracoes),
-        modelo=modelo_norm,
-        texto_caracteres=texto_total_chars,
-        quantidade_cues=total_cues,
-        quantidade_pedidos_tts=pedidos,
-        quantidade_cues_puladas=len(previews_puladas),
-        quantidade_cues_reutilizadas=reutilizadas,
-        previews_cues_puladas=tuple(previews_puladas[:12]),
-        quantidade_trechos_descartados_antes_tts=len(descartados),
+    return _anexar_diagnostico(
+        ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+            ok=True,
+            mensagem=msg,
+            nome_arquivo_concatenado=caminho_wav_concatenado.name,
+            caminhos_wav_por_cue=tuple(caminhos_ok),
+            duracoes_por_cue_segundos=tuple(duracoes),
+            modelo=modelo_norm,
+            texto_caracteres=texto_total_chars,
+            quantidade_cues=total_cues,
+            quantidade_pedidos_tts=pedidos,
+            quantidade_cues_puladas=len(previews_puladas),
+            quantidade_cues_reutilizadas=reutilizadas,
+            previews_cues_puladas=tuple(previews_puladas[:12]),
+            quantidade_trechos_descartados_antes_tts=len(descartados),
+        )
     )
 
 
@@ -1108,6 +1718,9 @@ async def gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     caminho_wav_saida: Path,
     voz: str = _TTS_VOICE,
+    perfil_tts: str = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+    temperatura: float | None = None,
+    ritmo: object = None,
     max_chars_trecho: int = _TTS_MAX_CHARS_TRECHO_CUE_PIPELINE,
 ) -> ResultadoPreviewTtsCueNarracaoTranscribrothers:
     """Sintetiza só uma cue para prévia na UI (não altera o WAV definitivo da narração)."""
@@ -1147,6 +1760,16 @@ async def gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
         [texto_norm],
         max_chars=max_chars_trecho,
     )
+    try:
+        perfil_preview = normalizar_perfil_tts_narracao_transcribrothers(perfil_tts)
+    except ValueError:
+        perfil_preview = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+    temperatura_preview = (
+        normalizar_temperatura_tts_narracao_transcribrothers(temperatura)
+        if temperatura is not None
+        else temperatura_tts_pelo_perfil_narracao_transcribrothers(perfil_preview)
+    )
+    ritmo_preview = normalizar_ritmo_tts_narracao_transcribrothers(ritmo)
     pcm_cue = bytearray()
     try:
         for pedaco in pedacos:
@@ -1159,6 +1782,9 @@ async def gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
                 base_v1=base_v1,
                 httpx_verify=httpx_verify,
                 voz=voz,
+                perfil_tts=perfil_preview,
+                temperatura=temperatura_preview,
+                ritmo=ritmo_preview,
             )
             pcm_cue.extend(pcm)
     except ErroTtsRespostaVaziaRetryavelTranscribrothers as exc:

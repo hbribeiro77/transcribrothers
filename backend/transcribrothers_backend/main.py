@@ -140,6 +140,10 @@ from transcribrothers_backend.modulo_persistencia_runtime_config_pastas_wiki_git
     pasta_wiki_esta_na_lista_permitida_transcribrothers,
     resolver_pastas_wiki_gitlab_efetivas_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_runtime_config_modelos_litellm_extras_sqlite_transcribrothers import (
+    adicionar_modelo_litellm_extra_runtime_sqlite_transcribrothers,
+    sincronizar_cache_modelos_litellm_extras_da_session_transcribrothers,
+)
 from transcribrothers_backend.modulo_verificacao_redundancia_secao_markdown_entre_secoes_litellm_transcribrothers import (
     SYSTEM_PROMPT_VERIFICACAO_REDUNDANCIA_SECAO_MARKDOWN_TRANSCRIBROTHERS,
 )
@@ -183,7 +187,7 @@ from transcribrothers_backend.modulo_util_listar_extrair_e_substituir_secao_mark
     resolver_secao_markdown_nivel2_por_linha_heading_ou_indice_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
-    listar_modelos_litellm_provisionados_para_interface,
+    listar_modelos_litellm_permitidos_efetivos_transcribrothers,
     normalizar_backend_transcricao_audio_configurado,
     resolver_modelo_para_transcricao_litellm_multimodal_audio,
     tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy,
@@ -221,6 +225,18 @@ from transcribrothers_backend.modulo_inventario_midia_fonte_e_cache_job_transcri
     limpar_cache_regeneravel_job_transcribrothers,
     resolver_arquivo_midia_fonte_permitido_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_transcribrothers import (
+    ErroBibliotecaMidiasTelaTranscribrothers,
+    ID_FONTE_VIDEO_ENTRADA_TRANSCRIBROTHERS,
+    alocar_destino_novo_item_biblioteca_midias_tela_transcribrothers,
+    apagar_item_biblioteca_midias_tela_por_id_transcribrothers,
+    confirmar_item_biblioteca_midias_tela_no_manifesto_transcribrothers,
+    listar_itens_biblioteca_midias_tela_do_work_transcribrothers,
+    resolver_caminho_arquivo_biblioteca_midias_tela_por_id_transcribrothers,
+)
+from transcribrothers_backend.modulo_debug_cache_segmentos_video_narrado_job_transcribrothers import (
+    montar_payload_debug_cache_segmentos_video_narrado_job_transcribrothers,
+)
 from transcribrothers_backend.modulo_limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers import (
     resolver_modelo_chat_para_limpeza_legendas_ia_transcribrothers,
 )
@@ -228,6 +244,20 @@ from transcribrothers_backend.modulo_pipeline_video_narrado_a_partir_documento_m
     FASE_VIDEO_NARRADO_AGENDADO,
     agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona,
     validar_pre_requisitos_pipeline_video_narrado_no_disco_transcribrothers,
+)
+from transcribrothers_backend.modulo_diretriz_conteudo_legendas_narracao_transcribrothers import (
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS,
+    normalizar_diretriz_conteudo_legendas_transcribrothers,
+)
+from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcribrothers import (
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PARALELISMO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS,
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS,
+    normalizar_paralelismo_tts_cues_experimental_transcribrothers,
+    normalizar_perfil_tts_narracao_transcribrothers,
+    normalizar_ritmo_tts_narracao_transcribrothers,
+    normalizar_temperatura_tts_narracao_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_resolver_markdown_escopo_pipeline_video_narrado_transcribrothers import (
     CHAVE_STEPS_MARKDOWN_ESCOPO_VIDEO_NARRADO_TRANSCRIBROTHERS,
@@ -259,6 +289,16 @@ from transcribrothers_backend.modulo_api_preview_tts_amostra_voz_narracao_transc
 )
 from transcribrothers_backend.modulo_api_preview_tts_cue_narracao_texto_atual_job_transcribrothers import (
     gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_resolver_cue_tts_pendente_timeout_experimental_e_continuar_mux_transcribrothers import (
+    descartar_cue_tts_pendente_timeout_experimental_job_transcribrothers,
+    resolver_cue_tts_pendente_timeout_experimental_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_sugerir_reescrita_texto_cue_tts_timeout_experimental_via_litellm_chat_transcribrothers import (
+    sugerir_reescrita_texto_cue_tts_pendente_timeout_experimental_transcribrothers,
+)
+from transcribrothers_backend.modulo_sugerir_reescrita_texto_cue_narracao_via_litellm_chat_transcribrothers import (
+    sugerir_reescrita_texto_cue_narracao_via_litellm_chat_transcribrothers,
 )
 from transcribrothers_backend.modulo_api_salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers import (
     ErroValidacaoLegendasDocumentoAlinhadasEditadasTranscribrothers,
@@ -351,6 +391,15 @@ from transcribrothers_backend.modulo_validacao_extensao_nome_arquivo_audio_uploa
 from transcribrothers_backend.modulo_validacao_extensao_nome_arquivo_video_upload_local import (
     ErroExtensaoVideoUploadTranscribrothers,
     extrair_extensao_video_sanitizada_para_upload_local,
+)
+from transcribrothers_backend.modulo_anexar_gravacao_complementar_unificar_video_entrada_e_reprocessar_job_transcribrothers import (
+    ErroAnexarGravacaoComplementarTranscribrothers,
+    aplicar_metadados_unificacao_nos_steps_json_transcribrothers,
+    unificar_video_entrada_com_gravacao_complementar_no_work_transcribrothers,
+)
+from transcribrothers_backend.modulo_preparar_video_entrada_unificado_a_partir_lista_clips_job_transcribrothers import (
+    ErroPrepararVideoEntradaMultiploTranscribrothers,
+    preparar_video_entrada_unificado_a_partir_lista_clips_no_work_transcribrothers,
 )
 from transcribrothers_backend.modulo_constante_markdown_inicial_projeto_em_branco_transcribrothers import (
     MARKDOWN_INICIAL_PROJETO_EM_BRANCO_TRANSCRIBROTHERS,
@@ -461,6 +510,43 @@ class RespostaJobTranscribrothers(BaseModel):
     steps_json: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+# Pipelines de vídeo narrado / edições do modal: podem recomeçar após cancelamento.
+_STATUS_JOB_PERMITE_REINICIAR_PIPELINE_VIDEO_NARRADO_TRANSCRIBROTHERS = frozenset(
+    {
+        StatusJobTranscribrothers.completed.value,
+        StatusJobTranscribrothers.failed.value,
+        StatusJobTranscribrothers.cancelled.value,
+    }
+)
+
+
+def _garantir_job_permite_reiniciar_pipeline_video_narrado_transcribrothers(
+    row: JobPipelineTranscribrothers,
+    *,
+    mensagem_se_bloqueado: str,
+) -> None:
+    if row.status in _STATUS_JOB_PERMITE_REINICIAR_PIPELINE_VIDEO_NARRADO_TRANSCRIBROTHERS:
+        return
+    raise HTTPException(
+        status_code=400
+        if row.status != StatusJobTranscribrothers.generating_tutorial.value
+        else 409,
+        detail=(
+            "Já há uma geração em andamento; aguarde concluir."
+            if row.status == StatusJobTranscribrothers.generating_tutorial.value
+            else mensagem_se_bloqueado
+        ),
+    )
+
+
+def _limpar_marcadores_cancelamento_ao_reiniciar_pipeline_video_narrado_transcribrothers(
+    job_id: str,
+    steps: dict[str, Any],
+) -> None:
+    limpar_marcacao_cancelamento_pipeline_job_transcribrothers(job_id)
+    steps.pop("cancelamento_pipeline_solicitado", None)
 
 
 class RespostaStagingVideoRecbrothersTranscribrothers(BaseModel):
@@ -622,6 +708,10 @@ class CorpoPatchVozTtsNarracaoRuntimeTranscribrothers(BaseModel):
 class CorpoPatchPastasWikiGitlabRuntimeTranscribrothers(BaseModel):
     pastas: list[str] = Field(..., min_length=1)
     pasta_padrao: str | None = None
+
+
+class CorpoPatchModeloLitellmExtraRuntimeTranscribrothers(BaseModel):
+    modelo: str = Field(..., min_length=1, max_length=256)
 
 
 class CorpoCriarIssueGitlabPortalDefensoriaGatewayTranscribrothers(BaseModel):
@@ -832,6 +922,17 @@ class CorpoPipelineVideoNarradoAPartirDocumentoTranscribrothers(BaseModel):
     # Markdown opcional (escopo parcial). Não altera result_markdown do job.
     markdown_narracao: str | None = None
     titulos_secoes_escopo: list[str] | None = None
+    # Motor TTS: padrao (sagrado) | experimental_voz (isolado para testes de voz).
+    perfil_tts: str | None = None
+    # Cues TTS em paralelo (1–9; padrão 3) — vale para padrao e experimental_voz.
+    # Nome histórico do campo (mantido por compatibilidade da API).
+    paralelismo_tts_experimental: int | None = Field(default=None, ge=1, le=9)
+    # Temperatura TTS (0.2–1.0, passo 0.1; padrão 0.4).
+    temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
+    # Ritmo via prompt: lento | normal | rapido | muito_rapido (padrão normal).
+    ritmo_tts: str | None = None
+    # Diretriz da limpeza IA: conservador | mais_falavel | mais_didatico | mais_descontraido.
+    diretriz_conteudo_legendas: str | None = None
 
 
 class CorpoAtualizarNarracaoAPartirLegendasVttEditadasTranscribrothers(BaseModel):
@@ -845,16 +946,62 @@ class CorpoPreviewTtsCueNarracaoTextoAtualTranscribrothers(BaseModel):
     texto: str = Field(min_length=1, max_length=16_000)
     litellm_model: str | None = None
     voz: str | None = None
+    temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
+    ritmo_tts: str | None = None
+
+
+class CorpoResolverCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseModel):
+    """Reenvia uma cue com timeout no perfil experimental_voz (1 tentativa)."""
+
+    indice: int = Field(ge=0, le=50_000)
+    texto: str = Field(min_length=1, max_length=16_000)
+    voz: str | None = None
+
+
+class CorpoDescartarCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseModel):
+    """Mantém a cue sem narração (silêncio) e remove da lista de pendentes."""
+
+    indice: int = Field(ge=0, le=50_000)
+
+
+class CorpoSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseModel):
+    """Pede sugestão de reescrita via chat; não altera o texto da cue até o usuário aceitar."""
+
+    indice: int = Field(ge=0, le=50_000)
+    texto: str = Field(min_length=1, max_length=16_000)
+    litellm_model_chat: str | None = None
+
+
+class RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseModel):
+    ok: bool
+    mensagem: str
+    indice: int
+    sugestao: str = ""
+    modelo: str | None = None
+    texto_original: str | None = None
+
+
+class RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseModel):
+    ok: bool
+    mensagem: str
+    indice: int
+    pendentes_restantes: int = 0
+    pipeline_continuada: bool = False
+    pipeline_fase: str | None = None
 
 
 class CorpoPreviewTtsAmostraVozNarracaoTranscribrothers(BaseModel):
     voz: str = Field(default=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS, min_length=1, max_length=64)
     litellm_model: str | None = None
+    perfil_tts: str | None = None
+    temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
+    ritmo_tts: str | None = None
 
 
 class JanelaVideoCueEditadaApiTranscribrothers(BaseModel):
     inicio_video_segundos: float
     fim_video_segundos: float
+    id_fonte_video: str = ""
 
 
 class CorpoSalvarJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
@@ -872,6 +1019,7 @@ class ResumoJanelaVideoCueApiRespostaTranscribrothers(BaseModel):
     voz_tts: str = ""
     # Pronúncia usada (ou a usar) no TTS; vazio = igual a `texto`.
     texto_tts: str = ""
+    id_fonte_video: str = ""
 
 
 class RespostaJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
@@ -900,8 +1048,18 @@ class CorpoGerarVideoComEdicoesDoModalNarradoTranscribrothers(BaseModel):
     """Salva edições do modal, regenera TTS se preciso e remonta o MP4 na timeline VTT."""
 
     litellm_model: str | None = None
+    temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
+    ritmo_tts: str | None = None
     cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
     janelas: list[JanelaVideoCueEditadaApiTranscribrothers] | None = None
+
+
+class CorpoSugerirReescritaTextoCueNarracaoTranscribrothers(BaseModel):
+    """Sugestão IA de reescrita da legenda (modal editar); não aplica sozinha."""
+
+    indice: int = Field(ge=0, le=50_000)
+    texto: str = Field(min_length=1, max_length=16_000)
+    litellm_model_chat: str | None = None
 
 
 class RespostaSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers(BaseModel):
@@ -1013,6 +1171,8 @@ async def lifespan_transcribrothers_app(app: FastAPI):
     engine = criar_engine_sqlite_async(url)
     await inicializar_banco(engine)
     session_factory = criar_session_factory(engine)
+    async with session_factory() as session:
+        await sincronizar_cache_modelos_litellm_extras_da_session_transcribrothers(session)
     app.state.cfg = cfg
     app.state.session_factory = session_factory
     app.state.data_dir = data_dir
@@ -1093,6 +1253,7 @@ async def _montar_resposta_config_publica_transcribrothers(
         prefs_voz_tts, voz_tts_sqlite = (
             await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
         )
+        await sincronizar_cache_modelos_litellm_extras_da_session_transcribrothers(session)
     janela_ef, paralelas_ef, formato_ef, bitrate_ef, mono_ef = (
         resolver_janela_paralelas_formato_bitrate_mono_efetivos_com_overrides_sqlite_transcribrothers(
             int(cfg.transcricao_multimodal_janela_segundos),
@@ -1110,7 +1271,7 @@ async def _montar_resposta_config_publica_transcribrothers(
             overrides,
         )
     )
-    modelos = listar_modelos_litellm_provisionados_para_interface(cfg)
+    modelos = listar_modelos_litellm_permitidos_efetivos_transcribrothers(cfg)
     if not modelos and (cfg.litellm_model or "").strip():
         modelos = [(cfg.litellm_model or "").strip()]
     mm = resolver_modelo_para_transcricao_litellm_multimodal_audio(cfg) or None
@@ -2136,6 +2297,27 @@ async def apagar_pastas_wiki_gitlab_runtime_volta_ao_env_transcribrothers(
     return await _montar_resposta_config_publica_transcribrothers(request)
 
 
+@app.patch(
+    "/api/config/transcribrothers/modelos-litellm-extras-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def adicionar_modelo_litellm_extra_runtime_via_sqlite_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchModeloLitellmExtraRuntimeTranscribrothers,
+) -> RespostaConfigPublicaTranscribrothers:
+    """Inclui um slug na allowlist runtime (além de LITELLM_MODELOS_PROVISIONADOS)."""
+    async with session_factory() as session:
+        try:
+            await adicionar_modelo_litellm_extra_runtime_sqlite_transcribrothers(
+                session,
+                modelo=body.modelo,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
 class RespostaValidarPastaWikiGitlabIndiceTranscribrothers(BaseModel):
     pasta: str
     existe_no_gitlab: bool
@@ -2247,12 +2429,19 @@ async def obter_arquivo_video_staging_importacao_recbrothers_transcribrothers(
     )
 
 
+_MAX_PARTES_VIDEO_UPLOAD_MULTI_TRANSCRIBROTHERS = 12
+
+
 @app.post("/api/jobs/upload", response_model=RespostaJobTranscribrothers)
 async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
     request: Request,
     session_factory: SessionFactoryDep,
     data_dir: DataDirDep,
     video: Annotated[UploadFile | None, File(description="Arquivo de vídeo do seu computador")] = None,
+    videos: Annotated[
+        list[UploadFile] | None,
+        File(description="Um ou mais vídeos na ordem da timeline (unificados antes do pipeline)"),
+    ] = None,
     staging_id: Annotated[str | None, Form()] = None,
     litellm_model: Annotated[str | None, Form()] = None,
     tutorial_litellm_instrucao_prefixo: Annotated[str | None, Form()] = None,
@@ -2272,6 +2461,7 @@ async def criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local(
             cfg=cfg,
             job_id=job_id,
             video=video,
+            videos=videos,
             staging_id=staging_id,
             litellm_model=litellm_model,
             tutorial_litellm_instrucao_prefixo=tutorial_litellm_instrucao_prefixo,
@@ -2293,6 +2483,7 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
     cfg: ConfiguracaoAmbienteTranscribrothers,
     job_id: str,
     video: UploadFile | None,
+    videos: list[UploadFile] | None,
     staging_id: str | None,
     litellm_model: str | None,
     tutorial_litellm_instrucao_prefixo: str | None,
@@ -2312,17 +2503,28 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
         )
     staging_id_norm = (staging_id or "").strip()
     nome_arquivo_video = (video.filename or "").strip() if video is not None else ""
+    partes_videos_lista = [
+        u for u in (videos or []) if u is not None and (u.filename or "").strip()
+    ]
     tem_staging = bool(staging_id_norm)
-    tem_video = bool(nome_arquivo_video)
-    if tem_staging and tem_video:
+    tem_video_legado = bool(nome_arquivo_video)
+    tem_videos_lista = bool(partes_videos_lista)
+    if tem_staging and tem_video_legado and not tem_videos_lista:
         raise HTTPException(
             status_code=400,
-            detail="Informe apenas video ou staging_id, não ambos.",
+            detail="Informe apenas video ou staging_id, não ambos. Para complementar o staging, use o campo videos.",
         )
-    if not tem_staging and not tem_video:
+    if not tem_staging and not tem_video_legado and not tem_videos_lista:
         raise HTTPException(
             status_code=400,
-            detail="Envie o arquivo video ou um staging_id de importação RecBrothers.",
+            detail="Envie o arquivo video (ou videos) ou um staging_id de importação RecBrothers.",
+        )
+    if len(partes_videos_lista) > _MAX_PARTES_VIDEO_UPLOAD_MULTI_TRANSCRIBROTHERS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"No máximo {_MAX_PARTES_VIDEO_UPLOAD_MULTI_TRANSCRIBROTHERS} vídeos por upload."
+            ),
         )
 
     modelo_litellm = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, litellm_model)
@@ -2407,10 +2609,19 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
             detail="JSON de cliques só pode ser enviado com destino_apos_transcricao=reproducao_bug.",
         )
 
+    partes_upload_ordenadas: list[UploadFile] = list(partes_videos_lista)
+    if not partes_upload_ordenadas and tem_video_legado and video is not None:
+        partes_upload_ordenadas = [video]
+
+    nome_log_upload = (
+        f"{len(partes_upload_ordenadas)} vídeos"
+        if len(partes_upload_ordenadas) > 1
+        else (nome_arquivo_video or staging_id_norm or "?")
+    )
     log_inicio_upload_video_job_transcribrothers(
         job_id=job_id,
         destino_apos_transcricao=destino_pipeline,
-        nome_arquivo=nome_arquivo_video or staging_id_norm or "?",
+        nome_arquivo=nome_log_upload,
         max_video_bytes=int(cfg.max_video_bytes),
         data_dir=data_dir.resolve(),
         via_staging=tem_staging,
@@ -2424,19 +2635,32 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
     total_cliques_reproducao_bug = 0
     tipo_entrada_midia = "video"
     destino_midia: Path
+    nome_original: str
+    total: int
+    meta_unificacao_upload: dict[str, Any] | None = None
+
+    caminhos_para_unificar: list[Path] = []
+    nomes_originais_para_unificar: list[str] = []
+
     if tem_staging:
         meta_staging = obter_metadados_staging_video_ou_erro_http(data_dir, staging_id_norm)
-        destino_midia = work / f"video_entrada_arquivo_local{meta_staging.ext}"
-        nome_original, total, ext, extras_staging = consumir_staging_video_para_destino_job(
+        destino_staging = work / f"video_entrada_arquivo_local{meta_staging.ext}"
+        nome_original, total, _ext, extras_staging = consumir_staging_video_para_destino_job(
             data_dir,
             staging_id_norm,
-            destino_midia,
+            destino_staging,
         )
         importado_recbrothers_staging_id = staging_id_norm
         total_cliques_reproducao_bug = int(extras_staging.get("total_cliques") or 0)
         tipo_entrada_midia = "video"
+        destino_midia = destino_staging
+        if partes_upload_ordenadas:
+            caminhos_para_unificar.append(destino_staging)
+            nomes_originais_para_unificar.append(nome_original)
     else:
-        nome_original = video.filename or "video.mp4"  # type: ignore[union-attr]
+        if not partes_upload_ordenadas:
+            raise HTTPException(status_code=400, detail="Envie ao menos um arquivo de vídeo ou áudio.")
+        nome_original = partes_upload_ordenadas[0].filename or "video.mp4"
         try:
             tipo_entrada_midia = classificar_tipo_entrada_midia_por_nome_arquivo_transcribrothers(nome_original)
         except ValueError as e:
@@ -2458,20 +2682,61 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
                 ),
             )
         if tipo_entrada_midia == "audio":
+            if len(partes_upload_ordenadas) > 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Unificação de vários arquivos no upload só está disponível para vídeo.",
+                )
             ext = extrair_extensao_audio_sanitizada_para_upload_local(nome_original)
             destino_midia = work / f"audio_entrada_arquivo_local{ext}"
-        else:
+            total = await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+                partes_upload_ordenadas[0],
+                destino_midia,
+                int(cfg.max_video_bytes),
+                job_id=job_id,
+            )
+        elif len(partes_upload_ordenadas) == 1:
             try:
                 ext = extrair_extensao_video_sanitizada_para_upload_local(nome_original)
             except ErroExtensaoVideoUploadTranscribrothers as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
             destino_midia = work / f"video_entrada_arquivo_local{ext}"
-        total = await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
-            video,  # type: ignore[arg-type]
-            destino_midia,
-            int(cfg.max_video_bytes),
-            job_id=job_id,
-        )
+            total = await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+                partes_upload_ordenadas[0],
+                destino_midia,
+                int(cfg.max_video_bytes),
+                job_id=job_id,
+            )
+        else:
+            # Vários vídeos: grava temporários e unifica antes do pipeline.
+            for i, parte in enumerate(partes_upload_ordenadas):
+                nome_parte = (parte.filename or f"parte_{i + 1}.mp4").strip()
+                try:
+                    tipo_parte = classificar_tipo_entrada_midia_por_nome_arquivo_transcribrothers(nome_parte)
+                except ValueError as e:
+                    raise HTTPException(status_code=400, detail=str(e)) from e
+                if tipo_parte != "video":
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Todos os arquivos em videos devem ser de vídeo para unificação.",
+                    )
+                try:
+                    ext_parte = extrair_extensao_video_sanitizada_para_upload_local(nome_parte)
+                except ErroExtensaoVideoUploadTranscribrothers as e:
+                    raise HTTPException(status_code=400, detail=str(e)) from e
+                dest_parte = work / f".upload_parte_video_{i + 1:03d}{ext_parte}"
+                await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+                    parte,
+                    dest_parte,
+                    int(cfg.max_video_bytes),
+                    job_id=job_id,
+                )
+                caminhos_para_unificar.append(dest_parte)
+                nomes_originais_para_unificar.append(nome_parte)
+            destino_midia = caminhos_para_unificar[0]
+            total = sum(p.stat().st_size for p in caminhos_para_unificar)
+            nome_original = " + ".join(Path(n).name for n in nomes_originais_para_unificar)
+
         if cliques_json is not None and nome_cliques_json:
             from transcribrothers_backend.modulo_util_validar_e_gravar_json_cliques_reproducao_bug_job_transcribrothers import (
                 validar_e_gravar_upload_cliques_json_reproducao_bug_job_transcribrothers,
@@ -2484,6 +2749,33 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
                 )
             )
 
+    if tem_staging and partes_upload_ordenadas:
+        for i, parte in enumerate(partes_upload_ordenadas):
+            nome_parte = (parte.filename or f"parte_extra_{i + 1}.mp4").strip()
+            try:
+                tipo_parte = classificar_tipo_entrada_midia_por_nome_arquivo_transcribrothers(nome_parte)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
+            if tipo_parte != "video":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Complementos do staging devem ser arquivos de vídeo.",
+                )
+            try:
+                ext_parte = extrair_extensao_video_sanitizada_para_upload_local(nome_parte)
+            except ErroExtensaoVideoUploadTranscribrothers as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
+            dest_parte = work / f".upload_parte_video_{i + 1:03d}{ext_parte}"
+            await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+                parte,
+                dest_parte,
+                int(cfg.max_video_bytes),
+                job_id=job_id,
+            )
+            caminhos_para_unificar.append(dest_parte)
+            nomes_originais_para_unificar.append(nome_parte)
+        nome_original = " + ".join(Path(n).name for n in nomes_originais_para_unificar)
+
     if tem_staging and tipo_entrada_midia not in entradas_aceitas_efetivas:
         raise HTTPException(
             status_code=400,
@@ -2493,7 +2785,29 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
             ),
         )
 
+    if len(caminhos_para_unificar) >= 2:
+        try:
+            meta_unificacao_upload = (
+                await preparar_video_entrada_unificado_a_partir_lista_clips_no_work_transcribrothers(
+                    work=work,
+                    caminhos_clips_ordenados=caminhos_para_unificar,
+                    nomes_originais_ordenados=nomes_originais_para_unificar,
+                )
+            )
+        except ErroPrepararVideoEntradaMultiploTranscribrothers as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha ao unificar os vídeos do upload: {type(e).__name__}: {e}",
+            ) from e
+        destino_midia = Path(meta_unificacao_upload["caminho_video_entrada"])
+        total = int(meta_unificacao_upload["bytes_written"])
+        nome_original = " + ".join(meta_unificacao_upload.get("nomes_originais") or nomes_originais_para_unificar)
+
     duracao_video_segundos_ffprobe = await obter_duracao_video_segundos_via_ffprobe(destino_midia)
+    if meta_unificacao_upload and meta_unificacao_upload.get("duracao_video_segundos"):
+        duracao_video_segundos_ffprobe = float(meta_unificacao_upload["duracao_video_segundos"])
     log_fim_gravacao_video_upload_job_transcribrothers(
         job_id=job_id,
         destino_video=destino_midia,
@@ -2518,6 +2832,16 @@ async def _criar_novo_job_pipeline_a_partir_de_upload_video_arquivo_local_impl_t
             steps_json["tutorial_litellm_instrucao_prefixo_custom"] = instr_norm
         if importado_recbrothers_staging_id:
             steps_json["importado_recbrothers_staging_id"] = importado_recbrothers_staging_id
+        if meta_unificacao_upload:
+            steps_json["ultimo_modo_concat_video_entrada"] = meta_unificacao_upload.get(
+                "modo_concat_video_entrada"
+            )
+            steps_json["videos_unificados_no_upload"] = {
+                "nomes_originais": meta_unificacao_upload.get("nomes_originais"),
+                "clips_arquivados": meta_unificacao_upload.get("clips_arquivados"),
+                "modo_concat_video_entrada": meta_unificacao_upload.get("modo_concat_video_entrada"),
+                "unificado_em_utc": meta_unificacao_upload.get("unificado_em_utc"),
+            }
         if destino_pipeline == "reproducao_bug":
             steps_json["reproducao_bug_total_cliques"] = total_cliques_reproducao_bug
             if total_cliques_reproducao_bug <= 0:
@@ -2845,6 +3169,19 @@ async def solicitar_cancelamento_do_job_pipeline_em_execucao_transcribrothers(
     async with session_factory() as session:
         row2 = await session.get(JobPipelineTranscribrothers, job_id)
         assert row2 is not None
+        steps = dict(row2.steps_json or {})
+        steps["cancelamento_pipeline_solicitado"] = True
+        steps["pipeline_fase"] = "cancelamento_solicitado"
+        row2.steps_json = steps
+        from sqlalchemy.orm.attributes import flag_modified
+
+        flag_modified(row2, "steps_json")
+        # Libera a UI imediatamente; o worker em background para no próximo checkpoint.
+        row2.status = StatusJobTranscribrothers.cancelled.value
+        row2.error_message = "Cancelado pelo usuário."
+        row2.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+        await session.refresh(row2)
         return _job_para_resposta(row2)
 
 
@@ -3984,6 +4321,123 @@ async def servir_arquivo_video_original_do_job_para_player_html5(
     )
 
 
+@app.post(
+    "/api/jobs/{job_id}/anexar-gravacao-complementar-video-entrada",
+    response_model=RespostaJobTranscribrothers,
+)
+async def anexar_gravacao_complementar_concatenar_e_reprocessar_pipeline_job_transcribrothers(
+    job_id: str,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+    video: UploadFile = File(..., description="Gravação complementar para unificar ao vídeo de entrada"),
+) -> RespostaJobTranscribrothers:
+    """
+    Concatena a gravação complementar ao `video_entrada` atual, invalida STT/tutorial
+    derivados e agenda o pipeline completo de novo.
+    """
+    cfg = obter_cfg(request)
+    if not tem_credencial_para_transcricao_no_pipeline(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Transcrição: configure o proxy LiteLLM com LITELLM_API_KEY e LITELLM_ENDPOINT."
+            ),
+        )
+    if not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(cfg):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Geração de documento usa o proxy LiteLLM: defina LITELLM_API_KEY e LITELLM_ENDPOINT."
+            ),
+        )
+
+    nome_original = (video.filename or "complementar.mp4").strip() or "complementar.mp4"
+    try:
+        ext = extrair_extensao_video_sanitizada_para_upload_local(nome_original)
+    except ErroExtensaoVideoUploadTranscribrothers as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    work.mkdir(parents=True, exist_ok=True)
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        if row.status not in (
+            StatusJobTranscribrothers.completed.value,
+            StatusJobTranscribrothers.failed.value,
+            StatusJobTranscribrothers.cancelled.value,
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Só é possível anexar gravação complementar quando o job já terminou "
+                    "(completed, failed ou cancelled)."
+                ),
+            )
+        steps = dict(row.steps_json or {}) if isinstance(row.steps_json, dict) else {}
+        if steps.get("tipo_entrada_midia") == "audio":
+            raise HTTPException(
+                status_code=400,
+                detail="Este job é só-áudio; não é possível anexar gravação de vídeo complementar.",
+            )
+        if _localizar_arquivo_video_entrada_no_diretorio_job(work) is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Este job ainda não tem vídeo de entrada para unificar.",
+            )
+
+    destino_upload = work / f".upload_gravacao_complementar_tmp{ext}"
+    destino_upload.unlink(missing_ok=True)
+    try:
+        await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+            video,
+            destino_upload,
+            int(cfg.max_video_bytes),
+            job_id=job_id,
+        )
+        try:
+            metadados = await unificar_video_entrada_com_gravacao_complementar_no_work_transcribrothers(
+                work=work,
+                caminho_video_complementar=destino_upload,
+                nome_original_complementar=nome_original,
+            )
+        except ErroAnexarGravacaoComplementarTranscribrothers as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha ao unificar os vídeos: {type(e).__name__}: {e}",
+            ) from e
+    finally:
+        destino_upload.unlink(missing_ok=True)
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {}) if isinstance(row.steps_json, dict) else {}
+        row.steps_json = aplicar_metadados_unificacao_nos_steps_json_transcribrothers(steps, metadados)
+        flag_modified(row, "steps_json")
+        row.status = StatusJobTranscribrothers.pending.value
+        row.error_message = None
+        row.result_markdown = None
+        await session.commit()
+
+    agendar_pipeline_job_em_task_assincrona(
+        job_id=job_id,
+        session_factory=session_factory,
+        configuracao=cfg,
+    )
+
+    async with session_factory() as session:
+        atualizado = await session.get(JobPipelineTranscribrothers, job_id)
+        assert atualizado is not None
+        return _job_para_resposta(atualizado)
+
+
 class CorpoDefinirExibicaoImagemTutorialAnotadaTranscribrothers(BaseModel):
     versao: Literal["original", "anotado"]
 
@@ -4778,6 +5232,25 @@ async def listar_midia_fonte_e_cache_do_job_transcribrothers(
     return inventariar_midia_fonte_e_cache_do_work_transcribrothers(work, job_id=job_id)
 
 
+@app.get("/api/jobs/{job_id}/debug-cache-segmentos-video-narrado")
+async def obter_debug_cache_segmentos_video_narrado_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    """Painel de debug: cache de segmentos no disco + último mux nos steps."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {}) if isinstance(row.steps_json, dict) else {}
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    return montar_payload_debug_cache_segmentos_video_narrado_job_transcribrothers(
+        work,
+        steps=steps,
+    )
+
+
 @app.get("/api/jobs/{job_id}/midia-fonte/arquivo/{nome_arquivo}")
 async def servir_arquivo_midia_fonte_do_job_transcribrothers(
     job_id: str,
@@ -4822,6 +5295,138 @@ async def limpar_cache_midia_fonte_do_job_transcribrothers(
     work = _diretorio_trabalho_job(data_dir, job_id)
     cache_bytes = limpar_cache_regeneravel_job_transcribrothers(work)
     return {"ok": True, "cache_bytes": cache_bytes}
+
+
+@app.get("/api/jobs/{job_id}/biblioteca-midias-tela")
+async def listar_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    """Lista o vídeo de entrada (lógico) e os vídeos extras de tela do job."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    video_entrada = _localizar_arquivo_video_entrada_no_diretorio_job(work)
+    entrada: dict[str, object] | None = None
+    if video_entrada is not None and video_entrada.is_file():
+        try:
+            tamanho = video_entrada.stat().st_size
+        except OSError:
+            tamanho = 0
+        entrada = {
+            "id": ID_FONTE_VIDEO_ENTRADA_TRANSCRIBROTHERS,
+            "nome_arquivo": video_entrada.name,
+            "nome_original": video_entrada.name,
+            "criado_em": "",
+            "tamanho_bytes": tamanho,
+            "duracao_segundos": None,
+            "url_arquivo": f"/api/jobs/{job_id}/video",
+            "eh_entrada": True,
+        }
+    itens = [
+        {**item.para_dict(job_id=job_id), "eh_entrada": False}
+        for item in listar_itens_biblioteca_midias_tela_do_work_transcribrothers(work)
+    ]
+    return {"ok": True, "entrada": entrada, "itens": itens}
+
+
+@app.post("/api/jobs/{job_id}/biblioteca-midias-tela")
+async def enviar_video_para_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    request: Request,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+    video: UploadFile = File(..., description="Vídeo de tela extra (B-roll) para o projeto"),
+) -> dict[str, object]:
+    """Upload de mídia de tela extra — não altera nem concatena o video_entrada."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    cfg = obter_cfg(request)
+    nome_original = (video.filename or "midia_tela.mp4").strip() or "midia_tela.mp4"
+    try:
+        ext = extrair_extensao_video_sanitizada_para_upload_local(nome_original)
+    except ErroExtensaoVideoUploadTranscribrothers as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    item, destino = alocar_destino_novo_item_biblioteca_midias_tela_transcribrothers(
+        work=work,
+        nome_original=nome_original,
+        extensao_com_ponto=ext,
+    )
+    try:
+        bytes_gravados = await gravar_arquivo_upload_video_com_limite_bytes_transcribrothers(
+            video,
+            destino,
+            int(cfg.max_video_bytes),
+            job_id=job_id,
+        )
+    except Exception:
+        try:
+            if destino.is_file():
+                destino.unlink()
+        except OSError:
+            pass
+        raise
+    confirmado = confirmar_item_biblioteca_midias_tela_no_manifesto_transcribrothers(
+        work=work,
+        item=item,
+        tamanho_bytes=bytes_gravados,
+    )
+    return {
+        "ok": True,
+        "item": {**confirmado.para_dict(job_id=job_id), "eh_entrada": False},
+    }
+
+
+@app.get("/api/jobs/{job_id}/biblioteca-midias-tela/arquivo/{id_midia}")
+async def servir_arquivo_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    id_midia: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        caminho = resolver_caminho_arquivo_biblioteca_midias_tela_por_id_transcribrothers(
+            work, id_midia
+        )
+    except ErroBibliotecaMidiasTelaTranscribrothers as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    ext = caminho.suffix.lstrip(".") or "mp4"
+    return FileResponse(
+        path=str(caminho),
+        media_type=media_type_para_video_por_extensao(ext),
+        filename=caminho.name,
+    )
+
+
+@app.delete("/api/jobs/{job_id}/biblioteca-midias-tela/{id_midia}")
+async def apagar_item_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    id_midia: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        apagar_item_biblioteca_midias_tela_por_id_transcribrothers(work, id_midia)
+    except ErroBibliotecaMidiasTelaTranscribrothers as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return {"ok": True, "id": id_midia}
 
 
 @app.get("/api/jobs/{job_id}/videos-narrados")
@@ -5072,18 +5677,12 @@ async def pipeline_video_narrado_a_partir_documento_markdown_job_transcribrother
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
-        if row.status not in (
-            StatusJobTranscribrothers.completed.value,
-            StatusJobTranscribrothers.failed.value,
-        ):
-            raise HTTPException(
-                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
-                detail=(
-                    "Já há uma geração em andamento; aguarde concluir."
-                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
-                    else "Só é possível iniciar o vídeo narrado quando o job está concluído ou falhou."
-                ),
-            )
+        _garantir_job_permite_reiniciar_pipeline_video_narrado_transcribrothers(
+            row,
+            mensagem_se_bloqueado=(
+                "Só é possível iniciar o vídeo narrado quando o job está concluído, falhou ou foi cancelado."
+            ),
+        )
         markdown_completo = (row.result_markdown or "").strip()
         markdown_escopo = (body.markdown_narracao or "").strip() or None
         markdown_para_validar = markdown_escopo or markdown_completo
@@ -5112,10 +5711,47 @@ async def pipeline_video_narrado_a_partir_documento_markdown_job_transcribrother
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
+        try:
+            perfil_tts = normalizar_perfil_tts_narracao_transcribrothers(body.perfil_tts)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            paralelismo_tts_experimental = (
+                normalizar_paralelismo_tts_cues_experimental_transcribrothers(
+                    body.paralelismo_tts_experimental
+                )
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        temperatura_tts = normalizar_temperatura_tts_narracao_transcribrothers(
+            body.temperatura_tts
+        )
+        ritmo_tts = normalizar_ritmo_tts_narracao_transcribrothers(body.ritmo_tts)
+        diretriz_conteudo_legendas = normalizar_diretriz_conteudo_legendas_transcribrothers(
+            body.diretriz_conteudo_legendas
+        )
+
         steps = dict(row.steps_json or {})
+        _limpar_marcadores_cancelamento_ao_reiniciar_pipeline_video_narrado_transcribrothers(
+            job_id, steps
+        )
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_AGENDADO
+        steps["pipeline_origem_corrida"] = "video_narrado_completo"
         steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
         steps["pipeline_video_narrado_modelo_chat_limpeza"] = modelo_chat_limpeza
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = perfil_tts
+        steps[
+            CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PARALELISMO_TTS_EXPERIMENTAL_TRANSCRIBROTHERS
+        ] = paralelismo_tts_experimental
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+            temperatura_tts
+        )
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = ritmo_tts
+        steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS] = (
+            diretriz_conteudo_legendas
+        )
         if markdown_escopo:
             titulos = [
                 t.strip()
@@ -5142,6 +5778,11 @@ async def pipeline_video_narrado_a_partir_documento_markdown_job_transcribrother
         configuracao=cfg,
         modelo_tts=modelo_tts,
         modelo_chat_limpeza=modelo_chat_limpeza,
+        perfil_tts=perfil_tts,
+        paralelismo_tts_experimental=paralelismo_tts_experimental,
+        temperatura_tts=temperatura_tts,
+        ritmo_tts=ritmo_tts,
+        diretriz_conteudo_legendas=diretriz_conteudo_legendas,
     )
 
     async with session_factory() as session:
@@ -5167,18 +5808,12 @@ async def atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
-        if row.status not in (
-            StatusJobTranscribrothers.completed.value,
-            StatusJobTranscribrothers.failed.value,
-        ):
-            raise HTTPException(
-                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
-                detail=(
-                    "Já há uma geração em andamento; aguarde concluir."
-                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
-                    else "Só é possível atualizar a narração quando o job está concluído ou falhou."
-                ),
-            )
+        _garantir_job_permite_reiniciar_pipeline_video_narrado_transcribrothers(
+            row,
+            mensagem_se_bloqueado=(
+                "Só é possível atualizar a narração quando o job está concluído, falhou ou foi cancelado."
+            ),
+        )
         work = _diretorio_trabalho_job(data_dir, job_id)
         assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
         try:
@@ -5198,6 +5833,9 @@ async def atualizar_narracao_a_partir_legendas_vtt_editadas_job_transcribrothers
             raise HTTPException(status_code=400, detail=str(e)) from e
 
         steps = dict(row.steps_json or {})
+        _limpar_marcadores_cancelamento_ao_reiniciar_pipeline_video_narrado_transcribrothers(
+            job_id, steps
+        )
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_ATUALIZANDO_LEGENDAS_EDITADAS
         steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
         row.status = StatusJobTranscribrothers.generating_tutorial.value
@@ -5237,20 +5875,12 @@ async def gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers(
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
-        if row.status not in (
-            StatusJobTranscribrothers.completed.value,
-            StatusJobTranscribrothers.failed.value,
-        ):
-            raise HTTPException(
-                status_code=400
-                if row.status != StatusJobTranscribrothers.generating_tutorial.value
-                else 409,
-                detail=(
-                    "Já há uma geração em andamento; aguarde concluir."
-                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
-                    else "Só é possível gerar o vídeo quando o job está concluído ou falhou."
-                ),
-            )
+        _garantir_job_permite_reiniciar_pipeline_video_narrado_transcribrothers(
+            row,
+            mensagem_se_bloqueado=(
+                "Só é possível gerar o vídeo quando o job está concluído, falhou ou foi cancelado."
+            ),
+        )
         work = _diretorio_trabalho_job(data_dir, job_id)
         assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
         try:
@@ -5278,8 +5908,21 @@ async def gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers(
         )
 
         steps = dict(row.steps_json or {})
+        _limpar_marcadores_cancelamento_ao_reiniciar_pipeline_video_narrado_transcribrothers(
+            job_id, steps
+        )
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_GERANDO_COM_EDICOES_MODAL
+        steps["pipeline_origem_corrida"] = "edicoes_modal"
+        steps.pop("limpeza_legendas_ia_antes_tts", None)
         steps["pipeline_video_narrado_modelo_tts"] = modelo_tts
+        if body.temperatura_tts is not None:
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (
+                normalizar_temperatura_tts_narracao_transcribrothers(body.temperatura_tts)
+            )
+        if body.ritmo_tts is not None and str(body.ritmo_tts).strip():
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = (
+                normalizar_ritmo_tts_narracao_transcribrothers(body.ritmo_tts)
+            )
         row.status = StatusJobTranscribrothers.generating_tutorial.value
         row.error_message = None
         row.steps_json = steps
@@ -5340,6 +5983,7 @@ async def listar_janelas_video_cues_narracao_job_transcribrothers(
                 sem_narracao=bool(getattr(r, "sem_narracao", False)),
                 voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
                 texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
+                id_fonte_video=str(getattr(r, "id_fonte_video", "") or "").strip(),
             )
             for r in resumos
         ],
@@ -5376,11 +6020,27 @@ async def salvar_janelas_video_cues_narracao_job_transcribrothers(
             duracao = await obter_duracao_video_segundos_via_ffprobe(video)
         except Exception:
             duracao = None
+    mapa_duracao_fontes: dict[str, float] | None = None
+    if video is not None and duracao is not None and duracao > 0:
+        from transcribrothers_backend.modulo_montar_mapa_duracao_segundos_por_id_fonte_video_cues_job_transcribrothers import (
+            montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers,
+        )
+
+        ids_fonte_body = [str(getattr(j, "id_fonte_video", "") or "") for j in body.janelas]
+        mapa_duracao_fontes = (
+            await montar_mapa_duracao_segundos_por_id_fonte_video_das_cues_job_transcribrothers(
+                work=work,
+                cues_ou_ids_fonte=ids_fonte_body,
+                caminho_video_entrada=video,
+                duracao_video_entrada_segundos=float(duracao),
+            )
+        )
     try:
         salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             work=work,
             janelas_brutas=[j.model_dump() for j in body.janelas],
             duracao_video_segundos=duracao,
+            duracao_por_id_fonte_video=mapa_duracao_fontes,
         )
     except ErroValidacaoJanelasVideoCuesTranscribrothers as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -5409,6 +6069,7 @@ async def salvar_janelas_video_cues_narracao_job_transcribrothers(
                 sem_narracao=bool(getattr(r, "sem_narracao", False)),
                 voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
                 texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
+                id_fonte_video=str(getattr(r, "id_fonte_video", "") or "").strip(),
             )
             for r in resumos
         ],
@@ -5431,24 +6092,21 @@ async def remux_video_narrado_apos_edicao_janelas_job_transcribrothers(
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
-        if row.status not in (
-            StatusJobTranscribrothers.completed.value,
-            StatusJobTranscribrothers.failed.value,
-        ):
-            raise HTTPException(
-                status_code=400 if row.status != StatusJobTranscribrothers.generating_tutorial.value else 409,
-                detail=(
-                    "Já há uma geração em andamento; aguarde concluir."
-                    if row.status == StatusJobTranscribrothers.generating_tutorial.value
-                    else "Só é possível aplicar tempos quando o job está concluído ou falhou."
-                ),
-            )
+        _garantir_job_permite_reiniciar_pipeline_video_narrado_transcribrothers(
+            row,
+            mensagem_se_bloqueado=(
+                "Só é possível aplicar tempos quando o job está concluído, falhou ou foi cancelado."
+            ),
+        )
         work = _diretorio_trabalho_job(data_dir, job_id)
         try:
             validar_pre_requisitos_remux_janelas_editadas_transcribrothers(work=work)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
         steps = dict(row.steps_json or {})
+        _limpar_marcadores_cancelamento_ao_reiniciar_pipeline_video_narrado_transcribrothers(
+            job_id, steps
+        )
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_REMUX_JANELAS_EDITADAS
         row.status = StatusJobTranscribrothers.generating_tutorial.value
         row.error_message = None
@@ -5507,6 +6165,9 @@ async def preview_tts_amostra_voz_narracao_transcribrothers(
             voz=body.voz,
             configuracao=cfg,
             litellm_model=body.litellm_model,
+            perfil_tts=body.perfil_tts,
+            temperatura_tts=body.temperatura_tts,
+            ritmo_tts=body.ritmo_tts,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -5534,6 +6195,18 @@ async def preview_tts_cue_narracao_texto_atual_job_transcribrothers(
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
         prefs_voz, _ = await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
+        steps_preview = dict(row.steps_json or {})
+    perfil_preview = steps_preview.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS)
+    temperatura_preview = (
+        body.temperatura_tts
+        if body.temperatura_tts is not None
+        else steps_preview.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS)
+    )
+    ritmo_preview = (
+        body.ritmo_tts
+        if body.ritmo_tts is not None and str(body.ritmo_tts).strip()
+        else steps_preview.get(CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS)
+    )
     work = _diretorio_trabalho_job(data_dir, job_id)
     try:
         resultado = await gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
@@ -5543,6 +6216,13 @@ async def preview_tts_cue_narracao_texto_atual_job_transcribrothers(
             configuracao=cfg,
             litellm_model=body.litellm_model,
             voz=body.voz or prefs_voz.voz,
+            perfil_tts=str(perfil_preview) if perfil_preview is not None else None,
+            temperatura_tts=(
+                float(temperatura_preview)
+                if isinstance(temperatura_preview, (int, float))
+                else None
+            ),
+            ritmo_tts=str(ritmo_preview) if ritmo_preview is not None else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -5552,6 +6232,171 @@ async def preview_tts_cue_narracao_texto_atual_job_transcribrothers(
         str(resultado.caminho_wav),
         media_type="audio/wav",
         filename=resultado.caminho_wav.name,
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/resolver-cue-tts-pendente-timeout-experimental",
+    response_model=RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers,
+)
+async def resolver_cue_tts_pendente_timeout_experimental_api_transcribrothers(
+    job_id: str,
+    body: CorpoResolverCueTtsPendenteTimeoutExperimentalTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers:
+    """
+    Reenvia cue com timeout (perfil experimental_voz). Sem retry automático.
+    Quando a lista zera, a montagem do MP4 continua sozinha.
+    """
+    cfg = obter_cfg(request)
+    try:
+        resultado = await resolver_cue_tts_pendente_timeout_experimental_job_transcribrothers(
+            job_id=job_id,
+            session_factory=session_factory,
+            configuracao=cfg,
+            indice=body.indice,
+            texto=body.texto,
+            voz=body.voz,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers(
+        ok=bool(resultado.get("ok")),
+        mensagem=str(resultado.get("mensagem") or ""),
+        indice=int(resultado.get("indice") or body.indice),
+        pendentes_restantes=int(resultado.get("pendentes_restantes") or 0),
+        pipeline_continuada=bool(resultado.get("pipeline_continuada")),
+        pipeline_fase=(
+            str(resultado["pipeline_fase"])
+            if resultado.get("pipeline_fase") is not None
+            else None
+        ),
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/descartar-cue-tts-pendente-timeout-experimental",
+    response_model=RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers,
+)
+async def descartar_cue_tts_pendente_timeout_experimental_api_transcribrothers(
+    job_id: str,
+    body: CorpoDescartarCueTtsPendenteTimeoutExperimentalTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers:
+    """
+    Não narrar cue com timeout: silêncio no slot + remove da lista.
+    Quando a lista zera, a montagem do MP4 continua sozinha.
+    """
+    cfg = obter_cfg(request)
+    try:
+        resultado = await descartar_cue_tts_pendente_timeout_experimental_job_transcribrothers(
+            job_id=job_id,
+            session_factory=session_factory,
+            configuracao=cfg,
+            indice=body.indice,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers(
+        ok=bool(resultado.get("ok")),
+        mensagem=str(resultado.get("mensagem") or ""),
+        indice=int(resultado.get("indice") or body.indice),
+        pendentes_restantes=int(resultado.get("pendentes_restantes") or 0),
+        pipeline_continuada=bool(resultado.get("pipeline_continuada")),
+        pipeline_fase=(
+            str(resultado["pipeline_fase"])
+            if resultado.get("pipeline_fase") is not None
+            else None
+        ),
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/sugerir-reescrita-texto-cue-narracao",
+    response_model=RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers,
+)
+async def sugerir_reescrita_texto_cue_narracao_api_transcribrothers(
+    job_id: str,
+    body: CorpoSugerirReescritaTextoCueNarracaoTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers:
+    """Sugere reescrita da legenda via chat (modal editar); só aplica se o usuário aceitar."""
+    cfg = obter_cfg(request)
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        steps = dict(row.steps_json or {})
+        modelo_steps = str(steps.get("pipeline_video_narrado_modelo_chat_limpeza") or "").strip()
+    try:
+        resultado = await sugerir_reescrita_texto_cue_narracao_via_litellm_chat_transcribrothers(
+            configuracao=cfg,
+            texto=body.texto,
+            indice=body.indice,
+            litellm_model_chat=body.litellm_model_chat,
+            modelo_chat_fallback_steps=modelo_steps,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers(
+        ok=bool(resultado.get("ok")),
+        mensagem=str(resultado.get("mensagem") or ""),
+        indice=int(resultado.get("indice") or body.indice),
+        sugestao=str(resultado.get("sugestao") or ""),
+        modelo=(str(resultado["modelo"]) if resultado.get("modelo") is not None else None),
+        texto_original=(
+            str(resultado["texto_original"])
+            if resultado.get("texto_original") is not None
+            else None
+        ),
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/sugerir-reescrita-cue-tts-pendente-timeout-experimental",
+    response_model=RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers,
+)
+async def sugerir_reescrita_cue_tts_pendente_timeout_experimental_api_transcribrothers(
+    job_id: str,
+    body: CorpoSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers,
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers:
+    """Sugere reescrita via chat; o texto da cue só muda se o usuário aceitar na UI."""
+    cfg = obter_cfg(request)
+    try:
+        resultado = await sugerir_reescrita_texto_cue_tts_pendente_timeout_experimental_transcribrothers(
+            job_id=job_id,
+            session_factory=session_factory,
+            configuracao=cfg,
+            indice=body.indice,
+            texto=body.texto,
+            litellm_model_chat=body.litellm_model_chat,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return RespostaSugerirReescritaCueTtsPendenteTimeoutExperimentalTranscribrothers(
+        ok=bool(resultado.get("ok")),
+        mensagem=str(resultado.get("mensagem") or ""),
+        indice=int(resultado.get("indice") or body.indice),
+        sugestao=str(resultado.get("sugestao") or ""),
+        modelo=(str(resultado["modelo"]) if resultado.get("modelo") is not None else None),
+        texto_original=(
+            str(resultado["texto_original"])
+            if resultado.get("texto_original") is not None
+            else None
+        ),
     )
 
 

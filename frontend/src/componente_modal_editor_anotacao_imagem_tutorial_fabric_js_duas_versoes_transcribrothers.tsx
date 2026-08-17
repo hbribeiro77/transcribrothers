@@ -9,6 +9,7 @@ import {
 import { ComponenteSeletorCorAnotacaoPaletaPredefinidaEColorPickerTranscribrothers } from "./componente_seletor_cor_anotacao_paleta_predefinida_e_color_picker_transcribrothers.tsx";
 import type { JobStatus } from "./tipos_job_status_api_transcribrothers.ts";
 import { urlAssetPngJobParaNomeArquivoTranscribrothers } from "./modulo_util_resolver_nome_asset_png_para_exibicao_com_metadados_anotacao_tutorial_transcribrothers.ts";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 import {
   COR_PADRAO_FERRAMENTAS_ANOTACAO_IMAGEM_TUTORIAL_TRANSCRIBROTHERS,
   ESPESSURA_TRACO_PADRAO_ANOTACAO_IMAGEM_TUTORIAL_TRANSCRIBROTHERS,
@@ -217,6 +218,8 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   processandoGestaoVersoes = false,
   aoSolicitarInserirImagemNoDocumentoMarkdown,
 }: PropsModalEditorAnotacaoImagemTutorialTranscribrothers) {
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const fabricMountRef = useRef<HTMLDivElement | null>(null);
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -780,6 +783,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   ];
 
   return (
+    <>
     <div role="dialog" aria-modal="true" className="tb-anotacao-modal-overlay" onClick={aoFechar}>
       <div
         className="tb-anotacao-modal-painel"
@@ -925,16 +929,19 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
                     className="tb-linkbtn"
                     disabled={processandoAlgumaAcao}
                     onClick={() => {
-                      if (
-                        !window.confirm(
-                          "Remover a versão anotada desta imagem? A captura original será mantida.",
-                        )
-                      ) {
-                        return;
-                      }
-                      void executarAcaoGestaoVersao(() =>
-                        aoRemoverAnotacaoSalva(nomeArquivoOriginal),
-                      );
+                      void (async () => {
+                        const ok = await pedirConfirmacao({
+                          titulo: "Remover anotação?",
+                          mensagem:
+                            "Remover a versão anotada desta imagem? A captura original será mantida.",
+                          rotuloConfirmar: "Remover",
+                          varianteConfirmar: "destrutiva",
+                        });
+                        if (!ok) return;
+                        void executarAcaoGestaoVersao(() =>
+                          aoRemoverAnotacaoSalva(nomeArquivoOriginal),
+                        );
+                      })();
                     }}
                   >
                     Remover anotação
@@ -985,5 +992,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
         </footer>
       </div>
     </div>
+    {elementoDialogoConfirmacao}
+    </>
   );
 }

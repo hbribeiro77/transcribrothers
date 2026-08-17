@@ -31,7 +31,7 @@ _DURACAO_PRECORTE_JANELA_CURTA_SEGUNDOS = 0.12
 _EPS_AUDIO_VS_VIDEO_SEGUNDOS = 0.05
 _NOME_SUBPASTA_SEGMENTOS = "segmentos_video_narrado_retarget"
 _NOME_SUBPASTA_PRECORTE = "clips_precorte_janelas_video"
-_VERSAO_CACHE_SEGMENTO = "retarget_v5_encode_prefs_scale_fps"
+_VERSAO_CACHE_SEGMENTO = "retarget_v6_fingerprint_sem_caminho"
 _PRESET_X264 = "ultrafast"
 _CRF_X264 = "28"
 # Com -threads 1 por processo, dá para subir o paralelismo sem briga de CPU.
@@ -47,11 +47,29 @@ class SegmentoVideoNarradoRetargetTranscribrothers:
     caminho_wav: Path
     inicio_video_segundos: float
     fim_video_segundos: float
+    # Se definido, o corte usa este vídeo em vez do `caminho_video` global da montagem.
+    caminho_video_fonte: Path | None = None
+
+
+def caminho_video_efetivo_do_segmento_retarget_transcribrothers(
+    caminho_video_padrao: Path,
+    segmento: SegmentoVideoNarradoRetargetTranscribrothers,
+) -> Path:
+    fonte = segmento.caminho_video_fonte
+    if fonte is not None and fonte.is_file():
+        return fonte
+    return caminho_video_padrao
 
 
 def _metadados_arquivo_para_cache_transcribrothers(caminho: Path) -> str:
+    """
+    Fingerprint do conteúdo via tamanho + mtime (não inclui o path).
+
+    O path mudava ao remapar/reindexar WAVs (ex.: excluir cue 0) e invalidava
+    o cache de *todos* os segmentos mesmo com áudio/janela idênticos.
+    """
     st = caminho.stat()
-    return f"{st.st_mtime_ns}:{st.st_size}:{caminho.resolve()}"
+    return f"{st.st_mtime_ns}:{st.st_size}"
 
 
 def calcular_chave_cache_segmento_retarget_audio_transcribrothers(
@@ -65,10 +83,13 @@ def calcular_chave_cache_segmento_retarget_audio_transcribrothers(
     prefs = preferencias_encode or preferencias_encode_video_narrado_padrao_transcribrothers()
     ini = max(0.0, float(segmento.inicio_video_segundos))
     fim = max(ini, float(segmento.fim_video_segundos))
+    video_efetivo = caminho_video_efetivo_do_segmento_retarget_transcribrothers(
+        caminho_video, segmento
+    )
     payload = "|".join(
         [
             _VERSAO_CACHE_SEGMENTO,
-            _metadados_arquivo_para_cache_transcribrothers(caminho_video),
+            _metadados_arquivo_para_cache_transcribrothers(video_efetivo),
             _metadados_arquivo_para_cache_transcribrothers(segmento.caminho_wav),
             f"{ini:.6f}",
             f"{fim:.6f}",
@@ -79,6 +100,62 @@ def calcular_chave_cache_segmento_retarget_audio_transcribrothers(
         ]
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def caminho_mp4_cache_segmento_retarget_transcribrothers(
+    *,
+    diretorio_trabalho: Path,
+    chave_cache: str,
+) -> Path:
+    return diretorio_trabalho / _NOME_SUBPASTA_SEGMENTOS / f"segmento_cache_{chave_cache[:24]}.mp4"
+
+
+def contar_segmentos_com_mp4_cache_retarget_disponivel_transcribrothers(
+    *,
+    caminho_video: Path,
+    segmentos: list[SegmentoVideoNarradoRetargetTranscribrothers],
+    duracoes_audio_segundos: list[float],
+    diretorio_trabalho: Path,
+    preferencias_encode: PreferenciasEncodeVideoNarradoTranscribrothers | None = None,
+) -> tuple[int, int]:
+    """Devolve (hits, total): quantos segmentos já têm MP4 de cache reutilizável."""
+    if len(segmentos) != len(duracoes_audio_segundos):
+        raise ValueError("Quantidade de durações não bate com segmentos.")
+    prefs = preferencias_encode or preferencias_encode_video_narrado_padrao_transcribrothers()
+    hits = 0
+    for seg, dur in zip(segmentos, duracoes_audio_segundos, strict=True):
+        chave = calcular_chave_cache_segmento_retarget_audio_transcribrothers(
+            caminho_video=caminho_video,
+            segmento=seg,
+            duracao_audio_segundos=float(dur),
+            preferencias_encode=prefs,
+        )
+        cache = caminho_mp4_cache_segmento_retarget_transcribrothers(
+            diretorio_trabalho=diretorio_trabalho,
+            chave_cache=chave,
+        )
+        if cache.is_file() and cache.stat().st_size > 0:
+            hits += 1
+    return hits, len(segmentos)
+
+
+def deve_usar_montagem_por_segmentos_com_cache_em_vez_de_passagem_unica_transcribrothers(
+    *,
+    hits_cache: int,
+    total_segmentos: int,
+    forcar_montagem_por_segmentos_com_cache: bool,
+) -> bool:
+    """
+    Geração Markdown, edições do modal e remux: passam ``forcar=True`` para gravar/reusar
+    MP4s por cue em ``segmentos_video_narrado_retarget`` (só reencode o sujo + concat).
+
+    Passagem única fica só quando a chamada deixa ``forcar=False`` e ``hits_cache==0``
+    (testes ou chamadas legadas explícitas).
+    """
+    del total_segmentos  # reservado para heurísticas futuras (ex.: % de hits)
+    if forcar_montagem_por_segmentos_com_cache:
+        return True
+    return hits_cache > 0
 
 
 def _resolver_paralelismo_encode_segmentos_transcribrothers(
@@ -388,7 +465,9 @@ async def _extrair_clips_precorte_janelas_em_paralelo_transcribrothers(
         destino = diretorio_clips / f"clip_precorte_{indice:04d}.mp4"
         async with semaforo:
             await _extrair_clip_precorte_janela_video_transcribrothers(
-                caminho_video=caminho_video,
+                caminho_video=caminho_video_efetivo_do_segmento_retarget_transcribrothers(
+                    caminho_video, seg
+                ),
                 inicio_video_segundos=seg.inicio_video_segundos,
                 duracao_corte_segundos=dur_corte,
                 caminho_clip_saida=destino,
@@ -598,6 +677,9 @@ async def _gerar_segmento_mp4_retarget_audio_via_ffmpeg_transcribrothers(
     else:
         filtro_v = f"trim=duration={dur_audio:.6f},setpts=PTS-STARTPTS,{scale}"
 
+    video_efetivo = caminho_video_efetivo_do_segmento_retarget_transcribrothers(
+        caminho_video, segmento
+    )
     args = [
         "-y",
         *threads_args,
@@ -606,7 +688,7 @@ async def _gerar_segmento_mp4_retarget_audio_via_ffmpeg_transcribrothers(
         "-t",
         f"{dur_corte:.6f}",
         "-i",
-        str(caminho_video),
+        str(video_efetivo),
         "-i",
         str(segmento.caminho_wav),
         "-filter_complex",
@@ -684,7 +766,10 @@ async def _montar_paralelo_com_cache_transcribrothers(
             duracao_audio_segundos=dur_audio,
             preferencias_encode=prefs,
         )
-        caminho_cache = dir_segs / f"segmento_cache_{chave[:24]}.mp4"
+        caminho_cache = caminho_mp4_cache_segmento_retarget_transcribrothers(
+            diretorio_trabalho=diretorio_trabalho,
+            chave_cache=chave,
+        )
         if caminho_cache.is_file() and caminho_cache.stat().st_size > 0:
             caminhos_seg[indice] = caminho_cache
             async with progresso_lock:
@@ -751,11 +836,14 @@ async def montar_video_narrado_por_segmentos_retarget_audio_via_ffmpeg_transcrib
     atualizar_progresso: AtualizarProgressoMontagemSegmentosTranscribrothers | None = None,
     paralelismo_encode: int | None = None,
     preferencias_encode: PreferenciasEncodeVideoNarradoTranscribrothers | None = None,
+    forcar_montagem_por_segmentos_com_cache: bool = False,
 ) -> Path:
     """
-    Preferência: pré-corte paralelo das janelas + 1 encode (filter_complex nos clips).
-    Fallback: segmentos em paralelo + cache.
-    Encode (resolução/FPS) vem de `preferencias_encode` (padrão app: 1080p @ 30 fps).
+    Com ``forcar_montagem_por_segmentos_com_cache=True`` (geração Markdown, edições, remux):
+    segmentos em paralelo gravando/reusando MP4 por cue + concat ``-c copy``.
+
+    Com ``forcar=False`` e cache frio: passagem única quando elegível (legado/testes);
+    se falhar, cai no caminho paralelo com cache.
     """
     if not caminho_video.is_file():
         raise FileNotFoundError(f"Arquivo de vídeo não encontrado: {caminho_video}")
@@ -773,9 +861,25 @@ async def montar_video_narrado_por_segmentos_retarget_audio_via_ffmpeg_transcrib
         obter_duracao_wav_pcm16_mono_segundos_transcribrothers(s.caminho_wav) for s in segmentos
     ]
 
-    if segmentos_aceitam_montagem_passagem_unica_transcribrothers(
-        segmentos,
+    hits_cache, total_segs = contar_segmentos_com_mp4_cache_retarget_disponivel_transcribrothers(
+        caminho_video=caminho_video,
+        segmentos=segmentos,
         duracoes_audio_segundos=duracoes,
+        diretorio_trabalho=diretorio_trabalho,
+        preferencias_encode=prefs,
+    )
+    usar_segmentos_cache = deve_usar_montagem_por_segmentos_com_cache_em_vez_de_passagem_unica_transcribrothers(
+        hits_cache=hits_cache,
+        total_segmentos=total_segs,
+        forcar_montagem_por_segmentos_com_cache=forcar_montagem_por_segmentos_com_cache,
+    )
+
+    if (
+        not usar_segmentos_cache
+        and segmentos_aceitam_montagem_passagem_unica_transcribrothers(
+            segmentos,
+            duracoes_audio_segundos=duracoes,
+        )
     ):
         try:
             return await _montar_passagem_unica_filter_complex_transcribrothers(
@@ -796,6 +900,16 @@ async def montar_video_narrado_por_segmentos_retarget_audio_via_ffmpeg_transcrib
                         "video_narrado_mux_segmento_total": len(segmentos),
                     }
                 )
+
+    if atualizar_progresso is not None and usar_segmentos_cache:
+        await atualizar_progresso(
+            {
+                "video_narrado_mux_fase": "segmentos_com_cache",
+                "video_narrado_mux_segmento_total": total_segs,
+                "video_narrado_mux_segmentos_cache": hits_cache,
+                "video_narrado_mux_forcar_cache": bool(forcar_montagem_por_segmentos_com_cache),
+            }
+        )
 
     return await _montar_paralelo_com_cache_transcribrothers(
         caminho_video=caminho_video,

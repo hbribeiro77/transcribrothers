@@ -47,8 +47,9 @@ type PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTra
   /** Substitui o play/pause nativo do `<video>` (modal narrado com áudio auxiliar). */
   aoAlternarPlayPauseCustomizado?: () => void;
   /**
-   * Timeline virtual na barra (tempo/duração/seek) sem ler o `currentTime` real do `<video>`.
-   * Usado no preview de recorte: imagem do original, barra como no MP4 narrado.
+   * Timeline virtual na barra (tempo/duração/seek) sem depender só do `currentTime`/`duration`
+   * reais do `<video>`. Usado no preview de recorte e quando a timeline narrada (cues)
+   * é mais longa que o MP4 ainda não remuxado.
    */
   timelineVirtualUi?: {
     tempoAtualSegundos: number;
@@ -57,6 +58,11 @@ type PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTra
   } | null;
   /** Conteúdo sobreposto à área do vídeo (ex.: legenda por overlay no preview de recorte). */
   overlaySobreVideo?: React.ReactNode;
+  /**
+   * Conteúdo opcional na mesma linha do play/tempo/volume
+   * (ex.: recorte início/fim na modal do vídeo original).
+   */
+  conteudoExtraNaLinhaAcoesControles?: React.ReactNode;
   exibirBotaoCapturarFrame?: boolean;
   capturandoFrame?: boolean;
   /** Recebe o instante atual do vídeo ativo (inline ou modal em tela maior). */
@@ -182,6 +188,7 @@ type BarraControlesPlayerVideoTranscribrothersProps = {
   aoClicarSegmentoFaixaCuesTimeline?: (indice: number) => void;
   /** Arrastar segmento na faixa: novo início desejado em segundos (pai aplica limites). */
   aoArrastarSegmentoFaixaCuesTimeline?: (indice: number, novoInicioSegundos: number) => void;
+  conteudoExtraNaLinhaAcoesControles?: React.ReactNode;
 };
 
 type ArrasteFaixaCueTimelineRefTranscribrothers = {
@@ -389,6 +396,7 @@ function BarraControlesPlayerVideoTranscribrothers({
   indiceCueAtivaFaixaTimeline = -1,
   aoClicarSegmentoFaixaCuesTimeline,
   aoArrastarSegmentoFaixaCuesTimeline,
+  conteudoExtraNaLinhaAcoesControles = null,
 }: BarraControlesPlayerVideoTranscribrothersProps) {
   const duracaoValida = Number.isFinite(duracaoSegundos) && duracaoSegundos > 0;
   const maxBarra = duracaoValida ? duracaoSegundos : 0;
@@ -405,7 +413,14 @@ function BarraControlesPlayerVideoTranscribrothers({
       onClick={(evento) => evento.stopPropagation()}
       onDoubleClick={(evento) => evento.stopPropagation()}
     >
-      <div className="tb-video-player-controles-linha-acoes">
+      <div
+        className={
+          "tb-video-player-controles-linha-acoes" +
+          (conteudoExtraNaLinhaAcoesControles
+            ? " tb-video-player-controles-linha-acoes--com-extra"
+            : "")
+        }
+      >
         <button
           type="button"
           className="tb-video-player-btn-icone"
@@ -426,6 +441,10 @@ function BarraControlesPlayerVideoTranscribrothers({
               ? "…"
               : "0:00"}
         </span>
+
+        {conteudoExtraNaLinhaAcoesControles ? (
+          <div className="tb-video-player-controles-extra">{conteudoExtraNaLinhaAcoesControles}</div>
+        ) : null}
 
         <div className="tb-video-player-controles-grupo-direita">
           <button
@@ -733,6 +752,7 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
   aoAlternarPlayPauseCustomizado,
   timelineVirtualUi = null,
   overlaySobreVideo = null,
+  conteudoExtraNaLinhaAcoesControles = null,
   exibirBotaoCapturarFrame = false,
   capturandoFrame = false,
   aoCapturarFrameNoInstanteAtual,
@@ -989,6 +1009,7 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
     ...(exibirBotaoTelaMaior ? { aoSolicitarTelaMaior: abrirModalTelaMaior } : {}),
     ...propsFaixaCuesCompartilhados,
     ...propsCapturaFrameCompartilhados,
+    conteudoExtraNaLinhaAcoesControles,
     ...handlersInlineComTimelineVirtual,
     aoAlternarPlayPause: aoPlayPauseInline,
   };

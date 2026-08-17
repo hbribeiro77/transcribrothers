@@ -4,6 +4,8 @@ export const DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS = 0.
 export const DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS = 0.15;
 /** Mostra «Ajustar ao áudio» quando a fala ocupa menos que esta fração do slot. */
 export const FRACAO_OCUPACAO_MAXIMA_PARA_AJUSTAR_CUE_AO_AUDIO_TRANSCRIBROTHERS = 0.95;
+/** Mostra «Ajustar à tela» quando |duração slot − janela de tela| passa deste limiar. */
+export const DELTA_MIN_DISCREPANCIA_CUE_VS_JANELA_TELA_SEGUNDOS_TRANSCRIBROTHERS = 0.2;
 
 export type ResultadoMutacaoCuesTimelineUiTranscribrothers =
   | { ok: true; cues: CueWebVttParaListaUiTranscribrothers[]; deslocouSegundos: number }
@@ -55,6 +57,66 @@ export function ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(
 
   const copia = clonarCuesTimelineUiTranscribrothers(cues);
   copia[indice] = { ...copia[indice], fimSegundos: novoFim };
+  return { ok: true, cues: copia, deslocouSegundos: novoFim - fimAtual };
+}
+
+/**
+ * Ajusta o fim da cue para `início + duração da janela de tela`.
+ * Encolher abre folga; esticar empurra as cues seguintes (preserva folgas que já existiam).
+ */
+export function ajustarFimCueTimelineAJanelaTelaUiTranscribrothers(
+  cues: CueWebVttParaListaUiTranscribrothers[],
+  indice: number,
+  duracaoJanelaTelaSegundos: number,
+): ResultadoMutacaoCuesTimelineUiTranscribrothers {
+  if (indice < 0 || indice >= cues.length) {
+    return { ok: false, motivo: "Cue inválida." };
+  }
+  if (
+    !(duracaoJanelaTelaSegundos > 0) ||
+    !Number.isFinite(duracaoJanelaTelaSegundos) ||
+    duracaoJanelaTelaSegundos < DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS
+  ) {
+    return { ok: false, motivo: "Duração da janela de tela indisponível para ajustar." };
+  }
+
+  const cue = cues[indice];
+  const inicio = cue.inicioSegundos;
+  const fimAtual = cue.fimSegundos;
+  const duracaoCue = fimAtual - inicio;
+  if (!(duracaoCue > 0)) {
+    return { ok: false, motivo: "A cue tem intervalo inválido." };
+  }
+
+  const novoFim = inicio + duracaoJanelaTelaSegundos;
+  if (Math.abs(novoFim - fimAtual) < DELTA_MIN_DISCREPANCIA_CUE_VS_JANELA_TELA_SEGUNDOS_TRANSCRIBROTHERS) {
+    return { ok: false, motivo: "A duração da cue já está alinhada à janela de tela." };
+  }
+  if (novoFim - inicio < DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS) {
+    return { ok: false, motivo: "A janela de tela é curta demais para a cue." };
+  }
+
+  const copia = clonarCuesTimelineUiTranscribrothers(cues);
+  copia[indice] = { ...copia[indice], fimSegundos: novoFim };
+
+  if (novoFim > fimAtual + 1e-9) {
+    let pisoInicio = novoFim;
+    for (let i = indice + 1; i < copia.length; i += 1) {
+      const atual = copia[i];
+      if (atual.inicioSegundos < pisoInicio - 1e-9) {
+        const shift = pisoInicio - atual.inicioSegundos;
+        for (let j = i; j < copia.length; j += 1) {
+          copia[j] = {
+            ...copia[j],
+            inicioSegundos: copia[j].inicioSegundos + shift,
+            fimSegundos: copia[j].fimSegundos + shift,
+          };
+        }
+      }
+      pisoInicio = copia[i].fimSegundos;
+    }
+  }
+
   return { ok: true, cues: copia, deslocouSegundos: novoFim - fimAtual };
 }
 
@@ -198,6 +260,59 @@ export function cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(
     duracaoAudioSegundos / duracaoCueSegundos <
     FRACAO_OCUPACAO_MAXIMA_PARA_AJUSTAR_CUE_AO_AUDIO_TRANSCRIBROTHERS
   );
+}
+
+export function cuePodeAjustarFimAJanelaTelaNaTimelineUiTranscribrothers(
+  duracaoCueSegundos: number,
+  duracaoJanelaTelaSegundos: number | null | undefined,
+): boolean {
+  if (
+    typeof duracaoJanelaTelaSegundos !== "number" ||
+    !Number.isFinite(duracaoJanelaTelaSegundos) ||
+    duracaoJanelaTelaSegundos < DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS
+  ) {
+    return false;
+  }
+  if (!(duracaoCueSegundos > 0)) return false;
+  return (
+    Math.abs(duracaoJanelaTelaSegundos - duracaoCueSegundos) >
+    DELTA_MIN_DISCREPANCIA_CUE_VS_JANELA_TELA_SEGUNDOS_TRANSCRIBROTHERS
+  );
+}
+
+export type PreviewAudioDuracaoParaAjusteCueUiTranscribrothers = {
+  texto: string;
+  voz: string;
+  duracaoSegundos: number;
+};
+
+/**
+ * Duração a usar em «Ajustar ao áudio».
+ * Prefere prévia válida (Prévia ou Regenerar); senão WAV gravado se o narrado ainda vale.
+ */
+export function resolverDuracaoAudioAtualDaCueParaAjusteTimelineUiTranscribrothers(opts: {
+  textoFalaAtual: string;
+  vozAtual: string;
+  audioNarradoDesatualizado: boolean;
+  preview: PreviewAudioDuracaoParaAjusteCueUiTranscribrothers | null | undefined;
+  duracaoWavGravadoSegundos: number | null | undefined;
+}): number | null {
+  const preview = opts.preview;
+  const previewBate =
+    !!preview &&
+    typeof preview.duracaoSegundos === "number" &&
+    Number.isFinite(preview.duracaoSegundos) &&
+    preview.duracaoSegundos > 0 &&
+    preview.texto.trim() === (opts.textoFalaAtual || "").trim() &&
+    preview.voz.trim().toLowerCase() === (opts.vozAtual || "").trim().toLowerCase();
+  if (previewBate && preview) {
+    return preview.duracaoSegundos;
+  }
+  if (opts.audioNarradoDesatualizado) {
+    return null;
+  }
+  const durWav = opts.duracaoWavGravadoSegundos;
+  return typeof durWav === "number" && Number.isFinite(durWav) && durWav > 0 ? durWav : null;
 }
 
 export function cuePodeDeslocarNaTimelineUiTranscribrothers(

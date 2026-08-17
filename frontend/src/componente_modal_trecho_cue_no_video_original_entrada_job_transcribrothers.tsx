@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import {
   deslizarJanelaVideoCuePeloPontoUiTranscribrothers,
+  marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers,
   type JanelaVideoCueLocalUiTranscribrothers,
 } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 import {
@@ -11,8 +12,15 @@ import {
 } from "./componente_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.tsx";
 import { formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers } from "./modulo_util_formatar_duracao_segundos_curta_portugues_ui_transcribrothers.ts";
 import { formatarSegundosComoTimestampVttCurtoUiTranscribrothers } from "./modulo_util_parsear_webvtt_em_cues_para_lista_ui_transcribrothers.ts";
+import {
+  montarSrcAudioNarracaoComBustCacheSeHttpUiTranscribrothers,
+  resolverUrlAudioNarracaoCueTrechoOriginalUiTranscribrothers,
+} from "./modulo_util_resolver_url_audio_narracao_cue_trecho_original_ui_transcribrothers.ts";
+import { normalizarIdFonteVideoUiTranscribrothers } from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
 import "./estilos_css_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.css";
 import "./estilos_css_modal_trecho_cue_no_video_original_entrada_job_transcribrothers.css";
+import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
+
 
 export type PropsComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothers = {
   aberto: boolean;
@@ -22,6 +30,15 @@ export type PropsComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothe
   janelas: JanelaVideoCueLocalUiTranscribrothers[];
   /** Textos das legendas (paralelo a `janelas`) para rótulos na faixa. */
   textosCues: string[];
+  /**
+   * URLs de áudio TTS por índice (WAV gravado ou blob de prévia/Regenerar do editor).
+   * Quando informado, habilita «Narração» mesmo sem `temWav` no manifesto.
+   */
+  urlsAudioNarracaoPorIndice?: Record<number, string>;
+  /** Override do src do player (mídia de tela da biblioteca). Default: vídeo de entrada. */
+  urlVideoSrc?: string;
+  /** Título do diálogo (ex.: quando a fonte não é a entrada). */
+  tituloModal?: string;
   onFechar: () => void;
   /**
    * Aplica o rascunho de janelas no editor narrado (sem remux automático).
@@ -63,13 +80,6 @@ function janelasTempoDiferemTranscribrothers(
   return false;
 }
 
-function cueTemWavNarracaoDisponivelTranscribrothers(
-  j: JanelaVideoCueLocalUiTranscribrothers | undefined,
-): boolean {
-  if (!j || j.semNarracao) return false;
-  return Boolean(j.temWav && j.urlWav && j.urlWav.trim());
-}
-
 function IconeMaximizarModalTrechoVideoOriginalTranscribrothers() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -105,10 +115,15 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   indiceCueInicial,
   janelas,
   textosCues,
+  urlsAudioNarracaoPorIndice,
+  urlVideoSrc,
+  tituloModal,
   onFechar,
   onAplicarJanelas,
 }: PropsComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothers) {
   const tituloId = useId();
+  const { pedirConfirmacao, elementoDialogoConfirmacao } =
+    usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioNarracaoRef = useRef<HTMLAudioElement | null>(null);
   const listaTrechosRef = useRef<HTMLUListElement | null>(null);
@@ -120,11 +135,18 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   /** Janela de tela acabou; o WAV da narração segue até o fim (como no MP4 gerado). */
   const narracaoSegueAposVideoRef = useRef(false);
   const janelasRascunhoRef = useRef<JanelaVideoCueLocalUiTranscribrothers[]>([]);
+  const urlsAudioNarracaoPorIndiceRef = useRef<Record<number, string> | undefined>(
+    urlsAudioNarracaoPorIndice,
+  );
+  urlsAudioNarracaoPorIndiceRef.current = urlsAudioNarracaoPorIndice;
 
   const [indiceAtivo, setIndiceAtivo] = useState(0);
   const [painelMaximizado, setPainelMaximizado] = useState(false);
   /** Padrão: sem áudio do vídeo de entrada (foco na tela / narração). */
   const [audioOriginalAtivo, setAudioOriginalAtivo] = useState(false);
+  /** Início/Fim marcam extremos (duração muda); padrão ligado em janela provisória. */
+  const [marcarExtremosDuracaoLivre, setMarcarExtremosDuracaoLivre] = useState(false);
+  const marcarExtremosDuracaoLivreRef = useRef(false);
   const [indiceTrechoTocando, setIndiceTrechoTocando] = useState<number | null>(null);
   const [modoPlayAtivo, setModoPlayAtivo] = useState<ModoPlayTrechoOriginalUiTranscribrothers | null>(
     null,
@@ -135,8 +157,11 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   const [erroRecorte, setErroRecorte] = useState<string | null>(null);
   const [avisoRecorte, setAvisoRecorte] = useState<string | null>(null);
   const [avisoAplicado, setAvisoAplicado] = useState<string | null>(null);
+  /** Fonte de tela desta sessão (só lista/edita cues com o mesmo id). */
+  const [idFonteEscopo, setIdFonteEscopo] = useState("");
 
   janelasRascunhoRef.current = janelasRascunho;
+  marcarExtremosDuracaoLivreRef.current = marcarExtremosDuracaoLivre;
 
   const pararAudioNarracao = useCallback(() => {
     const audio = audioNarracaoRef.current;
@@ -175,16 +200,28 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
       setErroRecorte(null);
       setAvisoRecorte(null);
       setAvisoAplicado(null);
+      setMarcarExtremosDuracaoLivre(false);
+      setIdFonteEscopo("");
       pararAudioNarracao();
       return;
     }
     const i = clampIndiceCueTranscribrothers(indiceCueInicial, janelas.length);
+    const idFonte = normalizarIdFonteVideoUiTranscribrothers(janelas[i]?.idFonteVideo);
     setIndiceAtivo(i);
     indiceAtivoRef.current = i;
+    setIdFonteEscopo(idFonte);
+    setMarcarExtremosDuracaoLivre(Boolean(janelas[i]?.janelaProvisoria));
     setErroRecorte(null);
     setAvisoRecorte(null);
     setAvisoAplicado(null);
-  }, [aberto, indiceCueInicial, janelas.length, pararAudioNarracao]);
+  }, [
+    aberto,
+    indiceCueInicial,
+    janelas.length,
+    // Garante escopo certo ao abrir logo após «Fonte» (mesmo length, id novo).
+    janelas[indiceCueInicial]?.idFonteVideo,
+    pararAudioNarracao,
+  ]);
 
   // Espelha janelas do editor no rascunho (abre modal / após «Aplicar janela»).
   useEffect(() => {
@@ -232,22 +269,45 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
     };
   }, [aberto, audioOriginalAtivo]);
 
+  const indicesMesmaOrigem = useMemo(() => {
+    if (!idFonteEscopo) return janelasRascunho.map((_, i) => i);
+    return janelasRascunho
+      .map((_, i) => i)
+      .filter(
+        (i) =>
+          normalizarIdFonteVideoUiTranscribrothers(janelasRascunho[i]?.idFonteVideo) ===
+          idFonteEscopo,
+      );
+  }, [janelasRascunho, idFonteEscopo]);
+
+  const indicesMesmaOrigemRef = useRef(indicesMesmaOrigem);
+  indicesMesmaOrigemRef.current = indicesMesmaOrigem;
+
   const faixaJanelasTimeline = useMemo<SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers[]>(
     () =>
-      janelasRascunho.map((j, indice) => {
+      indicesMesmaOrigem.map((indice) => {
+        const j = janelasRascunho[indice];
         const texto = (textosCues[indice] || "").trim();
-        const semNarracao = Boolean(j.semNarracao);
+        const semNarracao = Boolean(j?.semNarracao);
         return {
-          inicioSegundos: Math.max(0, j.inicioVideoSegundos),
-          fimSegundos: Math.max(j.inicioVideoSegundos + 0.05, j.fimVideoSegundos),
+          inicioSegundos: Math.max(0, j?.inicioVideoSegundos ?? 0),
+          fimSegundos: Math.max(
+            (j?.inicioVideoSegundos ?? 0) + 0.05,
+            j?.fimVideoSegundos ?? 0.05,
+          ),
           rotulo: semNarracao
             ? `#${indice + 1} — Sem narração`
             : `#${indice + 1} — ${texto.slice(0, 100) || "Cue"}`,
           semNarracao,
         };
       }),
-    [janelasRascunho, textosCues],
+    [janelasRascunho, textosCues, indicesMesmaOrigem],
   );
+
+  const indiceAtivoNaFaixaOrigem = useMemo(() => {
+    const pos = indicesMesmaOrigem.indexOf(indiceAtivo);
+    return pos >= 0 ? pos : -1;
+  }, [indicesMesmaOrigem, indiceAtivo]);
 
   const janelaAtiva = janelasRascunho[indiceAtivo] ?? null;
   const rascunhoSujo = useMemo(
@@ -267,6 +327,11 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   const selecionarCueSemPlay = useCallback(
     (indice: number) => {
       if (!janelasRascunhoRef.current[indice]) return;
+      if (indiceAtivoRef.current !== indice) {
+        setMarcarExtremosDuracaoLivre(
+          Boolean(janelasRascunhoRef.current[indice]?.janelaProvisoria),
+        );
+      }
       indiceAtivoRef.current = indice;
       setIndiceAtivo(indice);
       setErroRecorte(null);
@@ -301,11 +366,19 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
       const video = videoRef.current;
       if (!j || !video) return;
 
-      if (modo === "narracao" && !cueTemWavNarracaoDisponivelTranscribrothers(j)) {
-        return;
+      if (modo === "narracao") {
+        const urlNarracao = resolverUrlAudioNarracaoCueTrechoOriginalUiTranscribrothers(
+          j,
+          indice,
+          urlsAudioNarracaoPorIndiceRef.current,
+        );
+        if (!urlNarracao) return;
       }
 
       const ini = Math.max(0, j.inicioVideoSegundos);
+      if (indiceAtivoRef.current !== indice) {
+        setMarcarExtremosDuracaoLivre(Boolean(j.janelaProvisoria));
+      }
       indiceAtivoRef.current = indice;
       setIndiceAtivo(indice);
       narracaoSegueAposVideoRef.current = false;
@@ -327,10 +400,15 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
         void video.play().catch(() => undefined);
       };
 
-      if (modo === "narracao" && j.urlWav) {
+      if (modo === "narracao") {
+        const urlNarracao = resolverUrlAudioNarracaoCueTrechoOriginalUiTranscribrothers(
+          j,
+          indice,
+          urlsAudioNarracaoPorIndiceRef.current,
+        );
         const audio = audioNarracaoRef.current;
-        if (audio) {
-          audio.src = `${j.urlWav.trim()}?v=${Date.now()}`;
+        if (audio && urlNarracao) {
+          audio.src = montarSrcAudioNarracaoComBustCacheSeHttpUiTranscribrothers(urlNarracao);
           audio.currentTime = 0;
           void audio.play().catch(() => undefined);
         }
@@ -391,12 +469,19 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
     const atual = janelasRascunhoRef.current[indice];
     if (!video || !atual) return;
     const t = Math.max(0, video.currentTime || 0);
-    const r = deslizarJanelaVideoCuePeloPontoUiTranscribrothers(
-      janelasRascunhoRef.current,
-      indice,
-      campo,
-      t,
-    );
+    const r = marcarExtremosDuracaoLivreRef.current
+      ? marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers(
+          janelasRascunhoRef.current,
+          indice,
+          campo,
+          t,
+        )
+      : deslizarJanelaVideoCuePeloPontoUiTranscribrothers(
+          janelasRascunhoRef.current,
+          indice,
+          campo,
+          t,
+        );
     if (!r.ok) {
       setErroRecorte(r.motivo);
       setAvisoRecorte(null);
@@ -437,14 +522,19 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   }, [onAplicarJanelas, onFechar, rascunhoSujo, janelasRascunho]);
 
   const tentarFechar = useCallback(() => {
-    if (rascunhoSujo) {
-      const ok = window.confirm(
-        "Há recortes de tela não aplicados nesta modal. Fechar e descartar?",
-      );
-      if (!ok) return;
-    }
-    onFechar();
-  }, [rascunhoSujo, onFechar]);
+    void (async () => {
+      if (rascunhoSujo) {
+        const ok = await pedirConfirmacao({
+          titulo: "Descartar recortes?",
+          mensagem: "Há recortes de tela não aplicados nesta modal. Fechar e descartar?",
+          rotuloConfirmar: "Descartar e fechar",
+          varianteConfirmar: "destrutiva",
+        });
+        if (!ok) return;
+      }
+      onFechar();
+    })();
+  }, [rascunhoSujo, onFechar, pedirConfirmacao]);
 
   useEffect(() => {
     if (!aberto) {
@@ -456,26 +546,54 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
     }
     let cancelado = false;
     let tentativas = 0;
-    const tentar = () => {
+    const posicionarPausadoNaCue = () => {
       if (cancelado) return;
-      if (videoRef.current && janelasRascunhoRef.current.length > 0) {
-        iniciarTrechoDaCueNaPosicao(
-          clampIndiceCueTranscribrothers(indiceCueInicial, janelasRascunhoRef.current.length),
-          "video",
-        );
+      const video = videoRef.current;
+      const indice = clampIndiceCueTranscribrothers(
+        indiceCueInicial,
+        janelasRascunhoRef.current.length,
+      );
+      const j = janelasRascunhoRef.current[indice];
+      if (video && j) {
+        limitarReproducaoAoTrechoRef.current = false;
+        narracaoSegueAposVideoRef.current = false;
+        modoPlayRef.current = null;
+        setModoPlayAtivo(null);
+        setIndiceTrechoTocando(null);
+        pararAudioNarracao();
+        aplicarMuteVideoConformeEstado(null);
+        video.pause();
+        const ini = Math.max(0, j.inicioVideoSegundos);
+        const aplicarSeek = () => {
+          try {
+            video.currentTime = ini;
+          } catch {
+            /* ignore seek prematuro */
+          }
+          video.pause();
+        };
+        if (video.readyState >= 1) {
+          aplicarSeek();
+        } else {
+          const aoMeta = () => {
+            video.removeEventListener("loadedmetadata", aoMeta);
+            if (!cancelado) aplicarSeek();
+          };
+          video.addEventListener("loadedmetadata", aoMeta);
+        }
         return;
       }
       tentativas += 1;
       if (tentativas < 40) {
-        window.setTimeout(tentar, 50);
+        window.setTimeout(posicionarPausadoNaCue, 50);
       }
     };
-    const id = window.setTimeout(tentar, 50);
+    const id = window.setTimeout(posicionarPausadoNaCue, 50);
     return () => {
       cancelado = true;
       window.clearTimeout(id);
     };
-  }, [aberto, indiceCueInicial, iniciarTrechoDaCueNaPosicao, pararAudioNarracao]);
+  }, [aberto, indiceCueInicial, pararAudioNarracao, aplicarMuteVideoConformeEstado]);
 
   useEffect(() => {
     if (!aberto) return;
@@ -582,20 +700,109 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
   }, [aberto, painelMaximizado, tentarFechar]);
 
   const aoClicarSegmentoFaixa = useCallback(
-    (indice: number) => {
-      if (!janelasRascunhoRef.current[indice]) return;
-      iniciarTrechoDaCueNaPosicao(indice, "video");
+    (indiceNaFaixa: number) => {
+      const indiceGlobal = indicesMesmaOrigemRef.current[indiceNaFaixa];
+      if (indiceGlobal == null || !janelasRascunhoRef.current[indiceGlobal]) return;
+      iniciarTrechoDaCueNaPosicao(indiceGlobal, "video");
     },
     [iniciarTrechoDaCueNaPosicao],
   );
 
   if (!aberto || !jobId) return null;
 
-  const subTimestamps = janelaAtiva
-    ? `${formatarSegundosComoTimestampVttCurtoUiTranscribrothers(janelaAtiva.inicioVideoSegundos)} – ${formatarSegundosComoTimestampVttCurtoUiTranscribrothers(janelaAtiva.fimVideoSegundos)} no vídeo de entrada${cueAtivaSuja ? " · rascunho" : ""}`
-    : "Janela de tela não disponível para esta cue.";
+  const conteudoRecorteNosControles =
+    janelaAtiva && onAplicarJanelas ? (
+      <div className="tb-modal-trecho-video-original-recorte-barra">
+        <span className="tb-modal-trecho-video-original-recorte-divisor" aria-hidden="true" />
+        <div className="tb-modal-trecho-video-original-recorte-grupo-janela">
+          <p className="tb-modal-trecho-video-original-recorte-tempos">
+            {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(janelaAtiva.inicioVideoSegundos)}
+            {" – "}
+            {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(janelaAtiva.fimVideoSegundos)}
+            {" · "}
+            {formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(
+              Math.max(0, janelaAtiva.fimVideoSegundos - janelaAtiva.inicioVideoSegundos),
+            ) || "—"}
+            {cueAtivaSuja ? " · rascunho" : ""}
+          </p>
+          <button
+            type="button"
+            className="tb-modal-trecho-video-original-recorte-btn"
+            title={
+              marcarExtremosDuracaoLivre
+                ? "Início = tempo atual; o fim permanece (a duração da tela muda)"
+                : "Início = tempo atual; fim = início + duração da janela"
+            }
+            onClick={() => marcarPontoRecorte("inicio")}
+          >
+            Início
+          </button>
+          <button
+            type="button"
+            className="tb-modal-trecho-video-original-recorte-btn"
+            title={
+              marcarExtremosDuracaoLivre
+                ? "Fim = tempo atual; o início permanece (a duração da tela muda)"
+                : "Fim = tempo atual; início = fim − duração da janela"
+            }
+            onClick={() => marcarPontoRecorte("fim")}
+          >
+            Fim
+          </button>
+          <label
+            className="tb-modal-trecho-video-original-recorte-audio"
+            title="Se marcado, Início e Fim fixam extremos de forma independente (a duração da tela muda)"
+          >
+            <input
+              type="checkbox"
+              checked={marcarExtremosDuracaoLivre}
+              onChange={(e) => setMarcarExtremosDuracaoLivre(e.target.checked)}
+            />
+            <span>Marcar extremos</span>
+          </label>
+          <details className="tb-modal-trecho-video-original-recorte-ajuda-details">
+            <summary
+              className="tb-modal-trecho-video-original-recorte-ajuda-resumo"
+              aria-label="Como marcar o recorte"
+              title="Como marcar o recorte"
+            >
+              ?
+            </summary>
+            <p className="tb-modal-trecho-video-original-recorte-ajuda">
+              {marcarExtremosDuracaoLivre
+                ? "Marcar extremos: início e fim no tempo atual de forma independente — a duração da tela muda e a faixa sob o progresso acompanha. Sobreposição com vizinhas só avisa. Não altera a duração da cue na timeline narrada."
+                : "Duração fixa: marque início ou fim no tempo atual — o outro extremo acompanha mantendo a duração desta janela. Sobreposição com vizinhas só avisa — não bloqueia. Não altera a duração da cue na timeline narrada."}
+            </p>
+          </details>
+        </div>
+        <label className="tb-modal-trecho-video-original-recorte-audio tb-modal-trecho-video-original-recorte-audio--direita">
+          <span className="tb-modal-trecho-video-original-recorte-divisor" aria-hidden="true" />
+          <input
+            type="checkbox"
+            checked={audioOriginalAtivo}
+            onChange={(e) => setAudioOriginalAtivo(e.target.checked)}
+          />
+          <span>Áudio da origem</span>
+          <span className="tb-modal-trecho-video-original-recorte-divisor" aria-hidden="true" />
+        </label>
+      </div>
+    ) : (
+      <div className="tb-modal-trecho-video-original-recorte-barra">
+        <label className="tb-modal-trecho-video-original-recorte-audio tb-modal-trecho-video-original-recorte-audio--direita">
+          <span className="tb-modal-trecho-video-original-recorte-divisor" aria-hidden="true" />
+          <input
+            type="checkbox"
+            checked={audioOriginalAtivo}
+            onChange={(e) => setAudioOriginalAtivo(e.target.checked)}
+          />
+          <span>Áudio da origem</span>
+          <span className="tb-modal-trecho-video-original-recorte-divisor" aria-hidden="true" />
+        </label>
+      </div>
+    );
 
   return createPortal(
+    <>
     <div
       className={
         "tb-modal-trecho-video-original-root" +
@@ -634,17 +841,9 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
         <header className="tb-modal-trecho-video-original-cabecalho">
           <div className="tb-modal-trecho-video-original-cabecalho-texto">
             <h2 id={tituloId} className="tb-modal-trecho-video-original-titulo">
-              Trecho no vídeo original — cue #{indiceAtivo + 1}
+              {tituloModal?.trim() ||
+                `Trecho na origem — cue #${indiceAtivo + 1}`}
             </h2>
-            <p className="tb-modal-trecho-video-original-sub">{subTimestamps}</p>
-            <label className="tb-modal-trecho-video-original-toggle-audio">
-              <input
-                type="checkbox"
-                checked={audioOriginalAtivo}
-                onChange={(e) => setAudioOriginalAtivo(e.target.checked)}
-              />
-              <span>Áudio do vídeo original</span>
-            </label>
           </div>
           <div className="tb-modal-trecho-video-original-cabecalho-acoes">
             <button
@@ -678,84 +877,22 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
               <ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers
                 jobId={jobId}
                 videoRef={videoRef}
+                urlVideoSrc={urlVideoSrc}
+                keyVideo={urlVideoSrc || `entrada-${jobId}`}
                 classNameVideo="tb-video tb-modal-trecho-video-original-video"
                 classNameEnvoltorio="tb-modal-trecho-video-original-player-envoltorio"
                 preloadVideo="metadata"
                 exibirBotaoTelaMaior={false}
                 exibirBotaoCapturarFrame={false}
                 faixaCuesTimeline={faixaJanelasTimeline}
-                indiceCueAtivaFaixaTimeline={indiceAtivo}
+                indiceCueAtivaFaixaTimeline={indiceAtivoNaFaixaOrigem}
                 aoClicarSegmentoFaixaCuesTimeline={aoClicarSegmentoFaixa}
                 forcarUiComoTocando={indiceTrechoTocando !== null}
+                conteudoExtraNaLinhaAcoesControles={conteudoRecorteNosControles}
               />
             </div>
-
-            {janelaAtiva && onAplicarJanelas ? (
-              <div className="tb-modal-trecho-video-original-recorte">
-                <p className="tb-modal-trecho-video-original-recorte-titulo">
-                  Recorte da cue #{indiceAtivo + 1}
-                  {cueAtivaSuja ? " · não aplicado" : ""}
-                </p>
-                <p className="tb-modal-trecho-video-original-recorte-tempos">
-                  {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(
-                    janelaAtiva.inicioVideoSegundos,
-                  )}
-                  {" – "}
-                  {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(
-                    janelaAtiva.fimVideoSegundos,
-                  )}
-                  {" · "}
-                  {formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers(
-                    Math.max(
-                      0,
-                      janelaAtiva.fimVideoSegundos - janelaAtiva.inicioVideoSegundos,
-                    ),
-                  ) || "—"}
-                </p>
-                <p className="tb-modal-trecho-video-original-recorte-ajuda">
-                  Marque início ou fim no tempo atual: o outro extremo acompanha mantendo a duração
-                  desta janela. Sobreposição com vizinhas só avisa — não bloqueia. Não altera a
-                  duração da cue na timeline narrada.
-                </p>
-                <div className="tb-modal-trecho-video-original-recorte-acoes">
-                  <button
-                    type="button"
-                    className="tb-modal-trecho-video-original-trecho-play"
-                    title="Início = tempo atual; fim = início + duração da janela"
-                    onClick={() => marcarPontoRecorte("inicio")}
-                  >
-                    Marcar início
-                  </button>
-                  <button
-                    type="button"
-                    className="tb-modal-trecho-video-original-trecho-play"
-                    title="Fim = tempo atual; início = fim − duração da janela"
-                    onClick={() => marcarPontoRecorte("fim")}
-                  >
-                    Marcar fim
-                  </button>
-                  <button
-                    type="button"
-                    className="tb-modal-trecho-video-original-trecho-play"
-                    disabled={!rascunhoSujo}
-                    title="Descarta o rascunho e volta às janelas do editor"
-                    onClick={descartarRecorteRascunho}
-                  >
-                    Descartar
-                  </button>
-                  <button
-                    type="button"
-                    className="tb-primary"
-                    title={
-                      rascunhoSujo
-                        ? "Leva os recortes para o editor e fecha esta modal (sem remontar o MP4)"
-                        : "Volta ao editor — nada mudou no rascunho"
-                    }
-                    onClick={usarRecortesNoEditorEFechar}
-                  >
-                    Usar no editor
-                  </button>
-                </div>
+            {erroRecorte || avisoRecorte || avisoAplicado ? (
+              <div className="tb-modal-trecho-video-original-recorte-mensagens">
                 {erroRecorte ? (
                   <p className="tb-modal-trecho-video-original-recorte-erro" role="alert">
                     {erroRecorte}
@@ -777,19 +914,31 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
 
           <aside
             className="tb-modal-trecho-video-original-col-trechos"
-            aria-label="Trechos no vídeo original"
+            aria-label="Trechos nesta origem de tela"
           >
             <p className="tb-modal-trecho-video-original-col-trechos-titulo">
-              Trechos ({janelasRascunho.length})
+              Nesta origem ({indicesMesmaOrigem.length}
+              {janelasRascunho.length !== indicesMesmaOrigem.length
+                ? ` de ${janelasRascunho.length}`
+                : ""}
+              )
             </p>
             <ul ref={listaTrechosRef} className="tb-modal-trecho-video-original-trechos-lista">
-              {janelasRascunho.map((j, i) => {
+              {indicesMesmaOrigem.map((i) => {
+                const j = janelasRascunho[i];
+                if (!j) return null;
                 const ativa = i === indiceAtivo;
                 const tocandoVideo =
                   indiceTrechoTocando === i && modoPlayAtivo === "video";
                 const tocandoNarracao =
                   indiceTrechoTocando === i && modoPlayAtivo === "narracao";
-                const podeNarracao = cueTemWavNarracaoDisponivelTranscribrothers(j);
+                const podeNarracao = Boolean(
+                  resolverUrlAudioNarracaoCueTrechoOriginalUiTranscribrothers(
+                    j,
+                    i,
+                    urlsAudioNarracaoPorIndice,
+                  ),
+                );
                 const ini = Math.max(0, j.inicioVideoSegundos);
                 const fim = Math.max(ini + 0.05, j.fimVideoSegundos);
                 const duracao = fim - ini;
@@ -842,8 +991,8 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
                           tocandoVideo
                             ? "Pausar este trecho"
                             : audioOriginalAtivo
-                              ? "Reproduzir trecho (com áudio do original)"
-                              : "Reproduzir trecho (vídeo sem áudio do original)"
+                              ? "Reproduzir trecho (com áudio da origem)"
+                              : "Reproduzir trecho (vídeo sem áudio da origem)"
                         }
                         onClick={(e) => {
                           e.stopPropagation();
@@ -865,7 +1014,7 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
                           !podeNarracao
                             ? j.semNarracao
                               ? "Cue sem narração"
-                              : "WAV de narração ainda não disponível"
+                              : "Gere a prévia/Regenerar no editor ou aguarde o WAV gravado"
                             : tocandoNarracao
                               ? "Pausar trecho com narração"
                               : "Tocar trecho de tela com a narração TTS (vídeo mudo)"
@@ -887,12 +1036,39 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
         </div>
 
         <footer className="tb-modal-trecho-video-original-rodape">
-          <button type="button" className="tb-primary" onClick={tentarFechar}>
+          {onAplicarJanelas ? (
+            <>
+              <button
+                type="button"
+                className="tb-modal-trecho-video-original-trecho-play"
+                disabled={!rascunhoSujo}
+                title="Descarta o rascunho e volta às janelas do editor"
+                onClick={descartarRecorteRascunho}
+              >
+                Descartar
+              </button>
+              <button
+                type="button"
+                className="tb-primary"
+                title={
+                  rascunhoSujo
+                    ? "Leva os recortes para o editor e fecha esta modal (sem remontar o MP4)"
+                    : "Volta ao editor — nada mudou no rascunho"
+                }
+                onClick={usarRecortesNoEditorEFechar}
+              >
+                Usar no editor
+              </button>
+            </>
+          ) : null}
+          <button type="button" className="tb-modal-trecho-video-original-trecho-play" onClick={tentarFechar}>
             Fechar
           </button>
         </footer>
       </div>
-    </div>,
+    </div>
+    {elementoDialogoConfirmacao}
+    </>,
     document.body,
   );
 }
