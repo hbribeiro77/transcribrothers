@@ -513,6 +513,11 @@ async def executar_atualizacao_narracao_a_partir_legendas_vtt_editadas_em_backgr
             "gerado_em": datetime.now(timezone.utc).isoformat(),
             "atualizacao_parcial": True,
         }
+        from transcribrothers_backend.modulo_salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers import (
+            marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers,
+        )
+
+        marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers(steps)
 
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_CONCLUIDO
         steps[CHAVE_STEPS_JSON_PIPELINE_VIDEO_NARRADO_DOCUMENTO_TRANSCRIBROTHERS] = {

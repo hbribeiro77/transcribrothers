@@ -403,6 +403,11 @@ def tornar_versao_video_narrado_atual_transcribrothers(
         "restaurado_de_versao": versao_id,
         "gerado_em": datetime.now(timezone.utc).isoformat(),
     }
+    from transcribrothers_backend.modulo_salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers import (
+        marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers,
+    )
+
+    marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers(steps_novo)
     if vtt_src.is_file():
         url_vtt = (
             f"/api/jobs/{job_id}/assets/{NOME_ARQUIVO_LEGENDAS_DOCUMENTO_ALINHADAS_VTT_TRANSCRIBROTHERS}"

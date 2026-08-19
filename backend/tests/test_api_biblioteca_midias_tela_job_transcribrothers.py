@@ -60,6 +60,8 @@ def test_api_biblioteca_midias_tela_listar_upload_servir_e_apagar(tmp_path: Path
         assert id_midia.startswith("m")
         assert item["nome_original"] == "demo_extra.mp4"
         assert item["eh_entrada"] is False
+        # Bytes inválidos: ffprobe falha e duração fica ausente (não quebra o upload).
+        assert item.get("duracao_segundos") in (None, 0)
 
         lista = client.get(f"/api/jobs/{job_id}/biblioteca-midias-tela")
         assert lista.status_code == 200

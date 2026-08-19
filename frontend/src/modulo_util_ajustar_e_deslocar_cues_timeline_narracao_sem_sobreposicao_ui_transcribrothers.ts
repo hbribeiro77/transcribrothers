@@ -2,8 +2,8 @@ import type { CueWebVttParaListaUiTranscribrothers } from "./modulo_util_parsear
 
 export const DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS = 0.25;
 export const DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS = 0.15;
-/** Mostra «Ajustar ao áudio» quando a fala ocupa menos que esta fração do slot. */
-export const FRACAO_OCUPACAO_MAXIMA_PARA_AJUSTAR_CUE_AO_AUDIO_TRANSCRIBROTHERS = 0.95;
+/** Mostra «Ajustar ao áudio» quando |duração slot − áudio| passa deste limiar. */
+export const DELTA_MIN_DISCREPANCIA_CUE_VS_AUDIO_SEGUNDOS_TRANSCRIBROTHERS = 0.2;
 /** Mostra «Ajustar à tela» quando |duração slot − janela de tela| passa deste limiar. */
 export const DELTA_MIN_DISCREPANCIA_CUE_VS_JANELA_TELA_SEGUNDOS_TRANSCRIBROTHERS = 0.2;
 
@@ -17,7 +17,10 @@ function clonarCuesTimelineUiTranscribrothers(
   return cues.map((c) => ({ ...c }));
 }
 
-/** Encolhe o fim da cue para `início + duraçãoAudio`, abrindo folga à direita. */
+/**
+ * Ajusta o fim da cue para `início + duraçãoAudio`.
+ * Encolher abre folga; esticar empurra as cues seguintes (preserva folgas que já existiam).
+ */
 export function ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(
   cues: CueWebVttParaListaUiTranscribrothers[],
   indice: number,
@@ -43,20 +46,34 @@ export function ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(
   }
 
   const novoFim = inicio + duracaoAudioSegundos;
-  if (novoFim >= fimAtual - 0.02) {
-    return { ok: false, motivo: "O áudio já preenche (ou quase) todo o slot desta cue." };
+  if (Math.abs(novoFim - fimAtual) < DELTA_MIN_DISCREPANCIA_CUE_VS_AUDIO_SEGUNDOS_TRANSCRIBROTHERS) {
+    return { ok: false, motivo: "A duração da cue já está alinhada ao áudio." };
   }
   if (novoFim - inicio < DURACAO_MINIMA_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS) {
     return { ok: false, motivo: "A duração do áudio é curta demais para a cue." };
   }
 
-  const proxima = cues[indice + 1];
-  if (proxima && novoFim > proxima.inicioSegundos + 1e-6) {
-    return { ok: false, motivo: "O ajuste ultrapassaria o início da cue seguinte." };
-  }
-
   const copia = clonarCuesTimelineUiTranscribrothers(cues);
   copia[indice] = { ...copia[indice], fimSegundos: novoFim };
+
+  if (novoFim > fimAtual + 1e-9) {
+    let pisoInicio = novoFim;
+    for (let i = indice + 1; i < copia.length; i += 1) {
+      const atual = copia[i];
+      if (atual.inicioSegundos < pisoInicio - 1e-9) {
+        const shift = pisoInicio - atual.inicioSegundos;
+        for (let j = i; j < copia.length; j += 1) {
+          copia[j] = {
+            ...copia[j],
+            inicioSegundos: copia[j].inicioSegundos + shift,
+            fimSegundos: copia[j].fimSegundos + shift,
+          };
+        }
+      }
+      pisoInicio = copia[i].fimSegundos;
+    }
+  }
+
   return { ok: true, cues: copia, deslocouSegundos: novoFim - fimAtual };
 }
 
@@ -257,8 +274,8 @@ export function cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(
   }
   if (!(duracaoCueSegundos > 0)) return false;
   return (
-    duracaoAudioSegundos / duracaoCueSegundos <
-    FRACAO_OCUPACAO_MAXIMA_PARA_AJUSTAR_CUE_AO_AUDIO_TRANSCRIBROTHERS
+    Math.abs(duracaoAudioSegundos - duracaoCueSegundos) >
+    DELTA_MIN_DISCREPANCIA_CUE_VS_AUDIO_SEGUNDOS_TRANSCRIBROTHERS
   );
 }
 

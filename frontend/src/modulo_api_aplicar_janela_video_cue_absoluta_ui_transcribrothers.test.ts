@@ -4,6 +4,7 @@ import {
   avisarSobreposicaoSomenteCuesAlteradasUiTranscribrothers,
   deslizarJanelaVideoCuePeloPontoUiTranscribrothers,
   marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers,
+  validarEstruturaBasicaJanelasVideoNaUiTranscribrothers,
   type JanelaVideoCueLocalUiTranscribrothers,
 } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 
@@ -164,6 +165,33 @@ describe("marcarExtremoJanelaVideoCuePeloPontoUiTranscribrothers", () => {
       expect(r.janelas[1].fimVideoSegundos).toBe(8);
       expect(r.avisoSobreposicao).toMatch(/sobrepõ/i);
     }
+  });
+});
+
+describe("validarEstruturaBasicaJanelasVideoNaUiTranscribrothers", () => {
+  it("permite sobreposição entre vizinhas (montagem é por segmento independente)", () => {
+    expect(
+      validarEstruturaBasicaJanelasVideoNaUiTranscribrothers([
+        { inicio_video_segundos: 0, fim_video_segundos: 10 },
+        { inicio_video_segundos: 5, fim_video_segundos: 15 },
+      ]),
+    ).toBeNull();
+  });
+
+  it("rejeita fim menor ou igual ao início", () => {
+    expect(
+      validarEstruturaBasicaJanelasVideoNaUiTranscribrothers([
+        { inicio_video_segundos: 2, fim_video_segundos: 2.02 },
+      ]),
+    ).toMatch(/fim da janela/i);
+  });
+
+  it("rejeita tempos negativos", () => {
+    expect(
+      validarEstruturaBasicaJanelasVideoNaUiTranscribrothers([
+        { inicio_video_segundos: -1, fim_video_segundos: 2 },
+      ]),
+    ).toMatch(/negativ/i);
   });
 });
 

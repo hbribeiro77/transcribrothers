@@ -21,7 +21,11 @@ export type PropsComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribroth
   jobId: string;
   idFonteAtual?: string | null;
   onFechar: () => void;
-  onEscolherFonte: (idFonteVideo: string, rotulo: string) => void;
+  onEscolherFonte: (
+    idFonteVideo: string,
+    rotulo: string,
+    opcoes?: { duracaoSegundos?: number | null },
+  ) => void;
 };
 
 function rotuloItemTranscribrothers(item: ItemBibliotecaMidiaTelaApiTranscribrothers): string {
@@ -280,7 +284,9 @@ export function ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothe
                     file,
                   );
                   await recarregar();
-                  onEscolherFonte(item.id, rotuloItemTranscribrothers(item));
+                  onEscolherFonte(item.id, rotuloItemTranscribrothers(item), {
+                    duracaoSegundos: item.duracao_segundos,
+                  });
                 } catch (err: unknown) {
                   setErro(err instanceof Error ? err.message : String(err));
                 } finally {
@@ -332,7 +338,11 @@ export function ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothe
                     type="button"
                     className="tb-modal-escolher-fonte-midia-tela-card-corpo"
                     title="Usar esta mídia e abrir o recorte"
-                    onClick={() => onEscolherFonte(item.id, rotulo)}
+                    onClick={() =>
+                      onEscolherFonte(item.id, rotulo, {
+                        duracaoSegundos: item.duracao_segundos,
+                      })
+                    }
                   >
                     <div className="tb-modal-escolher-fonte-midia-tela-thumb">
                       <MiniaturaVideoFonteMidiaTelaBibliotecaTranscribrothers
@@ -386,7 +396,11 @@ export function ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothe
                       type="button"
                       className="tb-btn tb-modal-escolher-fonte-midia-tela-btn-acao"
                       title="Usar esta mídia e abrir o recorte"
-                      onClick={() => onEscolherFonte(item.id, rotulo)}
+                      onClick={() =>
+                        onEscolherFonte(item.id, rotulo, {
+                          duracaoSegundos: item.duracao_segundos,
+                        })
+                      }
                     >
                       Usar
                     </button>

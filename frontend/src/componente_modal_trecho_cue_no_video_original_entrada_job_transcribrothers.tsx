@@ -17,6 +17,7 @@ import {
   resolverUrlAudioNarracaoCueTrechoOriginalUiTranscribrothers,
 } from "./modulo_util_resolver_url_audio_narracao_cue_trecho_original_ui_transcribrothers.ts";
 import { normalizarIdFonteVideoUiTranscribrothers } from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
+import { clampJanelaVideoCueDentroDaDuracaoFonteUiTranscribrothers } from "./modulo_util_clamp_janela_video_cue_dentro_da_duracao_fonte_ui_transcribrothers.ts";
 import "./estilos_css_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.css";
 import "./estilos_css_modal_trecho_cue_no_video_original_entrada_job_transcribrothers.css";
 import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
@@ -228,6 +229,74 @@ export function ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrother
     if (!aberto) return;
     setJanelasRascunho(clonarJanelasTranscribrothers(janelas));
   }, [aberto, janelas]);
+
+  // Tempos herdados de outra origem (ex.: 6min num vídeo de 12s): corrige ao carregar metadados.
+  useEffect(() => {
+    if (!aberto) return;
+    let cancelado = false;
+    let videoAnexado: HTMLVideoElement | null = null;
+
+    const aplicarClampSeFora = () => {
+      if (cancelado) return;
+      const video = videoAnexado || videoRef.current;
+      if (!video) return;
+      const dur = Number(video.duration);
+      if (!(dur > 0) || !Number.isFinite(dur)) return;
+      const indice = indiceAtivoRef.current;
+      setJanelasRascunho((prev) => {
+        const j = prev[indice];
+        if (!j) return prev;
+        const r = clampJanelaVideoCueDentroDaDuracaoFonteUiTranscribrothers(
+          j.inicioVideoSegundos,
+          j.fimVideoSegundos,
+          dur,
+        );
+        if (!r.alterou) return prev;
+        const next = [...prev];
+        next[indice] = {
+          ...j,
+          inicioVideoSegundos: r.inicioVideoSegundos,
+          fimVideoSegundos: r.fimVideoSegundos,
+          janelaProvisoria: true,
+        };
+        return next;
+      });
+      try {
+        if ((video.currentTime || 0) >= dur) {
+          video.currentTime = 0;
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const aoMeta = () => aplicarClampSeFora();
+
+    let idRaf = 0;
+    const anexar = () => {
+      if (cancelado) return;
+      const video = videoRef.current;
+      if (!video) {
+        idRaf = window.requestAnimationFrame(anexar);
+        return;
+      }
+      videoAnexado = video;
+      if (video.readyState >= 1) {
+        aplicarClampSeFora();
+      } else {
+        video.addEventListener("loadedmetadata", aoMeta);
+      }
+    };
+    idRaf = window.requestAnimationFrame(anexar);
+
+    return () => {
+      cancelado = true;
+      window.cancelAnimationFrame(idRaf);
+      if (videoAnexado) {
+        videoAnexado.removeEventListener("loadedmetadata", aoMeta);
+      }
+    };
+  }, [aberto, urlVideoSrc, idFonteEscopo, indiceCueInicial]);
 
   useEffect(() => {
     if (!aberto) return;

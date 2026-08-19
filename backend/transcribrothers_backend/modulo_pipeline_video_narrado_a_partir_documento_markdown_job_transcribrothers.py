@@ -691,6 +691,11 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             "quantidade_segmentos": len(segmentos),
             "gerado_em": datetime.now(timezone.utc).isoformat(),
         }
+        from transcribrothers_backend.modulo_salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers import (
+            marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers,
+        )
+
+        marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers(steps)
 
         fechar_etapa_atual_pipeline_tempos_video_narrado_transcribrothers(steps)
         steps["pipeline_fase"] = FASE_VIDEO_NARRADO_CONCLUIDO

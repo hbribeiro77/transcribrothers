@@ -306,6 +306,7 @@ body[data-tb-pagina-video-narrado-aberta] {
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
   position: relative;
+  flex-wrap: wrap;
 }
 
 .tb-modal-assistir-video-narrado-col-titulo {
@@ -339,6 +340,17 @@ body[data-tb-pagina-video-narrado-aberta] {
 .tb-modal-assistir-video-narrado-adicionar-cue:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.tb-modal-assistir-video-narrado-adicionar-separador {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.tb-modal-assistir-video-narrado-adicionar-separador:hover:not(:disabled) {
+  background: #ede9fe;
+  border-color: #8b5cf6;
 }
 
 .tb-modal-assistir-video-narrado-ajuda-legendas {
@@ -586,6 +598,18 @@ body[data-tb-pagina-video-narrado-aberta] {
   color: #a16207;
   background: #fef9c3;
   border: 1px solid #fde047;
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  text-transform: lowercase;
+}
+
+.tb-modal-assistir-video-narrado-cue-badge-separador-secao {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #5b21b6;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
   border-radius: 4px;
   padding: 0.05rem 0.35rem;
   text-transform: lowercase;
@@ -1163,6 +1187,16 @@ body[data-tb-pagina-video-narrado-aberta] {
   border-radius: 999px;
   background: #2563eb;
   flex-shrink: 0;
+}
+
+.tb-modal-assistir-video-narrado-btn-salvar-projeto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-modal-assistir-video-narrado-btn-salvar-projeto--sujo:not(:disabled) {
+  font-weight: 600;
 }
 
 .tb-modal-video-narrado-menu-acoes-lista {

@@ -7,6 +7,9 @@ import type { CueWebVttParaListaUiTranscribrothers } from "./modulo_util_parsear
 
 /** Duração do slot (timeline narrada) e da janela provisória no vídeo de entrada. */
 export const DURACAO_CUE_NOVA_PROVISORIA_SEGUNDOS_TRANSCRIBROTHERS = 2.5;
+/** Slot padrão do intercalário entre funcionalidades (vinheta / cartão de seção). */
+export const DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS = 3.5;
+export const TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS = "Nova funcionalidade";
 
 export type CueTimelineComIdClienteUiTranscribrothers = CueWebVttParaListaUiTranscribrothers & {
   /** Id estável para Sortable (@dnd-kit); não vai no VTT/API. */
@@ -187,6 +190,12 @@ export function inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers(opts: {
   duracaoVideoEntradaSegundos?: number | null;
   vozPadrao?: string;
   duracaoProvisoriaSegundos?: number;
+  /** Texto inicial da cue (vazio = cue em branco). */
+  textoCue?: string;
+  /** Se true, a cue nasce sem TTS (só vídeo / silêncio no export). */
+  semNarracao?: boolean;
+  /** Marca visual/UX de intercalário entre funcionalidades. */
+  ehSeparadorSecao?: boolean;
 }): ResultadoInserirCueTimelineNarracaoUiTranscribrothers {
   const dur =
     opts.duracaoProvisoriaSegundos ?? DURACAO_CUE_NOVA_PROVISORIA_SEGUNDOS_TRANSCRIBROTHERS;
@@ -215,7 +224,7 @@ export function inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers(opts: {
     idCliente: gerarIdClienteCueTimelineNarracaoUiTranscribrothers(),
     inicioSegundos: 0,
     fimSegundos: dur,
-    texto: "",
+    texto: typeof opts.textoCue === "string" ? opts.textoCue : "",
     textoTts: "",
   };
   const novaJanela = montarJanelaProvisoriaAncoradaNoVizinhoTranscribrothers({
@@ -224,6 +233,12 @@ export function inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers(opts: {
     duracaoVideoEntradaSegundos: opts.duracaoVideoEntradaSegundos ?? null,
     vozPadrao: opts.vozPadrao || "Kore",
   });
+  if (opts.semNarracao) {
+    novaJanela.semNarracao = true;
+  }
+  if (opts.ehSeparadorSecao) {
+    novaJanela.ehSeparadorSecao = true;
+  }
 
   cues.splice(indiceInserido, 0, novaCue);
   janelas.splice(indiceInserido, 0, novaJanela);
@@ -233,6 +248,35 @@ export function inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers(opts: {
     janelas,
     indiceInserido,
   };
+}
+
+/**
+ * Intercalário entre funcionalidades: cue curta sem narração + badge de separador.
+ * O usuário escolhe a mídia da vinheta em «Fonte» e pode editar o título na legenda.
+ */
+export function inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers(opts: {
+  cues: CueTimelineComIdClienteUiTranscribrothers[];
+  janelas: JanelaVideoCueLocalUiTranscribrothers[];
+  indiceSelecionado: number | null;
+  duracaoVideoEntradaSegundos?: number | null;
+  vozPadrao?: string;
+  tituloSecao?: string;
+  duracaoSegundos?: number;
+}): ResultadoInserirCueTimelineNarracaoUiTranscribrothers {
+  const titulo =
+    (opts.tituloSecao || "").trim() || TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS;
+  return inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers({
+    cues: opts.cues,
+    janelas: opts.janelas,
+    indiceSelecionado: opts.indiceSelecionado,
+    duracaoVideoEntradaSegundos: opts.duracaoVideoEntradaSegundos,
+    vozPadrao: opts.vozPadrao,
+    duracaoProvisoriaSegundos:
+      opts.duracaoSegundos ?? DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+    textoCue: titulo,
+    semNarracao: true,
+    ehSeparadorSecao: true,
+  });
 }
 
 export function reordenarCuesEmpacotandoTimelineNarracaoUiTranscribrothers(opts: {

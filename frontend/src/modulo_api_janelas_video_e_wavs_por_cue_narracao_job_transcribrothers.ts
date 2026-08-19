@@ -78,7 +78,11 @@ export function urlWavNarracaoPorCueJobTranscribrothers(jobId: string, indice: n
 
 const FOLGA_MIN_JANELAS_UI = 0.05;
 
-export function validarJanelasVideoSemSobreposicaoNaUiTranscribrothers(
+/**
+ * Valida só o que impede montar/salvar: início &lt; fim e tempos não negativos.
+ * Sobreposição entre vizinhas na origem é permitida — o MP4 é montado por segmento.
+ */
+export function validarEstruturaBasicaJanelasVideoNaUiTranscribrothers(
   janelas: { inicio_video_segundos: number; fim_video_segundos: number }[],
 ): string | null {
   for (let i = 0; i < janelas.length; i++) {
@@ -89,11 +93,21 @@ export function validarJanelasVideoSemSobreposicaoNaUiTranscribrothers(
     if (a.inicio_video_segundos < 0 || a.fim_video_segundos < 0) {
       return `Cue ${i + 1}: tempos não podem ser negativos.`;
     }
-    if (i > 0) {
-      const prev = janelas[i - 1];
-      if (a.inicio_video_segundos + 1e-9 < prev.fim_video_segundos + FOLGA_MIN_JANELAS_UI) {
-        return `Cue ${i + 1} sobrepõe a cue ${i}. Ajuste o início ou o fim da vizinha.`;
-      }
+  }
+  return null;
+}
+
+/** @deprecated Preferir validarEstruturaBasica + aviso opcional; ainda usada em avisos do Origem. */
+export function validarJanelasVideoSemSobreposicaoNaUiTranscribrothers(
+  janelas: { inicio_video_segundos: number; fim_video_segundos: number }[],
+): string | null {
+  const erroEstrutura = validarEstruturaBasicaJanelasVideoNaUiTranscribrothers(janelas);
+  if (erroEstrutura) return erroEstrutura;
+  for (let i = 1; i < janelas.length; i++) {
+    const a = janelas[i];
+    const prev = janelas[i - 1];
+    if (a.inicio_video_segundos + 1e-9 < prev.fim_video_segundos + FOLGA_MIN_JANELAS_UI) {
+      return `Cue ${i + 1} sobrepõe a cue ${i}. Ajuste o início ou o fim da vizinha.`;
     }
   }
   return null;
@@ -172,6 +186,11 @@ export type JanelaVideoCueLocalUiTranscribrothers = {
   forcarRegenerarTts?: boolean;
   /** Cue adicionada na UI ainda sem trecho escolhido no Original. */
   janelaProvisoria?: boolean;
+  /**
+   * Intercalário entre funcionalidades (vinheta / cartão de seção).
+   * Só UX no editor; o export trata como cue normal (em geral sem narração).
+   */
+  ehSeparadorSecao?: boolean;
   /**
    * Fonte de tela: vazio/`entrada` = vídeo de entrada; senão id da biblioteca.
    */

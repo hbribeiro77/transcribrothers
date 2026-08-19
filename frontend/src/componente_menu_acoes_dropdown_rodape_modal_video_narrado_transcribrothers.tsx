@@ -119,38 +119,3 @@ export function ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothe
     </div>
   );
 }
-
-export type AcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers = {
-  rotulo: string;
-  desabilitado: boolean;
-  onClick: () => void;
-  titulo?: string;
-};
-
-/** Botão primário só quando há algo para salvar (texto ou tempos). Aplicar fica no menu. */
-export function resolverAcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers(opts: {
-  podeSalvarLegendas: boolean;
-  podeSalvarTempos: boolean;
-  salvandoLegendas: boolean;
-  salvandoJanelas: boolean;
-  onSalvarLegendas: () => void;
-  onSalvarTempos: () => void;
-}): AcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers | null {
-  if (opts.podeSalvarLegendas || opts.salvandoLegendas) {
-    return {
-      rotulo: opts.salvandoLegendas ? "Salvando…" : "Salvar legendas",
-      desabilitado: !opts.podeSalvarLegendas,
-      onClick: opts.onSalvarLegendas,
-      titulo: "Grava o texto das legendas no VTT (não altera o áudio).",
-    };
-  }
-  if (opts.podeSalvarTempos || opts.salvandoJanelas) {
-    return {
-      rotulo: opts.salvandoJanelas ? "Salvando…" : "Salvar tempos",
-      desabilitado: !opts.podeSalvarTempos,
-      onClick: opts.onSalvarTempos,
-      titulo: "Grava os tempos de tela no manifesto (sem remux).",
-    };
-  }
-  return null;
-}

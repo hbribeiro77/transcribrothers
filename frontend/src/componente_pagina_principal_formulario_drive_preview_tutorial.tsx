@@ -7534,6 +7534,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           urlVideoMp4={urlDownloadVideoComNarracaoTts}
           urlLegendasVtt={urlAssetLegendasVttAlinhadas}
           urlNarracaoWav={urlAssetNarracaoTtsDocumento}
+          stepsJsonJob={
+            (job?.steps_json as Record<string, unknown> | null | undefined) ?? null
+          }
           litellmModelTts={modeloTtsPreferidoUi}
           modelosLitellmDisponiveis={modelosParaSelectLiteLLM}
           onModeloTtsPreferidoAlterado={(m) => setModeloTtsPreferidoSalvo(m)}

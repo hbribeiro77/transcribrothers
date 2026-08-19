@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { JanelaVideoCueLocalUiTranscribrothers } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 import {
   DURACAO_CUE_NOVA_PROVISORIA_SEGUNDOS_TRANSCRIBROTHERS,
+  DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+  TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS,
   alinharJanelasAoNumeroDeCuesTimelineNarracaoUiTranscribrothers,
   garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers,
   inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers,
+  inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers,
   remaparRecordPorIndiceAposInserirUiTranscribrothers,
   remaparRecordPorIndiceAposReordenarUiTranscribrothers,
   reordenarCuesEmpacotandoTimelineNarracaoUiTranscribrothers,
@@ -78,6 +81,39 @@ describe("inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers", () => {
       DURACAO_CUE_NOVA_PROVISORIA_SEGUNDOS_TRANSCRIBROTHERS,
     );
     expect(r.janelas[0].janelaProvisoria).toBe(true);
+  });
+});
+
+describe("inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers", () => {
+  it("insere intercalário sem narração, com título e duração de separador", () => {
+    const cues = cuesDuas();
+    const janelas = [janelaBase(10, 12), janelaBase(20, 25)];
+    const r = inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers({
+      cues,
+      janelas,
+      indiceSelecionado: 0,
+      tituloSecao: "Cadastro de pastas",
+    });
+    expect(r.indiceInserido).toBe(1);
+    expect(r.cues[1].texto).toBe("Cadastro de pastas");
+    expect(r.cues[1].fimSegundos - r.cues[1].inicioSegundos).toBeCloseTo(
+      DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+    );
+    expect(r.janelas[1].semNarracao).toBe(true);
+    expect(r.janelas[1].ehSeparadorSecao).toBe(true);
+    expect(r.janelas[1].janelaProvisoria).toBe(true);
+    expect(r.cues[2].texto).toBe("b");
+  });
+
+  it("usa título padrão quando vazio", () => {
+    const r = inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers({
+      cues: [],
+      janelas: [],
+      indiceSelecionado: null,
+      tituloSecao: "   ",
+    });
+    expect(r.cues[0].texto).toBe(TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS);
+    expect(r.janelas[0].ehSeparadorSecao).toBe(true);
   });
 });
 

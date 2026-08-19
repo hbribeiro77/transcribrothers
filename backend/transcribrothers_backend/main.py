@@ -234,6 +234,12 @@ from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_tra
     listar_itens_biblioteca_midias_tela_do_work_transcribrothers,
     resolver_caminho_arquivo_biblioteca_midias_tela_por_id_transcribrothers,
 )
+from transcribrothers_backend.modulo_ffmpeg_gerar_mp4_cartao_secao_titulo_fade_vinheta_transcribrothers import (
+    DURACAO_PADRAO_CARTAO_SECAO_SEGUNDOS,
+    FADE_PADRAO_CARTAO_SECAO_SEGUNDOS,
+    SUBTITULO_PADRAO_CARTAO_SECAO,
+    gerar_mp4_cartao_secao_titulo_com_fade_via_ffmpeg_transcribrothers,
+)
 from transcribrothers_backend.modulo_debug_cache_segmentos_video_narrado_job_transcribrothers import (
     montar_payload_debug_cache_segmentos_video_narrado_job_transcribrothers,
 )
@@ -303,6 +309,9 @@ from transcribrothers_backend.modulo_sugerir_reescrita_texto_cue_narracao_via_li
 from transcribrothers_backend.modulo_api_salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers import (
     ErroValidacaoLegendasDocumentoAlinhadasEditadasTranscribrothers,
     salvar_legendas_documento_alinhadas_vtt_editadas_no_job_transcribrothers,
+)
+from transcribrothers_backend.modulo_salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers import (
+    salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers,
 )
 from transcribrothers_backend.modulo_ffmpeg_extrair_audio_e_capturar_frames_por_timestamps import (
     ErroFfmpegTranscribrothers,
@@ -1042,6 +1051,23 @@ class CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers(BaseModel):
 
 class CorpoSalvarLegendasDocumentoAlinhadasVttEditadasJobTranscribrothers(BaseModel):
     cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
+
+
+class CorpoSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers(BaseModel):
+    """Checkpoint do editor: VTT + manifesto (sem gerar MP4)."""
+
+    cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
+    janelas: list[JanelaVideoCueEditadaApiTranscribrothers]
+
+
+class RespostaSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers(BaseModel):
+    ok: bool = True
+    quantidade_cues: int
+    nome_arquivo_vtt: str
+    url_asset_vtt: str
+    wavs_remapeados: int = 0
+    previews_promovidas: int = 0
+    indices_previews_promovidas: list[int] = Field(default_factory=list)
 
 
 class CorpoGerarVideoComEdicoesDoModalNarradoTranscribrothers(BaseModel):
@@ -5178,6 +5204,11 @@ async def gerar_video_com_narracao_tts_substituindo_audio_do_job_transcribrother
             "url_download": url_download,
             "gerado_em": datetime.now(timezone.utc).isoformat(),
         }
+        from transcribrothers_backend.modulo_salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers import (
+            marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers,
+        )
+
+        marcar_audio_mp4_sincronizado_com_projeto_editor_apos_remux_transcribrothers(steps)
         row.steps_json = steps
         flag_modified(row, "steps_json")
         row.updated_at = datetime.now(timezone.utc)
@@ -5373,10 +5404,105 @@ async def enviar_video_para_biblioteca_midias_tela_do_job_transcribrothers(
         except OSError:
             pass
         raise
+    duracao_ffprobe = 0.0
+    try:
+        duracao_ffprobe = float(await obter_duracao_video_segundos_via_ffprobe(destino) or 0.0)
+    except Exception:
+        duracao_ffprobe = 0.0
     confirmado = confirmar_item_biblioteca_midias_tela_no_manifesto_transcribrothers(
         work=work,
         item=item,
         tamanho_bytes=bytes_gravados,
+        duracao_segundos=duracao_ffprobe if duracao_ffprobe > 0 else None,
+    )
+    return {
+        "ok": True,
+        "item": {**confirmado.para_dict(job_id=job_id), "eh_entrada": False},
+    }
+
+
+class CorpoGerarCartaoSecaoBibliotecaMidiasTelaTranscribrothers(BaseModel):
+    titulo: str = Field(default="Nova funcionalidade", max_length=200)
+    subtitulo: str | None = Field(default=None, max_length=120)
+    duracao_segundos: float = Field(
+        default=DURACAO_PADRAO_CARTAO_SECAO_SEGUNDOS, ge=0.8, le=30.0
+    )
+    fade_segundos: float = Field(
+        default=FADE_PADRAO_CARTAO_SECAO_SEGUNDOS, ge=0.05, le=2.0
+    )
+
+
+@app.post("/api/jobs/{job_id}/biblioteca-midias-tela/gerar-cartao-secao")
+async def gerar_cartao_secao_na_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    corpo: CorpoGerarCartaoSecaoBibliotecaMidiasTelaTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    """Gera vinheta/cartão de seção (título + fade) e adiciona à biblioteca do job."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    titulo = (corpo.titulo or "").strip() or "Nova funcionalidade"
+    subtitulo = corpo.subtitulo
+    if subtitulo is None:
+        subtitulo = SUBTITULO_PADRAO_CARTAO_SECAO
+    elif not str(subtitulo).strip():
+        subtitulo = None
+    else:
+        subtitulo = str(subtitulo).strip()
+
+    largura, altura = 1920, 1080
+    nome_original = f"cartao_secao_{(titulo[:40].strip() or 'secao')}.mp4"
+    nome_original = re.sub(r"[^\w.\-]+", "_", nome_original, flags=re.UNICODE)[:80]
+    if not nome_original.lower().endswith(".mp4"):
+        nome_original = f"{nome_original}.mp4"
+    item, destino = alocar_destino_novo_item_biblioteca_midias_tela_transcribrothers(
+        work=work,
+        nome_original=nome_original,
+        extensao_com_ponto=".mp4",
+    )
+    try:
+        await gerar_mp4_cartao_secao_titulo_com_fade_via_ffmpeg_transcribrothers(
+            caminho_saida=destino,
+            titulo=titulo,
+            subtitulo=subtitulo,
+            duracao_segundos=float(corpo.duracao_segundos),
+            fade_segundos=float(corpo.fade_segundos),
+            largura=largura,
+            altura=altura,
+        )
+    except ErroFfmpegTranscribrothers as e:
+        try:
+            if destino.is_file():
+                destino.unlink()
+        except OSError:
+            pass
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        try:
+            if destino.is_file():
+                destino.unlink()
+        except OSError:
+            pass
+        raise
+
+    try:
+        tamanho = destino.stat().st_size
+    except OSError:
+        tamanho = 0
+    duracao_ffprobe = 0.0
+    try:
+        duracao_ffprobe = float(await obter_duracao_video_segundos_via_ffprobe(destino) or 0.0)
+    except Exception:
+        duracao_ffprobe = float(corpo.duracao_segundos)
+    confirmado = confirmar_item_biblioteca_midias_tela_no_manifesto_transcribrothers(
+        work=work,
+        item=item,
+        tamanho_bytes=tamanho,
+        duracao_segundos=duracao_ffprobe if duracao_ffprobe > 0 else float(corpo.duracao_segundos),
     )
     return {
         "ok": True,
@@ -6397,6 +6523,59 @@ async def sugerir_reescrita_cue_tts_pendente_timeout_experimental_api_transcribr
             if resultado.get("texto_original") is not None
             else None
         ),
+    )
+
+
+@app.put(
+    "/api/jobs/{job_id}/editor-video-narrado/salvar-projeto",
+    response_model=RespostaSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers,
+)
+async def salvar_projeto_editor_video_narrado_edicoes_modal_job_transcribrothers(
+    job_id: str,
+    body: CorpoSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers:
+    """Persiste legendas + tempos/fonte/sem narração/voz no disco, sem remux/TTS."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
+        steps = dict(row.steps_json or {})
+        voz_padrao = str(steps.get("pipeline_video_narrado_voz_tts") or "").strip()
+        try:
+            resultado = salvar_estado_editor_video_narrado_edicoes_modal_sem_gerar_mp4_transcribrothers(
+                job_id=job_id,
+                work=work,
+                diretorio_assets=assets,
+                steps_json=steps,
+                cues_brutas=[c.model_dump() for c in body.cues],
+                janelas_brutas=[j.model_dump() for j in body.janelas],
+                voz_padrao_job=voz_padrao or None,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except RuntimeError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except OSError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Não foi possível gravar o projeto no disco: {e}",
+            ) from e
+        row.steps_json = resultado.steps_json_atualizado
+        flag_modified(row, "steps_json")
+        row.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+    return RespostaSalvarProjetoEditorVideoNarradoEdicoesModalTranscribrothers(
+        ok=True,
+        quantidade_cues=resultado.quantidade_cues,
+        nome_arquivo_vtt=resultado.nome_arquivo_vtt,
+        url_asset_vtt=resultado.url_asset_vtt,
+        wavs_remapeados=resultado.wavs_remapeados,
+        previews_promovidas=resultado.previews_promovidas,
+        indices_previews_promovidas=list(resultado.indices_previews_promovidas),
     )
 
 

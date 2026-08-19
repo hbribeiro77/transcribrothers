@@ -57,6 +57,33 @@ export async function enviarVideoBibliotecaMidiasTelaJobApiTranscribrothers(
   return j.item;
 }
 
+export async function gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers(
+  jobId: string,
+  opts: {
+    titulo: string;
+    subtitulo?: string | null;
+    duracaoSegundos?: number;
+    fadeSegundos?: number;
+  },
+): Promise<ItemBibliotecaMidiaTelaApiTranscribrothers> {
+  const r = await fetch(
+    `/api/jobs/${encodeURIComponent(jobId)}/biblioteca-midias-tela/gerar-cartao-secao`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        titulo: opts.titulo,
+        subtitulo: opts.subtitulo === undefined ? undefined : opts.subtitulo,
+        duracao_segundos: opts.duracaoSegundos,
+        fade_segundos: opts.fadeSegundos,
+      }),
+    },
+  );
+  if (!r.ok) await _lerErroHttpApiTranscribrothers(r);
+  const j = (await r.json()) as { item: ItemBibliotecaMidiaTelaApiTranscribrothers };
+  return j.item;
+}
+
 export async function apagarItemBibliotecaMidiasTelaJobApiTranscribrothers(
   jobId: string,
   idMidia: string,

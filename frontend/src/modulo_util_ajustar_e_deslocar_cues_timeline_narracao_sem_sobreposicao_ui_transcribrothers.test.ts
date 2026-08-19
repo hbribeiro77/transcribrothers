@@ -25,8 +25,36 @@ describe("ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers", () => {
     expect(r.cues[1].inicioSegundos).toBe(3);
   });
 
-  it("recusa se o áudio já preenche o slot", () => {
-    const r = ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(cuesBase, 0, 2.99);
+  it("estica e empurra as cues seguintes encostadas", () => {
+    const r = ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(cuesBase, 0, 7);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.cues[0].inicioSegundos).toBe(0);
+    expect(r.cues[0].fimSegundos).toBeCloseTo(7);
+    expect(r.cues[1].inicioSegundos).toBeCloseTo(7);
+    expect(r.cues[1].fimSegundos).toBeCloseTo(10);
+    expect(r.cues[2].inicioSegundos).toBeCloseTo(10);
+    expect(r.cues[2].fimSegundos).toBeCloseTo(13);
+  });
+
+  it("ao esticar preserva folga que já existia entre vizinhas", () => {
+    const comFolga = [
+      { inicioSegundos: 0, fimSegundos: 3, texto: "a" },
+      { inicioSegundos: 5, fimSegundos: 8, texto: "b" },
+      { inicioSegundos: 10, fimSegundos: 13, texto: "c" },
+    ];
+    const r = ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(comFolga, 0, 7);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.cues[0].fimSegundos).toBeCloseTo(7);
+    expect(r.cues[1].inicioSegundos).toBeCloseTo(7);
+    expect(r.cues[1].fimSegundos).toBeCloseTo(10);
+    expect(r.cues[2].inicioSegundos).toBeCloseTo(12);
+    expect(r.cues[2].fimSegundos).toBeCloseTo(15);
+  });
+
+  it("recusa se a duração da cue já está alinhada ao áudio", () => {
+    const r = ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers(cuesBase, 0, 3.05);
     expect(r.ok).toBe(false);
   });
 });
@@ -154,9 +182,10 @@ describe("deslocarCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers", () 
 });
 
 describe("cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers", () => {
-  it("true quando a ocupação está abaixo do limiar", () => {
+  it("true quando a discrepância passa do limiar (encolher ou esticar)", () => {
     expect(cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(3, 1.5)).toBe(true);
-    expect(cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(3, 2.9)).toBe(false);
+    expect(cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(3, 7)).toBe(true);
+    expect(cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(3, 3.05)).toBe(false);
     expect(cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers(3, null)).toBe(false);
   });
 });

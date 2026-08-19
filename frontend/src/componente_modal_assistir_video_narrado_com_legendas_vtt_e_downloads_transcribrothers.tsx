@@ -4,11 +4,11 @@ import {
   cueVozDifereDaNarradaTranscribrothers,
   gerarPreviewTtsCueNarracaoTextoAtualJobApiTranscribrothers,
   listarJanelasVideoCuesNarracaoJobApiTranscribrothers,
-  salvarJanelasVideoCuesNarracaoJobApiTranscribrothers,
   textoEfetivoParaTtsCueUiTranscribrothers,
+  urlWavNarracaoPorCueJobTranscribrothers,
   type JanelaVideoCueLocalUiTranscribrothers,
   avisarSobreposicaoSomenteCuesAlteradasUiTranscribrothers,
-  validarJanelasVideoSemSobreposicaoNaUiTranscribrothers,
+  validarEstruturaBasicaJanelasVideoNaUiTranscribrothers,
 } from "./modulo_api_janelas_video_e_wavs_por_cue_narracao_job_transcribrothers.ts";
 import { baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers } from "./modulo_api_baixar_video_narrado_com_legendas_queimadas_job_transcribrothers.ts";
 import {
@@ -22,7 +22,6 @@ import {
   type MetaVersaoVideoNarradoApiTranscribrothers,
 } from "./modulo_api_listar_versoes_video_narrado_job_transcribrothers.ts";
 import { obterUrlAssetLegendasVttAlinhadasDosStepsJsonJobTranscribrothers } from "./modulo_api_pipeline_video_narrado_a_partir_documento_markdown_job_transcribrothers.ts";
-import { salvarLegendasDocumentoAlinhadasVttEditadasJobApiTranscribrothers } from "./modulo_api_salvar_legendas_documento_alinhadas_vtt_editadas_job_transcribrothers.ts";
 import { salvarModeloTtsNarracaoPreferidoNoNavegadorTranscribrothers } from "./modulo_armazenamento_local_modelo_tts_narracao_preferido_navegador_transcribrothers.ts";
 import {
   carregarTemperaturaTtsNarracaoPreferidaSalvaNoNavegadorTranscribrothers,
@@ -69,7 +68,10 @@ import {
 } from "./modulo_util_ajustar_e_deslocar_cues_timeline_narracao_sem_sobreposicao_ui_transcribrothers.ts";
 import {
   garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers,
+  DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+  TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS,
   inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers,
+  inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers,
   remaparRecordPorIndiceAposInserirUiTranscribrothers,
   remaparRecordPorIndiceAposReordenarUiTranscribrothers,
   resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers,
@@ -94,10 +96,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers,
-  resolverAcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers,
-} from "./componente_menu_acoes_dropdown_rodape_modal_video_narrado_transcribrothers.tsx";
+import { ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers } from "./componente_menu_acoes_dropdown_rodape_modal_video_narrado_transcribrothers.tsx";
+import { salvarProjetoEditorVideoNarradoEdicoesModalJobApiTranscribrothers } from "./modulo_api_salvar_projeto_editor_video_narrado_edicoes_modal_job_transcribrothers.ts";
 import {
   ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers,
   type SegmentoFaixaCuesTimelinePlayerVideoTranscribrothers,
@@ -106,14 +106,19 @@ import { ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothers } fro
 import { ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothers } from "./componente_modal_escolher_fonte_midia_tela_cue_biblioteca_transcribrothers.tsx";
 import {
   ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS,
+  gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers,
   normalizarIdFonteVideoUiTranscribrothers,
 } from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
+import { calcularJanelaVideoAposTrocaFonteMidiaTelaUiTranscribrothers } from "./modulo_util_calcular_janela_video_apos_troca_fonte_midia_tela_ui_transcribrothers.ts";
 import { CartaoCueSortableListaVideoNarradoTranscribrothers } from "./componente_cartao_cue_sortable_lista_video_narrado_transcribrothers.tsx";
 import { ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrothers } from "./componente_painel_debug_cache_segmentos_video_narrado_modal_transcribrothers.tsx";
 import { formatarDuracaoSegundosCurtaPortuguesUiTranscribrothers } from "./modulo_util_formatar_duracao_segundos_curta_portugues_ui_transcribrothers.ts";
 import { obterDuracaoSegundosArquivoAudioPorUrlNavegadorTranscribrothers } from "./modulo_util_obter_duracao_segundos_arquivo_audio_por_url_navegador_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
 import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
+import { audioMp4NarradoDesatualizadoEmRelacaoAoProjetoEditorDosStepsJsonTranscribrothers } from "./modulo_util_audio_mp4_narrado_desatualizado_em_relacao_ao_projeto_editor_steps_json_transcribrothers.ts";
+import { erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers } from "./modulo_util_erro_play_midia_foi_interrompido_por_pause_ou_abort_ui_transcribrothers.ts";
+import { previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers } from "./modulo_util_preview_recorte_aguardar_troca_src_fonte_cue_antes_do_play_ui_transcribrothers.ts";
 import "./estilos_css_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.css";
 import "./estilos_css_modal_assistir_video_narrado_com_legendas_vtt_e_downloads_transcribrothers.css";
 
@@ -187,6 +192,8 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
   urlVideoMp4: string;
   urlLegendasVtt: string | null;
   urlNarracaoWav: string | null;
+  /** Steps do job — detecta MP4 com áudio atrás dos WAVs após Salvar projeto. */
+  stepsJsonJob?: Record<string, unknown> | null;
   litellmModelTts?: string | null;
   /** Lista completa (chat + TTS); o select filtra só slugs com -tts. */
   modelosLitellmDisponiveis?: string[] | null;
@@ -375,6 +382,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   urlVideoMp4,
   urlLegendasVtt,
   urlNarracaoWav,
+  stepsJsonJob = null,
   litellmModelTts,
   modelosLitellmDisponiveis,
   onModeloTtsPreferidoAlterado,
@@ -443,6 +451,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     semNarracao: boolean;
   } | null>(null);
   const pedidoSeekNarradoAposSairPreviewRef = useRef<number | null>(null);
+  /** Coalesce de seek na barra (evita tempestade play/pause no arraste). */
+  const debounceScrubBarraTimeoutRef = useRef<number | null>(null);
+  const debounceScrubBarraTempoPendenteRef = useRef<number | null>(null);
   /** Cue escolhida no clique (destaque estável; evita “pular” para a próxima no limite fim==próximo início). */
   const [indiceCueSelecionadaSolo, setIndiceCueSelecionadaSolo] = useState<number | null>(null);
   /** Modal «Origem» (recorte na fonte de tela da cue; índice 0-based). */
@@ -515,8 +526,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const [indicesSugerindoReescritaLegenda, setIndicesSugerindoReescritaLegenda] = useState<
     Set<number>
   >(() => new Set());
-  const [salvandoLegendas, setSalvandoLegendas] = useState(false);
-  const [salvandoJanelas, setSalvandoJanelas] = useState(false);
+  const [salvandoProjeto, setSalvandoProjeto] = useState(false);
+  /** Após promover prévia no save, até o job/steps refletirem ou o MP4 ser regenerado. */
+  const [audioMp4DesatualizadoLocal, setAudioMp4DesatualizadoLocal] = useState(false);
   const [baixandoVideoComLegendasQueimadas, setBaixandoVideoComLegendasQueimadas] = useState(false);
   const [versaoCacheTrackVtt, setVersaoCacheTrackVtt] = useState(0);
   const [indiceAudioTocando, setIndiceAudioTocando] = useState<number | null>(null);
@@ -582,8 +594,29 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     () => janelasEstaoSujasTranscribrothers(janelas, janelasOriginais),
     [janelas, janelasOriginais],
   );
-  /** Exclusão, «sem narração», texto ou tempos: o áudio embutido do MP4 não vale mais no preview. */
-  const audioDoMp4NaoRefleteEdicoesLocais = sujas || temposCuesDeslocados || janelasSujas;
+  /** Exclusão, «sem narração», texto/tempos locais ou WAVs mais novos que o MP4. */
+  const audioMp4DesatualizadoNoJob = useMemo(
+    () =>
+      audioMp4NarradoDesatualizadoEmRelacaoAoProjetoEditorDosStepsJsonTranscribrothers(
+        stepsJsonJob,
+      ),
+    [stepsJsonJob],
+  );
+  useEffect(() => {
+    // Job/steps já sincronizados (ex.: após Gerar vídeo) — limpa override local.
+    if (
+      stepsJsonJob &&
+      stepsJsonJob.editor_video_narrado_audio_mp4_desatualizado === false
+    ) {
+      setAudioMp4DesatualizadoLocal(false);
+    }
+  }, [stepsJsonJob]);
+  const audioDoMp4NaoRefleteEdicoesLocais =
+    sujas ||
+    temposCuesDeslocados ||
+    janelasSujas ||
+    audioMp4DesatualizadoNoJob ||
+    audioMp4DesatualizadoLocal;
 
   const urlVideoEntradaJob = jobId
     ? urlVideoEntradaJobParaPreviewUiTranscribrothers(jobId)
@@ -600,6 +633,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     previewRecorteTelaAtivo && (jobTemVideoEntrada || Boolean(urlVideoFontePreviewAtiva))
       ? urlVideoFontePreviewAtiva || urlVideoEntradaJob
       : urlVideoMp4;
+  const urlVideoPlayerEfetivoRef = useRef(urlVideoPlayerEfetivo);
+  urlVideoPlayerEfetivoRef.current = urlVideoPlayerEfetivo;
 
   const duracaoTimelineNarradaParaBarraUi = useMemo(() => {
     let maxCue = 0;
@@ -848,10 +883,10 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   }, [aberto]);
 
   useEffect(() => {
-    if (regenerando || salvandoLegendas || salvandoJanelas) {
+    if (regenerando || salvandoProjeto) {
       setMenuRodapeAbertoId(null);
     }
-  }, [regenerando, salvandoLegendas, salvandoJanelas]);
+  }, [regenerando, salvandoProjeto]);
 
   useEffect(() => {
     if (!aberto) return;
@@ -859,7 +894,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       if (evento.key !== "Escape") return;
       // Modal do trecho original trata o Escape sozinha.
       if (indiceCueModalVideoOriginal !== null) return;
-      if (!regenerando && !salvandoLegendas && !salvandoJanelas) {
+      if (!regenerando && !salvandoProjeto) {
         onFechar();
       }
     };
@@ -869,8 +904,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     aberto,
     onFechar,
     regenerando,
-    salvandoLegendas,
-    salvandoJanelas,
+    salvandoProjeto,
     indiceCueModalVideoOriginal,
   ]);
 
@@ -883,8 +917,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       setErroCues(null);
       setCarregandoCues(false);
       setTempoAtualSegundos(0);
-      setSalvandoLegendas(false);
-      setSalvandoJanelas(false);
+      setSalvandoProjeto(false);
+      setAudioMp4DesatualizadoLocal(false);
+      if (debounceScrubBarraTimeoutRef.current != null) {
+        window.clearTimeout(debounceScrubBarraTimeoutRef.current);
+        debounceScrubBarraTimeoutRef.current = null;
+      }
+      debounceScrubBarraTempoPendenteRef.current = null;
       setIndicesFalaTtsExpandidos({});
       return;
     }
@@ -1275,6 +1314,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       void video.play().then(
         () => undefined,
         (e: unknown) => {
+          if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
           video.muted = false;
           setIndiceAudioTocando(null);
           indiceCueReproducaoSoloRef.current = null;
@@ -1319,6 +1359,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         aplicarOffsetAudio();
       },
       (e: unknown) => {
+        if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
         setIndiceAudioTocando(null);
         indiceCueReproducaoSoloRef.current = null;
         reproducaoContinuaPorWavRef.current = false;
@@ -1589,8 +1630,24 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
           semNarracao: Boolean(j.semNarracao) || !urlAudio,
         };
 
+        if (!jobId) {
+          definirPreviewRecorteTelaAtivoUi(true);
+          return true;
+        }
+        const urlFonteAlvo = urlVideoFonteTelaCueParaPreviewUiTranscribrothers(
+          jobId,
+          j.idFonteVideo,
+        );
+        const aguardarTrocaSrc = previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers({
+          previewRecorteAtivo: previewRecorteTelaAtivoRef.current,
+          urlVideoPlayerAtual: urlVideoPlayerEfetivoRef.current,
+          urlVideoFonteAlvo: urlFonteAlvo,
+        });
         if (previewRecorteTelaAtivoRef.current) {
-          executarPedidoPlayPreviewRecorteTelaUi();
+          if (!aguardarTrocaSrc) {
+            executarPedidoPlayPreviewRecorteTelaUi();
+          }
+          // Fonte diferente: mantém o pedido; o effect dispara após urlVideoPlayerEfetivo mudar.
         } else {
           definirPreviewRecorteTelaAtivoUi(true);
         }
@@ -1618,6 +1675,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         void video.play().then(
           () => undefined,
           (e: unknown) => {
+            if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
             video.muted = false;
             setIndiceAudioTocando(null);
             indiceCueReproducaoSoloRef.current = null;
@@ -1683,6 +1741,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             aplicarOffsetAudio();
           },
           (e: unknown) => {
+            if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
             setIndiceAudioTocando(null);
             indiceCueReproducaoSoloRef.current = null;
             reproducaoContinuaPorWavRef.current = false;
@@ -1721,6 +1780,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     [
       definirPreviewRecorteTelaAtivoUi,
       executarPedidoPlayPreviewRecorteTelaUi,
+      jobId,
       jobTemVideoEntrada,
       pushToast,
       resolverUrlAudioNarracaoDaCueParaPlaybackUi,
@@ -1819,6 +1879,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   /**
    * Seek na barra durante preview: tempo é da timeline narrada; por baixo mapeia
    * para a janela no vídeo original (+ offset do WAV).
+   * Arraste contínuo só faz seek na cue atual; troca de cue / play é debounced.
    */
   const aoAlterarTempoPelaBarraDurantePreviewRecorteUi = useCallback(
     (tempoTimelineSegundos: number) => {
@@ -1837,40 +1898,56 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
 
       const mesmoSoloTocando =
         soloAtual === indiceAlvo &&
-        (Boolean(audio && !audio.paused) || !video.paused || narracaoSegueAposJanelaPreviewRef.current);
+        (Boolean(audio && !audio.paused) ||
+          !video.paused ||
+          narracaoSegueAposJanelaPreviewRef.current);
 
-      if (!mesmoSoloTocando) {
-        tocarNarracaoWavDaCueNaPosicaoTimelineUi(indiceAlvo, {
-          continuo: false,
-          partirDoTempoTimelineSegundos: t,
-        });
-        return;
-      }
-
-      const tJanela = mapearTempoTimelineCueParaJanelaVideoOriginalPreviewUiTranscribrothers(
-        t,
-        cue.inicioSegundos,
-        cue.fimSegundos,
-        j.inicioVideoSegundos,
-        j.fimVideoSegundos,
-      );
-      try {
-        video.currentTime = tJanela;
-      } catch {
-        /* ignore */
-      }
-      if (audio && !j.semNarracao && audio.src) {
-        const offsetAudio = Math.max(0, t - cue.inicioSegundos);
+      if (mesmoSoloTocando) {
+        const tJanela = mapearTempoTimelineCueParaJanelaVideoOriginalPreviewUiTranscribrothers(
+          t,
+          cue.inicioSegundos,
+          cue.fimSegundos,
+          j.inicioVideoSegundos,
+          j.fimVideoSegundos,
+        );
         try {
-          if (Number.isFinite(audio.duration) && audio.duration > 0) {
-            audio.currentTime = Math.min(offsetAudio, Math.max(0, audio.duration - 0.05));
-          } else {
-            audio.currentTime = offsetAudio;
-          }
+          video.currentTime = tJanela;
         } catch {
           /* ignore */
         }
+        if (audio && !j.semNarracao && audio.src) {
+          const offsetAudio = Math.max(0, t - cue.inicioSegundos);
+          try {
+            if (Number.isFinite(audio.duration) && audio.duration > 0) {
+              audio.currentTime = Math.min(offsetAudio, Math.max(0, audio.duration - 0.05));
+            } else {
+              audio.currentTime = offsetAudio;
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        return;
       }
+
+      // Troca de cue no arraste: atualiza só o ponteiro visual e agenda um play no fim do gesto.
+      setIndiceCueSelecionadaSolo(indiceAlvo);
+      debounceScrubBarraTempoPendenteRef.current = t;
+      if (debounceScrubBarraTimeoutRef.current != null) {
+        window.clearTimeout(debounceScrubBarraTimeoutRef.current);
+      }
+      debounceScrubBarraTimeoutRef.current = window.setTimeout(() => {
+        debounceScrubBarraTimeoutRef.current = null;
+        const tFinal = debounceScrubBarraTempoPendenteRef.current;
+        debounceScrubBarraTempoPendenteRef.current = null;
+        if (tFinal == null) return;
+        const idx = indiceCueNoInstanteTimelineUiTranscribrothers(cuesRef.current, tFinal);
+        if (idx < 0) return;
+        tocarNarracaoWavDaCueNaPosicaoTimelineUi(idx, {
+          continuo: false,
+          partirDoTempoTimelineSegundos: tFinal,
+        });
+      }, 140);
     },
     [tocarNarracaoWavDaCueNaPosicaoTimelineUi],
   );
@@ -1899,12 +1976,23 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       const alemDoMp4 = durMp4 > 0 && t > durMp4 - 0.02;
       if (audioDoMp4NaoRefleteEdicoesLocais || alemDoMp4) {
         const indice = indiceCueNoInstanteTimelineUiTranscribrothers(cuesRef.current, t);
-        if (indice >= 0) {
-          tocarNarracaoWavDaCueNaPosicaoTimelineUi(indice, {
-            continuo: false,
-            partirDoTempoTimelineSegundos: t,
-          });
+        if (indice < 0) return;
+        debounceScrubBarraTempoPendenteRef.current = t;
+        if (debounceScrubBarraTimeoutRef.current != null) {
+          window.clearTimeout(debounceScrubBarraTimeoutRef.current);
         }
+        debounceScrubBarraTimeoutRef.current = window.setTimeout(() => {
+          debounceScrubBarraTimeoutRef.current = null;
+          const tFinal = debounceScrubBarraTempoPendenteRef.current;
+          debounceScrubBarraTempoPendenteRef.current = null;
+          if (tFinal == null) return;
+          const idx = indiceCueNoInstanteTimelineUiTranscribrothers(cuesRef.current, tFinal);
+          if (idx < 0) return;
+          tocarNarracaoWavDaCueNaPosicaoTimelineUi(idx, {
+            continuo: false,
+            partirDoTempoTimelineSegundos: tFinal,
+          });
+        }, 140);
         return;
       }
 
@@ -2088,6 +2176,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         );
       } catch (e: unknown) {
         setIndiceAudioTocando(null);
+        if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
         pushToast(e instanceof Error ? e.message : "Falha na prévia TTS.", "error");
       } finally {
         setIndiceAudioGerandoPreview(null);
@@ -2167,6 +2256,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         audio.src = `${j.urlWav}?v=${Date.now()}`;
         setIndiceAudioTocando(indice);
         void audio.play().catch((e: unknown) => {
+          if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
           setIndiceAudioTocando(null);
           pushToast(e instanceof Error ? e.message : "Não foi possível tocar o áudio.", "error");
         });
@@ -2179,6 +2269,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         audio.src = previewExistente.urlBlob;
         setIndiceAudioTocando(indice);
         void audio.play().catch((e: unknown) => {
+          if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
           setIndiceAudioTocando(null);
           pushToast(e instanceof Error ? e.message : "Não foi possível tocar a prévia.", "error");
         });
@@ -2295,7 +2386,11 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         ),
       );
       setIndiceCueSelecionadaSolo(indice);
-      pushToast("Cue ajustada ao áudio — ficou folga na timeline para deslocar.", "success");
+      const msg =
+        r.deslocouSegundos > 0
+          ? "Cue ajustada ao áudio — cues seguintes foram empurradas se necessário."
+          : "Cue ajustada ao áudio — ficou folga na timeline para deslocar.";
+      pushToast(msg, "success");
     },
     [cues, pushToast, resolverDuracaoAudioAtualDaCueParaAjusteUi],
   );
@@ -2414,93 +2509,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     ajustarAlturasTodosTextareasCuesNaListaTranscribrothers(listaCuesRef.current);
   }, [aberto, carregandoCues, cues]);
 
-  const salvarLegendas = useCallback(async () => {
-    if (!jobId || !urlLegendasVtt || salvandoLegendas || regenerando) return;
-    const payload = cues.map((c) => ({
-      inicio_segundos: c.inicioSegundos,
-      fim_segundos: c.fimSegundos,
-      texto: c.texto,
-    }));
-    setSalvandoLegendas(true);
-    try {
-      await salvarLegendasDocumentoAlinhadasVttEditadasJobApiTranscribrothers(jobId, payload);
-      setCuesOriginais(cues.map((c) => ({ ...c })));
-      setVersaoCacheTrackVtt(Date.now());
-      pushToast("Legendas salvas. O áudio e o vídeo narrado não foram alterados.", "success");
-      if (onLegendasSalvas) await onLegendasSalvas();
-    } catch (e: unknown) {
-      pushToast(e instanceof Error ? e.message : String(e), "error");
-    } finally {
-      setSalvandoLegendas(false);
-    }
-  }, [
-    jobId,
-    urlLegendasVtt,
-    salvandoLegendas,
-    regenerando,
-    cues,
-    pushToast,
-    onLegendasSalvas,
-  ]);
-
-  const salvarJanelas = useCallback(async () => {
-    if (!jobId || salvandoJanelas || regenerando || janelas.length === 0) return;
-    const payload = janelas.map((j) => ({
-      inicio_video_segundos: j.inicioVideoSegundos,
-      fim_video_segundos: j.fimVideoSegundos,
-      id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
-    }));
-    const erroLocal = validarJanelasVideoSemSobreposicaoNaUiTranscribrothers(payload);
-    if (erroLocal) {
-      pushToast(erroLocal, "error");
-      return;
-    }
-    setSalvandoJanelas(true);
-    try {
-      const resp = await salvarJanelasVideoCuesNarracaoJobApiTranscribrothers(jobId, payload);
-      setJanelas((prev) => {
-        const padrao =
-          String(resp.voz_tts_padrao_job || vozPadraoJob || "Kore").trim() || "Kore";
-        const lista: JanelaVideoCueLocalUiTranscribrothers[] = resp.cues.map((c, i) => {
-          const vozApi = String(c.voz_tts || "").trim() || padrao;
-          const textoTts = String(c.texto_tts || "").trim();
-          return {
-            inicioVideoSegundos: c.inicio_video_segundos,
-            fimVideoSegundos: c.fim_video_segundos,
-            temWav: c.tem_wav,
-            urlWav: c.url_wav,
-            textoNarrado: textoEfetivoParaTtsCueUiTranscribrothers(c.texto || "", textoTts),
-            textoTtsNarrado: textoTts,
-            // Toggle/voz locais até o «Gerar vídeo» persistir no manifesto.
-            semNarracao: prev[i]?.semNarracao ?? Boolean(c.sem_narracao),
-            vozTts: prev[i]?.vozTts || vozApi,
-            vozNarrada: prev[i]?.vozNarrada || vozApi,
-            idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(
-              c.id_fonte_video || prev[i]?.idFonteVideo,
-            ),
-          };
-        });
-        setJanelasOriginais((orig) =>
-          lista.map((j, i) => ({
-            ...j,
-            semNarracao: orig[i]?.semNarracao ?? Boolean(resp.cues[i]?.sem_narracao),
-            vozTts: orig[i]?.vozTts || j.vozTts,
-            vozNarrada: orig[i]?.vozNarrada || j.vozNarrada,
-          })),
-        );
-        return lista;
-      });
-      pushToast(
-        "Tempos de tela salvos. Use «Aplicar tempos ao vídeo» para remontar o MP4 (sem novo TTS).",
-        "success",
-      );
-    } catch (e: unknown) {
-      pushToast(e instanceof Error ? e.message : String(e), "error");
-    } finally {
-      setSalvandoJanelas(false);
-    }
-  }, [jobId, salvandoJanelas, regenerando, janelas, pushToast, vozPadraoJob]);
-
   const aoBaixarVideoComLegendasQueimadas = useCallback(async () => {
     if (!jobId || baixandoVideoComLegendasQueimadas) return;
     if (!urlVideoMp4) {
@@ -2592,37 +2600,106 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
 
   const ocupado =
     regenerando ||
-    salvandoLegendas ||
-    salvandoJanelas ||
+    salvandoProjeto ||
     baixandoVideoComLegendasQueimadas ||
     trocandoVersaoVideoNarrado;
-  const podeSalvar =
+  const projetoSujo = sujas || janelasSujas;
+  const podeSalvarProjeto =
     Boolean(jobId) &&
     Boolean(urlLegendasVtt) &&
-    sujas &&
+    cues.length > 0 &&
+    janelas.length === cues.length &&
+    projetoSujo &&
     !ocupado &&
     !carregandoCues &&
-    cues.length > 0;
-  const podeSalvarJanelas =
-    Boolean(jobId) && janelas.length > 0 && janelasSujas && !ocupado;
-  const podeAplicarTempos =
-    Boolean(jobId) && janelas.length > 0 && !janelasSujas && !ocupado;
-  const podeAtualizarNarracao =
-    Boolean(jobId) && Boolean(urlLegendasVtt) && !ocupado && !sujas;
+    !erroCues;
   const podeGerarVideoComEstasEdicoes =
     Boolean(jobId) && cues.length > 0 && !ocupado && !carregandoCues && !erroCues;
-  const acaoSalvarContextual = resolverAcaoPrimariaContextualRodapeModalVideoNarradoTranscribrothers({
-    podeSalvarLegendas: podeSalvar,
-    podeSalvarTempos: podeSalvarJanelas,
-    salvandoLegendas,
-    salvandoJanelas,
-    onSalvarLegendas: () => {
-      void salvarLegendas();
-    },
-    onSalvarTempos: () => {
-      void salvarJanelas();
-    },
-  });
+
+  const salvarProjetoEditorUi = () => {
+    void (async () => {
+      if (!jobId || salvandoProjeto || regenerando) return;
+      if (cues.length === 0 || janelas.length !== cues.length) {
+        pushToast(
+          "Não foi possível salvar: quantidade de cues e tempos de tela não batem.",
+          "error",
+        );
+        return;
+      }
+      const erroLocal = validarEstruturaBasicaJanelasVideoNaUiTranscribrothers(
+        janelas.map((j) => ({
+          inicio_video_segundos: j.inicioVideoSegundos,
+          fim_video_segundos: j.fimVideoSegundos,
+        })),
+      );
+      if (erroLocal) {
+        pushToast(erroLocal, "error");
+        return;
+      }
+      setSalvandoProjeto(true);
+      try {
+        const resp = await salvarProjetoEditorVideoNarradoEdicoesModalJobApiTranscribrothers(
+          jobId,
+          {
+            cues: cues.map((c, i) => ({
+              inicio_segundos: c.inicioSegundos,
+              fim_segundos: c.fimSegundos,
+              texto: c.texto,
+              texto_tts: (c.textoTts || "").trim() || undefined,
+              sem_narracao: Boolean(janelas[i]?.semNarracao),
+              voz_tts: janelas[i]?.vozTts || vozPadraoJob || "Kore",
+              forcar_regenerar_tts: Boolean(janelas[i]?.forcarRegenerarTts),
+            })),
+            janelas: janelas.map((j) => ({
+              inicio_video_segundos: j.inicioVideoSegundos,
+              fim_video_segundos: j.fimVideoSegundos,
+              id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
+            })),
+          },
+        );
+        const promovidos = new Set(resp.indices_previews_promovidas ?? []);
+        const janelasAposSave = janelas.map((j, i) => {
+          if (!promovidos.has(i)) {
+            return { ...j, forcarRegenerarTts: false };
+          }
+          const cue = cues[i];
+          const textoFala = textoEfetivoParaTtsCueUiTranscribrothers(
+            cue?.texto || "",
+            cue?.textoTts || "",
+          );
+          const voz = j.vozTts || vozPadraoJob || "Kore";
+          return {
+            ...j,
+            temWav: true,
+            urlWav: `${urlWavNarracaoPorCueJobTranscribrothers(jobId, i)}?v=${Date.now()}`,
+            textoNarrado: textoFala,
+            textoTtsNarrado: (cue?.textoTts || "").trim(),
+            vozNarrada: voz,
+            forcarRegenerarTts: false,
+          };
+        });
+        setJanelas(janelasAposSave);
+        setCuesOriginais(cues.map((c) => ({ ...c })));
+        setJanelasOriginais(janelasAposSave.map((j) => ({ ...j })));
+        setVersaoCacheTrackVtt(Date.now());
+        const nPrev = resp.previews_promovidas ?? 0;
+        // Checkpoint sem remux: player deve usar preview/WAV até gerar o MP4 de novo.
+        setAudioMp4DesatualizadoLocal(true);
+        pushToast(
+          nPrev > 0
+            ? `Projeto salvo (legendas, tempos e ${nPrev} áudio(s) da prévia). O MP4 só muda ao gerar o vídeo.`
+            : "Projeto salvo (legendas e tempos). O MP4 só muda ao gerar o vídeo.",
+          "success",
+        );
+        if (onLegendasSalvas) await onLegendasSalvas();
+      } catch (e: unknown) {
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      } finally {
+        setSalvandoProjeto(false);
+      }
+    })();
+  };
+
   const dispararGerarVideoComEstasEdicoes = () => {
     void (async () => {
       const videoEl = videoRef.current;
@@ -2751,6 +2828,94 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         ta?.focus();
       });
     });
+  };
+
+  const adicionarSeparadorSecaoDepoisDoSelecionadoUi = () => {
+    if (ocupado || !jobId) return;
+    void (async () => {
+      const indiceBase = resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers({
+        quantidadeCues: cues.length,
+        indiceSelecionadoSolo: indiceCueSelecionadaSolo,
+        indiceCueAtiva,
+      });
+      const videoEl = videoRef.current;
+      const durEntrada =
+        previewRecorteTelaAtivo &&
+        videoEl &&
+        Number.isFinite(videoEl.duration) &&
+        videoEl.duration > 0
+          ? videoEl.duration
+          : null;
+      const titulo = TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS;
+      const r = inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers({
+        cues,
+        janelas,
+        indiceSelecionado: indiceBase,
+        duracaoVideoEntradaSegundos: durEntrada,
+        vozPadrao: vozPadraoJob || "Kore",
+        tituloSecao: titulo,
+      });
+      setCues(r.cues);
+      setJanelas(r.janelas);
+      setDuracoesWavPorIndice((prev) =>
+        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+      );
+      setPreviewAudioPorIndice((prev) =>
+        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+      );
+      setIndicesFalaTtsExpandidos((prev) =>
+        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+      );
+      setSugestoesReescritaLegendaPorIndice((prev) =>
+        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+      );
+      setIndiceCueSelecionadaSolo(r.indiceInserido);
+
+      const toastId = pushToastProgresso({
+        message: "Gerando cartão de seção (vinheta)…",
+        indeterminado: true,
+      });
+      try {
+        const item = await gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers(jobId, {
+          titulo,
+          duracaoSegundos: DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+        });
+        const durFonte =
+          typeof item.duracao_segundos === "number" && item.duracao_segundos > 0
+            ? item.duracao_segundos
+            : DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS;
+        setJanelas((prev) => {
+          if (!prev[r.indiceInserido]) return prev;
+          return prev.map((j, i) =>
+            i === r.indiceInserido
+              ? {
+                  ...j,
+                  idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(item.id),
+                  inicioVideoSegundos: 0,
+                  fimVideoSegundos: Math.max(0.05, durFonte),
+                  janelaProvisoria: false,
+                  ehSeparadorSecao: true,
+                  semNarracao: true,
+                }
+              : j,
+          );
+        });
+        removerToast(toastId);
+        pushToast(
+          "Separador inserido com vinheta gerada (fade in/out). Edite o título na legenda se quiser — para outro texto no cartão, use «Fonte» ou reinseira.",
+          "success",
+        );
+      } catch (e: unknown) {
+        removerToast(toastId);
+        pushToast(
+          e instanceof Error
+            ? `Separador criado, mas a vinheta falhou: ${e.message}. Use «Fonte» para escolher uma mídia.`
+            : "Separador criado, mas a vinheta falhou. Use «Fonte» para escolher uma mídia.",
+          "error",
+        );
+        setIndiceCueModalEscolherFonte(r.indiceInserido);
+      }
+    })();
   };
 
   const reordenarCueNaListaUi = (indiceDe: number, indicePara: number) => {
@@ -3146,6 +3311,15 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
               >
                 Adicionar cue
               </button>
+              <button
+                type="button"
+                className="tb-modal-assistir-video-narrado-adicionar-cue tb-modal-assistir-video-narrado-adicionar-separador"
+                disabled={ocupado || !urlLegendasVtt || carregandoCues || Boolean(erroCues)}
+                title="Insere intercalário com cartão de seção gerado (título + fade) e sem narração"
+                onClick={() => adicionarSeparadorSecaoDepoisDoSelecionadoUi()}
+              >
+                Inserir separador
+              </button>
               <details className="tb-modal-assistir-video-narrado-ajuda-legendas">
                 <summary
                   className="tb-modal-assistir-video-narrado-ajuda-legendas-resumo"
@@ -3173,7 +3347,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 </summary>
                 <div className="tb-modal-assistir-video-narrado-ajuda-legendas-popover" role="note">
                   <p>
-                    «Ajustar ao áudio» encolhe a cue quando a fala é menor que o slot.
+                    «Ajustar ao áudio» alinha a duração da cue à fala (encolhe ou estica; ao
+                    esticar, empurra as cues seguintes). Use após Prévia/Regenerar quando o áudio
+                    for maior que o slot — senão o vídeo gerado corta a narração.
                   </p>
                   <p>
                     «Ajustar à tela» alinha a duração da cue à janela do vídeo original (encolhe ou
@@ -3188,8 +3364,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   </p>
                   <p>
                     «Adicionar cue» insere depois do cartão destacado (clique ou cue do instante
-                    atual do vídeo; janela provisória). Arraste pelo handle ou use as setas para
-                    reordenar (estilo Trello).
+                    atual do vídeo; janela provisória). «Inserir separador» gera um cartão de seção
+                    (vinheta com título e fade) e coloca na timeline. Arraste pelo handle ou use as
+                    setas para reordenar (estilo Trello).
                   </p>
                   <p>
                     O número (#1, #2…) identifica a cue na lista e no tooltip da timeline.
@@ -3411,6 +3588,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             title="Trecho de tela provisório — ajuste em «Origem»"
                           >
                             janela provisória
+                          </span>
+                        ) : null}
+                        {janela?.ehSeparadorSecao ? (
+                          <span
+                            className="tb-modal-assistir-video-narrado-cue-badge-separador-secao"
+                            title="Intercalário entre funcionalidades — escolha a vinheta em «Fonte»"
+                          >
+                            separador
                           </span>
                         ) : null}
                         <button
@@ -3638,7 +3823,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             type="button"
                             className="tb-modal-assistir-video-narrado-cue-ajustar-audio"
                             disabled={ocupado}
-                            title="Encolher o fim da cue até a duração do áudio atual (abre folga na timeline)"
+                            title="Alinhar o fim da cue à duração do áudio atual (encolhe ou estica; ao esticar, empurra as seguintes)"
                             onClick={() => ajustarCueAoAudioAtual(i)}
                           >
                             Ajustar ao áudio
@@ -3893,73 +4078,36 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 },
               ]}
             />
+            <button
+              type="button"
+              className={
+                "tb-linkbtn tb-modal-assistir-video-narrado-btn-salvar-projeto" +
+                (projetoSujo ? " tb-modal-assistir-video-narrado-btn-salvar-projeto--sujo" : "")
+              }
+              disabled={!podeSalvarProjeto}
+              title={
+                projetoSujo
+                  ? "Grava legendas e tempos de tela no projeto (sem gerar o MP4)."
+                  : "Nenhuma alteração para salvar."
+              }
+              onClick={() => salvarProjetoEditorUi()}
+            >
+              {salvandoProjeto ? "Salvando…" : "Salvar projeto"}
+              {projetoSujo && !ocupado ? (
+                <span
+                  className="tb-modal-video-narrado-menu-acoes-badge"
+                  aria-hidden="true"
+                />
+              ) : null}
+            </button>
             <ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers
-              idMenu="salvar"
-              rotulo="Salvar"
-              ariaLabel="Salvar legendas ou tempos de tela"
-              desabilitado={ocupado}
-              badge={sujas || janelasSujas}
-              menuAbertoId={menuRodapeAbertoId}
-              onMenuAbertoIdChange={setMenuRodapeAbertoId}
-              itens={[
-                {
-                  id: "legendas",
-                  rotulo: salvandoLegendas ? "Salvando legendas…" : "Legendas (texto)",
-                  desabilitado: !podeSalvar,
-                  titulo: sujas
-                    ? "Grava o texto das legendas no VTT."
-                    : "Nenhuma alteração de texto para salvar.",
-                  onClick: () => {
-                    void salvarLegendas();
-                  },
-                },
-                {
-                  id: "tempos",
-                  rotulo: salvandoJanelas ? "Salvando tempos…" : "Tempos de tela",
-                  desabilitado: !podeSalvarJanelas,
-                  titulo: janelasSujas
-                    ? "Grava os tempos de tela no manifesto (sem remux)."
-                    : "Nenhuma alteração de tempos para salvar.",
-                  onClick: () => {
-                    void salvarJanelas();
-                  },
-                },
-              ]}
-            />
-            <ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers
-              idMenu="aplicar"
-              rotulo="Aplicar"
-              ariaLabel="Aplicar tempos ou regenerar narração"
+              idMenu="mais"
+              rotulo="Mais"
+              ariaLabel="Outras ações do vídeo narrado"
               desabilitado={ocupado}
               menuAbertoId={menuRodapeAbertoId}
               onMenuAbertoIdChange={setMenuRodapeAbertoId}
               itens={[
-                {
-                  id: "tempos-video",
-                  rotulo: regenerando ? "Aplicando tempos…" : "Tempos ao vídeo",
-                  desabilitado: !podeAplicarTempos,
-                  titulo: janelasSujas
-                    ? "Salve os tempos antes de aplicar ao vídeo."
-                    : "Remonta o MP4 com as janelas salvas (reutiliza o áudio TTS).",
-                  onClick: onAplicarTemposJanelasAoVideo,
-                },
-                {
-                  id: "atualizar-narracao",
-                  rotulo: "Atualizar narração",
-                  desabilitado: !podeAtualizarNarracao,
-                  titulo: sujas
-                    ? "Salve as legendas antes de atualizar a narração."
-                    : "Regenera TTS só nas cues cujo texto mudou e remonta o MP4.",
-                  onClick: onAtualizarNarracaoDasLegendas,
-                },
-                {
-                  id: "gerar-edicoes",
-                  rotulo: "Gerar vídeo com estas edições",
-                  desabilitado: !podeGerarVideoComEstasEdicoes,
-                  titulo:
-                    "Salva edições, regenera TTS se o texto mudou (pula cues «Sem narração») e monta um MP4 só com as cues, como no play do modal.",
-                  onClick: dispararGerarVideoComEstasEdicoes,
-                },
                 {
                   id: "gerar-nova",
                   rotulo: "Gerar nova narração",
@@ -3967,6 +4115,24 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   titulo:
                     "Parte do Markdown com preparação IA das legendas e gera TTS de todas as cues (não reusa este VTT).",
                   onClick: onGerarNovaNarracao,
+                },
+                {
+                  id: "remux-tempos",
+                  rotulo: "Remontar MP4 (só tempos)",
+                  desabilitado: ocupado || !jobId || janelas.length === 0 || projetoSujo,
+                  titulo: projetoSujo
+                    ? "Salve o projeto antes de remontar só com os tempos."
+                    : "Remonta o MP4 reutilizando o áudio TTS (sem regenerar fala).",
+                  onClick: onAplicarTemposJanelasAoVideo,
+                },
+                {
+                  id: "atualizar-narracao",
+                  rotulo: "Atualizar narração (TTS parcial)",
+                  desabilitado: ocupado || !jobId || !urlLegendasVtt || projetoSujo,
+                  titulo: projetoSujo
+                    ? "Salve o projeto antes de atualizar a narração."
+                    : "Regenera TTS só nas cues cujo texto mudou e remonta o MP4.",
+                  onClick: onAtualizarNarracaoDasLegendas,
                 },
               ]}
             />
@@ -3981,17 +4147,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             >
               {regenerando ? "Gerando…" : "Gerar vídeo com estas edições"}
             </button>
-            {acaoSalvarContextual ? (
-              <button
-                type="button"
-                className="tb-linkbtn"
-                disabled={acaoSalvarContextual.desabilitado}
-                title={acaoSalvarContextual.titulo}
-                onClick={acaoSalvarContextual.onClick}
-              >
-                {acaoSalvarContextual.rotulo}
-              </button>
-            ) : null}
             <button
               type="button"
               className="tb-linkbtn"
@@ -4077,19 +4232,71 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         jobId={jobId}
         idFonteAtual={janelas[indiceCueModalEscolherFonte]?.idFonteVideo}
         onFechar={() => setIndiceCueModalEscolherFonte(null)}
-        onEscolherFonte={(idFonte) => {
+        onEscolherFonte={(idFonte, _rotulo, opcoes) => {
           const indice = indiceCueModalEscolherFonte;
+          const atual = janelas[indice];
+          if (!atual) {
+            setIndiceCueModalEscolherFonte(null);
+            return;
+          }
+          const cue = cues[indice];
+          const durCue = cue
+            ? Math.max(0.05, cue.fimSegundos - cue.inicioSegundos)
+            : 0.05;
+          const recalc = calcularJanelaVideoAposTrocaFonteMidiaTelaUiTranscribrothers({
+            idFonteAnterior: atual.idFonteVideo,
+            idFonteNova: idFonte,
+            inicioVideoSegundos: atual.inicioVideoSegundos,
+            fimVideoSegundos: atual.fimVideoSegundos,
+            duracaoCueTimelineSegundos: durCue,
+            duracaoFonteNovaSegundos: opcoes?.duracaoSegundos,
+          });
+          const idNorm = normalizarIdFonteVideoUiTranscribrothers(idFonte);
           setJanelas((prev) => {
             if (!prev[indice]) return prev;
+            if (!recalc.mudouFonte) {
+              return prev.map((j, i) =>
+                i === indice ? { ...j, idFonteVideo: idNorm } : j,
+              );
+            }
             return prev.map((j, i) =>
               i === indice
                 ? {
                     ...j,
-                    idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(idFonte),
+                    idFonteVideo: idNorm,
+                    inicioVideoSegundos: recalc.inicioVideoSegundos,
+                    fimVideoSegundos: recalc.fimVideoSegundos,
+                    janelaProvisoria: true,
                   }
                 : j,
             );
           });
+          if (recalc.mudouFonte) {
+            const durNova = Math.max(
+              0.05,
+              recalc.fimVideoSegundos - recalc.inicioVideoSegundos,
+            );
+            setCues((prev) => {
+              if (!prev[indice]) return prev;
+              const durAnt = Math.max(
+                0,
+                prev[indice].fimSegundos - prev[indice].inicioSegundos,
+              );
+              if (Math.abs(durNova - durAnt) < 0.15) return prev;
+              const r = ajustarFimCueTimelineAJanelaTelaUiTranscribrothers(
+                prev,
+                indice,
+                durNova,
+              );
+              if (!r.ok) return prev;
+              return garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
+                r.cues.map((c, i) => ({
+                  ...c,
+                  idCliente: prev[i]?.idCliente ?? c.idCliente,
+                })),
+              );
+            });
+          }
           setIndiceCueModalEscolherFonte(null);
           setIndiceCueModalVideoOriginal(indice);
         }}
