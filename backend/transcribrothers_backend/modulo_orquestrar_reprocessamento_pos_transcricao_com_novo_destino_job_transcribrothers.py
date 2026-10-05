@@ -36,7 +36,7 @@ from transcribrothers_backend.modulo_util_carregar_transcricao_snapshot_para_rep
 )
 
 DESTINOS_GERAR_OUTRO_FORMATO_VALIDOS_TRANSCRIBROTHERS = frozenset(
-    {"gerar_tutorial", "notas_proposta_funcionalidade", "reproducao_bug"},
+    {"gerar_tutorial", "tutorial_passo_a_passo_software", "notas_proposta_funcionalidade", "reproducao_bug"},
 )
 
 _CHAVES_STEPS_REMOVER_AO_TROCAR_DESTINO_POS_TRANSCRICAO_TRANSCRIBROTHERS = frozenset(
@@ -141,9 +141,13 @@ def validar_job_pode_gerar_outro_formato_transcribrothers(
             "Jobs iniciados só com áudio só podem gerar notas de proposta nesta versão "
             "(tutorial e bug exigem vídeo)."
         )
-    if not tem_video and novo_destino in {"gerar_tutorial", "reproducao_bug"}:
+    if not tem_video and novo_destino in {
+        "gerar_tutorial",
+        "tutorial_passo_a_passo_software",
+        "reproducao_bug",
+    }:
         raise ErroGerarOutroFormatoJobTranscribrothers(
-            "Vídeo do job não encontrado; tutorial e reprodução de bug exigem vídeo."
+            "Vídeo do job não encontrado; tutorial, passo a passo de software e reprodução de bug exigem vídeo."
         )
 
 

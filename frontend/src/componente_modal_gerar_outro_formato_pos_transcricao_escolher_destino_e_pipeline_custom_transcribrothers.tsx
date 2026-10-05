@@ -11,6 +11,8 @@ const DESCRICAO_DESTINO: Record<
 > = {
   gerar_tutorial:
     "Gera tutorial em Markdown com capturas e links para o tempo no vídeo, reutilizando a transcrição já feita.",
+  tutorial_passo_a_passo_software:
+    "Gera tutorial denso de software, com um screenshot por procedimento da interface, reutilizando a transcrição já feita.",
   reproducao_bug:
     "Monta passo a passo de reprodução do bug com capturas. Com JSON de cliques no job, alinha aos cliques; sem JSON, infere passos da transcrição.",
   notas_proposta_funcionalidade:
@@ -22,6 +24,7 @@ const MAPEAMENTO_PIPELINE_SISTEMA_COPIADO_DE_PARA_DESTINO_TRANSCRIBROTHERS: Reco
   Exclude<DestinoAposTranscricaoTranscribrothers, "projeto_em_branco" | "so_transcricao">
 > = {
   pipeline_inicial_tutorial: "gerar_tutorial",
+  pipeline_inicial_tutorial_passo_a_passo_software: "tutorial_passo_a_passo_software",
   pipeline_inicial_notas_proposta: "notas_proposta_funcionalidade",
   pipeline_inicial_reproducao_bug: "reproducao_bug",
 };
@@ -68,7 +71,7 @@ export function ModalGerarOutroFormatoPosTranscricaoEscolherDestinoEPipelineCust
 
   const destinosDisponiveis: DestinoGerarOutroFormatoTranscribrothers[] = soNotas
     ? ["notas_proposta_funcionalidade"]
-    : ["gerar_tutorial", "notas_proposta_funcionalidade", "reproducao_bug"];
+    : ["gerar_tutorial", "tutorial_passo_a_passo_software", "notas_proposta_funcionalidade", "reproducao_bug"];
 
   useEffect(() => {
     if (!aberto) return;
@@ -97,6 +100,7 @@ export function ModalGerarOutroFormatoPosTranscricaoEscolherDestinoEPipelineCust
     }
     const alternativas: DestinoGerarOutroFormatoTranscribrothers[] = [
       "gerar_tutorial",
+      "tutorial_passo_a_passo_software",
       "notas_proposta_funcionalidade",
       "reproducao_bug",
     ];
@@ -162,6 +166,7 @@ export function ModalGerarOutroFormatoPosTranscricaoEscolherDestinoEPipelineCust
                 {(
                   [
                     ["gerar_tutorial", "Gerar tutorial"],
+                    ["tutorial_passo_a_passo_software", "Passo a passo de software"],
                     ["notas_proposta_funcionalidade", "Notas de proposta"],
                     ["reproducao_bug", "Reproduzir bug"],
                   ] as const

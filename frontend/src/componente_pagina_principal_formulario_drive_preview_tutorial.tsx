@@ -32,6 +32,20 @@ import {
   mesclarModelosServidorComExtrasNavegadorTranscribrothers,
 } from "./modulo_armazenamento_local_modelos_litellm_extras_navegador_transcribrothers.ts";
 import { carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers } from "./modulo_armazenamento_local_modelo_tts_narracao_preferido_navegador_transcribrothers.ts";
+import {
+  listarVozesTtsElevenlabsApiTranscribrothers,
+  type VozTtsElevenlabsUiTranscribrothers,
+} from "./modulo_api_listar_vozes_tts_elevenlabs_transcribrothers.ts";
+import { escolherPrimeiraVozTtsElevenlabsPreferindoPtBrTranscribrothers } from "./modulo_util_rotulo_e_grupo_vozes_tts_elevenlabs_pt_br_transcribrothers.ts";
+import { ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers } from "./componente_opcoes_select_vozes_tts_elevenlabs_agrupadas_pt_br_transcribrothers.tsx";
+import {
+  MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+  PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS,
+  PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS,
+  mesclarModelosTtsLitellmComElevenlabsSeConfiguradoTranscribrothers,
+  modeloTtsPareceElevenlabsPeloSlugTranscribrothers,
+  normalizarProvedorTtsNarracaoUiTranscribrothers,
+} from "./modulo_util_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers.ts";
 import { gerarMarkdownTutorialComImagensPngEmbutidasComoDataUriParaArquivoDownloadTranscribrothers } from "./modulo_util_gerar_markdown_tutorial_com_imagens_png_embutidas_data_uri_base64_download_transcribrothers.ts";
 import { abrirUrlExternaNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_url_externa_nova_aba_navegador_transcribrothers.ts";
 import { abrirTutorialMarkdownRenderizadoEmNovaAbaNavegadorTranscribrothers } from "./modulo_util_abrir_tutorial_markdown_renderizado_em_nova_aba_navegador_transcribrothers.ts";
@@ -40,6 +54,11 @@ import {
   extrairTituloH1MarkdownTutorialTranscribrothers,
   obterNomeBaseArquivoDownloadTutorialComTituloH1MarkdownOuJobIdTranscribrothers,
 } from "./modulo_util_extrair_titulo_h1_markdown_e_sanitizar_nome_arquivo_download_tutorial_transcribrothers.ts";
+import {
+  dispararDownloadArquivoPorUrlComNomeTranscribrothers,
+  montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers,
+  resolverTituloInicialVideoNarradoAPartirDoH1MarkdownTranscribrothers,
+} from "./modulo_util_nome_arquivo_download_video_narrado_titulo_h1_e_sufixo_legendado_transcribrothers.ts";
 import { criarIssueGitlabPortalDefensoriaGatewayApiTranscribrothers } from "./modulo_api_criar_issue_gitlab_portal_defensoria_gateway_transcribrothers.ts";
 import { comentarIssueGitlabDocumentoMarkdownApiTranscribrothers } from "./modulo_api_comentar_issue_gitlab_documento_markdown_transcribrothers.ts";
 import { anexarDescricaoIssueGitlabDocumentoMarkdownApiTranscribrothers } from "./modulo_api_anexar_descricao_issue_gitlab_documento_markdown_transcribrothers.ts";
@@ -84,8 +103,6 @@ import { listarCaminhosAssetsPngOrdemPrimeiraOcorrenciaMarkdownTutorialTranscrib
 import { montarTextoPlanoTranscricaoOriginalAPartirDeSnapshotJobTutorialTranscribrothers } from "./modulo_util_montar_texto_plano_transcricao_original_a_partir_de_snapshot_job_tutorial_transcribrothers.ts";
 import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
 import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
-import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_documento_projeto_em_branco_transcribrothers.ts";
-import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_tutorial_sem_referencias_video_documento_autonomo_transcribrothers.ts";
 import {
   aplicarPreviewRegeneracaoSecaoMarkdownTutorialJobApiTranscribrothers,
   descartarPreviewRegeneracaoSecaoMarkdownTutorialJobApiTranscribrothers,
@@ -159,6 +176,13 @@ import {
   obterTituloFrameDocumentoPorDestinoAposTranscricaoTranscribrothers,
 } from "./modulo_constante_destino_apos_transcricao_e_rotulo_frame_documento_transcribrothers.ts";
 import { montarSubtituloVersaoEDataFrameDocumentoTutorialTranscribrothers } from "./modulo_util_subtitulo_versao_e_data_frame_documento_tutorial_transcribrothers.ts";
+import { extrairTextoPlanoParaDownloadTxtTranscricaoDeMarkdownResultadoTranscribrothers } from "./modulo_util_extrair_texto_plano_para_download_txt_transcricao_de_markdown_resultado_transcribrothers.ts";
+import {
+  aplicarColapsoOcorrenciasRepeticaoSelecionadasEmTextoTranscricaoTranscribrothers,
+  detectarOcorrenciasRepeticaoSuspeitaEmTextoTranscricaoTranscribrothers,
+} from "./modulo_util_detectar_e_colapsar_repeticoes_suspeitas_texto_transcricao_transcribrothers.ts";
+import { ComponenteModalRevisarRepeticoesSuspeitasTranscricaoMarkdownTranscribrothers } from "./componente_modal_revisar_repeticoes_suspeitas_transcricao_markdown_transcribrothers.tsx";
+import "./estilos_css_modal_revisar_repeticoes_suspeitas_transcricao_markdown_transcribrothers.css";
 import { obterNumeroVersaoHistoricoTutorialMarkdownPorIndiceNaListaDescTranscribrothers } from "./modulo_util_rotulo_numero_versao_historico_tutorial_markdown_por_projeto_transcribrothers.ts";
 import { criarProjetoEmBrancoJobApiTranscribrothers } from "./modulo_api_criar_projeto_em_branco_job_transcribrothers.ts";
 import { importarTranscricaoProntaJobApiTranscribrothers } from "./modulo_api_importar_transcricao_pronta_job_transcribrothers.ts";
@@ -172,22 +196,73 @@ import {
 import {
   classificarArquivoAnexoContextoFabTranscribrothers,
   lerArquivoMarkdownOuTextoComoUtf8Transcribrothers,
-  rotuloExibicaoAnexoTextoContextoFabUiTranscribrothers,
   truncarTextoAnexoContextoFabSeNecessarioTranscribrothers,
 } from "./modulo_util_anexo_texto_contexto_fab_projeto_em_branco_transcribrothers.ts";
 import { jobEhProjetoEmBrancoTranscribrothers } from "./modulo_util_job_eh_projeto_em_branco_transcribrothers.ts";
 import { jobEhReproducaoBugTranscribrothers } from "./modulo_util_job_eh_reproducao_bug_transcribrothers.ts";
 import { jobEhNotasPropostaFuncionalidadeTranscribrothers } from "./modulo_util_job_eh_notas_proposta_funcionalidade_transcribrothers.ts";
+import { jobPodeAbrirChatAskAgenteDocumentoTranscribrothers } from "./modulo_util_job_pode_abrir_chat_ask_agente_documento_transcribrothers.ts";
+import {
+  limparChatAskAgenteDeveFicarDesabilitadoTranscribrothers,
+  rotuloBotaoToolbarChatAskAgenteDocumentoTranscribrothers,
+} from "./modulo_util_rotulo_botao_toolbar_e_limpar_chat_ask_agente_documento_transcribrothers.ts";
+import {
+  MS_TETO_ESPERA_PREVIA_DOCUMENTO_CHAT_AGENTE_TRANSCRIBROTHERS,
+  TEXTO_MENSAGEM_AGENTE_APLICOU_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS,
+  TEXTO_MENSAGEM_AGENTE_DESCARTOU_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS,
+  chatAskAgenteDeveMostrarSpinnerPreparandoPreviaTranscribrothers,
+  composerChatAskAgenteDeveFicarTravadoPorPreviaDocumentoTranscribrothers,
+} from "./modulo_util_feedback_previa_documento_no_chat_ask_agente_transcribrothers.ts";
+import {
+  anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers,
+  buscarHistoricoChatAskAgenteDocumentoJobApiTranscribrothers,
+  enviarMensagemChatAgenteDocumentoJobApiEmStreamTranscribrothers,
+  enviarMensagemChatAskDocumentoJobApiEmStreamTranscribrothers,
+  limparHistoricoChatAskAgenteDocumentoJobApiTranscribrothers,
+  resolverFrameChatAskDocumentoJobApiTranscribrothers,
+  type RespostaResolverFrameChatAskDocumentoJobApiTranscribrothers,
+} from "./modulo_api_chat_ask_e_historico_documento_job_transcribrothers.ts";
+import {
+  chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers,
+  propostaFerramentaChatAgenteExigeConfirmacaoForteTranscribrothers,
+  rotuloBotaoPropostaFerramentaChatAgenteTranscribrothers,
+  textoConfirmacaoPropostaFerramentaChatAgenteTranscribrothers,
+} from "./modulo_util_ferramenta_forcada_pelo_chip_agente_documento_transcribrothers.ts";
+import { aplicarAlturaTextareaComposerChatAskAgenteTranscribrothers } from "./modulo_util_altura_textarea_composer_chat_ask_agente_documento_transcribrothers.ts";
+import {
+  classeGridPreviewRolagemDocumentoQuandoChatAbertoTranscribrothers,
+  classesDockGavetaChatAskAgenteDocumentoTranscribrothers,
+} from "./modulo_util_classes_gaveta_chat_ask_agente_empurra_grid_transcribrothers.ts";
+import { classesLayoutPaginaProjetoCabecalhoForaDaRolagemTranscribrothers } from "./modulo_util_classes_layout_pagina_projeto_cabecalho_fora_da_rolagem_transcribrothers.ts";
+import {
+  carregarModeloChatAskAgentePreferidoSalvoNoNavegadorTranscribrothers,
+  salvarModeloChatAskAgentePreferidoNoNavegadorTranscribrothers,
+} from "./modulo_armazenamento_local_modelo_chat_ask_agente_preferido_navegador_transcribrothers.ts";
+import {
+  escolherModeloChatAskAgenteDaListaDisponivelTranscribrothers,
+  listarModelosChatAskAgenteDaListaDisponivelTranscribrothers,
+} from "./modulo_util_modelo_chat_ask_agente_documento_transcribrothers.ts";
+import {
+  caminhosRelativosDeImagensHistoricoChatAskTranscribrothers,
+  mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+  mesclarCaminhosImagensPropostaChatAgenteDocumentoTranscribrothers,
+  resolverPropostasEdicaoParcialParaAplicarChatAgenteTranscribrothers,
+  turnoAgenteGerandoDevePersistirEstadoFalhouSemPreviaTranscribrothers,
+  type PropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
+} from "./modulo_tipos_item_historico_chat_ask_agente_documento_job_transcribrothers.ts";
+import {
+  ComponentePainelChatAskAgenteDocumentoJobTranscribrothers,
+  type MensagemChatAskAgenteDocumentoEmMemoriaTranscribrothers,
+} from "./componente_painel_chat_ask_agente_documento_job_transcribrothers.tsx";
 import { deveAbrirModalProgressoAoCarregarProjetoTranscribrothers } from "./modulo_util_job_esta_em_regeneracao_markdown_apenas_transcribrothers.ts";
 import { regenerarMarkdownReproducaoBugJobApiTranscribrothers } from "./modulo_api_regenerar_markdown_reproducao_bug_job_transcribrothers.ts";
 import { regenerarMarkdownNotasPropostaJobApiTranscribrothers } from "./modulo_api_regenerar_markdown_notas_proposta_job_transcribrothers.ts";
-import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_REPRODUCAO_BUG_SEM_VIDEO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_reproducao_bug_sem_video_transcribrothers.ts";
-import { TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_NOTAS_PROPOSTA_SEM_VIDEO_TRANSCRIBROTHERS } from "./constante_texto_instrucao_template_fab_regeneracao_notas_proposta_sem_video_transcribrothers.ts";
 import { ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTranscribrothers } from "./componente_modal_edicao_markdown_tutorial_duas_colunas_preview_ao_vivo_transcribrothers.tsx";
 import { ComponenteModalColarTextoAnexoContextoFabProjetoEmBrancoTranscribrothers } from "./componente_modal_colar_texto_anexo_contexto_fab_projeto_em_branco_transcribrothers.tsx";
 import { ComponenteModalEscolherVersaoHistoricoTutorialMarkdownEstiloListaProjetosTranscribrothers } from "./componente_modal_escolher_versao_historico_tutorial_markdown_estilo_lista_projetos_transcribrothers.tsx";
 import { ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTranscribrothers } from "./componente_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.tsx";
 import { lerDuracaoVideoSegundosStepsJsonJobTranscribrothers } from "./modulo_util_ler_duracao_video_segundos_steps_json_job_transcribrothers.ts";
+import { ComponentePainelCatalogoModelosLitellmProxyGavetaConfiguracoesTranscribrothers } from "./componente_painel_catalogo_modelos_litellm_proxy_gaveta_configuracoes_transcribrothers.tsx";
 import "./componente_pagina_principal_formulario_drive_preview_tutorial.css";
 import "./estilos_css_modal_escolher_versao_historico_tutorial_markdown_transcribrothers.css";
 
@@ -268,6 +343,12 @@ type ConfigPublicaTranscribrothers = {
   voz_tts_narracao_padrao_app: string;
   voz_tts_narracao_preferencia_sqlite_definida: boolean;
   voz_tts_narracao_vozes_disponiveis: { id: string; estilo: string }[];
+  tts_provedor_efetivo: string;
+  tts_provedor_preferencia_sqlite_definida: boolean;
+  elevenlabs_configurado: boolean;
+  elevenlabs_modelos: string[];
+  modelo_tts_elevenlabs_efetivo: string;
+  voz_tts_elevenlabs_efetiva: string;
 };
 
 type ResolucaoEncodeVideoNarradoUiTranscribrothers = "original" | "1080p" | "720p" | "480p";
@@ -413,6 +494,20 @@ function normalizarRespostaConfigPublicaTranscribrothersDaApi(
           })
           .filter((v): v is { id: string; estilo: string } => v != null)
       : [],
+    tts_provedor_efetivo: normalizarProvedorTtsNarracaoUiTranscribrothers(
+      String(raw.tts_provedor_efetivo ?? PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS),
+    ),
+    tts_provedor_preferencia_sqlite_definida: Boolean(raw.tts_provedor_preferencia_sqlite_definida),
+    elevenlabs_configurado: Boolean(raw.elevenlabs_configurado),
+    elevenlabs_modelos: Array.isArray(raw.elevenlabs_modelos)
+      ? (raw.elevenlabs_modelos as unknown[])
+          .map((p) => String(p || "").trim())
+          .filter(Boolean)
+      : [MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS],
+    modelo_tts_elevenlabs_efetivo: String(
+      raw.modelo_tts_elevenlabs_efetivo ?? MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+    ),
+    voz_tts_elevenlabs_efetiva: String(raw.voz_tts_elevenlabs_efetiva ?? ""),
   };
 }
 
@@ -609,10 +704,6 @@ async function restaurarHistoricoVersaoTutorialMarkdownJobApiTranscribrothers(
   }
   return (await r.json()) as JobStatus;
 }
-
-/** Texto do tooltip (i) ao lado de «Regenerar tutorial» no painel do FAB. */
-const TEXTO_TOOLTIP_INFO_PIXELS_REGENERACAO_TUTORIAL_FAB_TRANSCRIBROTHERS =
-  "O servidor envia pixels só para imagens que entram no pedido: as que já estão no tutorial com ![](assets/…png) ou as que você citar nas instruções (Figura 1, imagem 2, ou o caminho assets/…png). Sem isso, regeneração é só texto. Modelo: configurações (engrenagem).";
 
 type ResumoJobListaApiTranscribrothers = {
   id: string;
@@ -848,6 +939,21 @@ function IconeColarImagemClipboardTutorialMarkdownTranscribrothers() {
   );
 }
 
+function IconeChatAskAgenteHeaderToolbarTranscribrothers() {
+  return (
+    <IconeSvgHeaderToolbarTranscribrothers>
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+      />
+    </IconeSvgHeaderToolbarTranscribrothers>
+  );
+}
+
 function descreverMotivoAuditorOmitidoEmPtBrTranscribrothers(motivo: string | undefined): string {
   switch (motivo) {
     case "desativada_por_configuracao_ambiente":
@@ -879,6 +985,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     useState<ImportacaoRecbrothersModalStepperTranscribrothers | null>(null);
   const [configApi, setConfigApi] = useState<ConfigPublicaTranscribrothers | null>(null);
   const [modeloLitellm, setModeloLitellm] = useState("");
+  const [modeloChatAskAgente, setModeloChatAskAgente] = useState(
+    () => carregarModeloChatAskAgentePreferidoSalvoNoNavegadorTranscribrothers() ?? "",
+  );
   const [modeloTtsPreferidoSalvo, setModeloTtsPreferidoSalvo] = useState<string | null>(() =>
     carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers(),
   );
@@ -971,6 +1080,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const indicesCuesTimeoutTtsExperimentalEmProcessamentoRef = useRef<Set<number>>(new Set());
   const indicesCuesTimeoutTtsExperimentalSugerindoIaRef = useRef<Set<number>>(new Set());
   const [modalTranscricaoOriginalAberta, setModalTranscricaoOriginalAberta] = useState(false);
+  const [modalRevisarRepeticoesSuspeitasTranscricaoAberta, setModalRevisarRepeticoesSuspeitasTranscricaoAberta] =
+    useState(false);
+  const [bannerRepeticoesSuspeitasTranscricaoDispensado, setBannerRepeticoesSuspeitasTranscricaoDispensado] =
+    useState(false);
+  const [aplicandoColapsoRepeticoesSuspeitasTranscricao, setAplicandoColapsoRepeticoesSuspeitasTranscricao] =
+    useState(false);
   const [modalListaJobsServidorAberta, setModalListaJobsServidorAberta] = useState(false);
   const [modalEscolherVersaoHistoricoTutorialAberta, setModalEscolherVersaoHistoricoTutorialAberta] =
     useState(false);
@@ -1008,6 +1123,33 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [carregandoSelecaoJobListaId, setCarregandoSelecaoJobListaId] = useState<string | null>(null);
   const [apagandoJobServidorId, setApagandoJobServidorId] = useState<string | null>(null);
   const [painelRegeneracaoFabAberto, setPainelRegeneracaoFabAberto] = useState(false);
+  const [modoChatAskOuAgenteDocumento, setModoChatAskOuAgenteDocumento] = useState<"ask" | "agente">(
+    "agente",
+  );
+  const [mensagensChatAskAgenteDocumento, setMensagensChatAskAgenteDocumento] = useState<
+    MensagemChatAskAgenteDocumentoEmMemoriaTranscribrothers[]
+  >([]);
+  const [enviandoMensagemChatAskDocumento, setEnviandoMensagemChatAskDocumento] = useState(false);
+  const [preparandoPreviaDocumentoChatAgente, setPreparandoPreviaDocumentoChatAgente] =
+    useState(false);
+  const [frameAnexoComposerChatAsk, setFrameAnexoComposerChatAsk] =
+    useState<RespostaResolverFrameChatAskDocumentoJobApiTranscribrothers | null>(null);
+  const [confirmacaoLimparChatAskAberta, setConfirmacaoLimparChatAskAberta] = useState(false);
+  const [processandoLimparChatAskDocumento, setProcessandoLimparChatAskDocumento] = useState(false);
+  const epochCargaHistoricoChatAskAgenteRef = useRef(0);
+  const enviandoMensagemChatAskDocumentoRef = useRef(false);
+  const aplicarPropostaFerramentaChatAgenteRef = useRef<
+    | ((
+        proposta: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
+        caminhosImagensMensagem?: string[],
+        propostas?: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[],
+      ) => void)
+    | null
+  >(null);
+  const persistindoEstadoPreviewProntaChatAgenteRef = useRef(false);
+  const chavePreviewProntaPersistidaChatAgenteRef = useRef<string | null>(null);
+  const persistindoEstadoFalhouChatAgenteRef = useRef(false);
+  const chaveFalhouPersistidaChatAgenteRef = useRef<string | null>(null);
   const [modoPainelFabAtualizarTutorial, setModoPainelFabAtualizarTutorial] = useState<
     "regeneracao_inteira" | "edicao_parcial"
   >("regeneracao_inteira");
@@ -1058,6 +1200,15 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [vozTtsNarracaoForm, setVozTtsNarracaoForm] = useState("Kore");
   const [salvandoVozTtsRuntimeSqlite, setSalvandoVozTtsRuntimeSqlite] = useState(false);
   const [erroVozTtsRuntimeSqlite, setErroVozTtsRuntimeSqlite] = useState<string | null>(null);
+  const [provedorTtsNarracaoForm, setProvedorTtsNarracaoForm] = useState(
+    PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS,
+  );
+  const [vozTtsElevenlabsForm, setVozTtsElevenlabsForm] = useState("");
+  const [vozesTtsElevenlabsUi, setVozesTtsElevenlabsUi] = useState<
+    VozTtsElevenlabsUiTranscribrothers[]
+  >([]);
+  const [carregandoVozesElevenlabs, setCarregandoVozesElevenlabs] = useState(false);
+  const [erroVozesElevenlabs, setErroVozesElevenlabs] = useState<string | null>(null);
   const [pastasWikiForm, setPastasWikiForm] = useState<string[]>(["workshop"]);
   const [pastaWikiPadraoForm, setPastaWikiPadraoForm] = useState("workshop");
   const [novaPastaWikiForm, setNovaPastaWikiForm] = useState("");
@@ -1164,15 +1315,48 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     return mesclarModelosServidorComExtrasNavegadorTranscribrothers(base, modelosExtrasNavegador);
   }, [configApi, modelosExtrasNavegador, modeloLitellm]);
 
-  /** Preferência TTS do navegador (select da modal) → select geral se for TTS → primeiro -tts. */
-  const modeloTtsPreferidoUi = useMemo(
-    () =>
-      escolherModeloTtsDaListaDisponivelTranscribrothers(
-        modelosParaSelectLiteLLM,
-        modeloTtsPreferidoSalvo || modeloLitellm,
-      ),
-    [modelosParaSelectLiteLLM, modeloLitellm, modeloTtsPreferidoSalvo],
+  const modelosChatAskAgenteDisponiveis = useMemo(
+    () => listarModelosChatAskAgenteDaListaDisponivelTranscribrothers(modelosParaSelectLiteLLM),
+    [modelosParaSelectLiteLLM],
   );
+
+  useEffect(() => {
+    const escolhido = escolherModeloChatAskAgenteDaListaDisponivelTranscribrothers(
+      modelosChatAskAgenteDisponiveis,
+      modeloChatAskAgente,
+    );
+    if (!escolhido || escolhido === modeloChatAskAgente) return;
+    setModeloChatAskAgente(escolhido);
+    salvarModeloChatAskAgentePreferidoNoNavegadorTranscribrothers(escolhido);
+  }, [modeloChatAskAgente, modelosChatAskAgenteDisponiveis]);
+
+  const modelosTtsNarracaoDisponiveis = useMemo(
+    () =>
+      mesclarModelosTtsLitellmComElevenlabsSeConfiguradoTranscribrothers(
+        modelosParaSelectLiteLLM,
+        configApi?.elevenlabs_modelos ?? [MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS],
+        Boolean(configApi?.elevenlabs_configurado),
+      ),
+    [configApi?.elevenlabs_configurado, configApi?.elevenlabs_modelos, modelosParaSelectLiteLLM],
+  );
+
+  /** Preferência TTS do navegador (select da modal) → ElevenLabs se for o provedor → primeiro -tts. */
+  const modeloTtsPreferidoUi = useMemo(() => {
+    const preferidoProvedor =
+      normalizarProvedorTtsNarracaoUiTranscribrothers(configApi?.tts_provedor_efetivo) ===
+      PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS
+        ? MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS
+        : modeloLitellm;
+    return escolherModeloTtsDaListaDisponivelTranscribrothers(
+      modelosTtsNarracaoDisponiveis,
+      modeloTtsPreferidoSalvo || preferidoProvedor,
+    );
+  }, [
+    configApi?.tts_provedor_efetivo,
+    modeloLitellm,
+    modeloTtsPreferidoSalvo,
+    modelosTtsNarracaoDisponiveis,
+  ]);
 
   useEffect(() => {
     if (!modeloLitellm.trim()) return;
@@ -1201,6 +1385,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         : "1080p") as ResolucaoEncodeVideoNarradoUiTranscribrothers,
     );
     setVozTtsNarracaoForm(String(configApi.voz_tts_narracao_efetiva || "Kore"));
+    setProvedorTtsNarracaoForm(
+      normalizarProvedorTtsNarracaoUiTranscribrothers(configApi.tts_provedor_efetivo),
+    );
+    setVozTtsElevenlabsForm(String(configApi.voz_tts_elevenlabs_efetiva || ""));
     setPastasWikiForm(
       configApi.gitlab_wiki_pastas_disponiveis.length > 0
         ? [...configApi.gitlab_wiki_pastas_disponiveis]
@@ -1209,6 +1397,43 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setPastaWikiPadraoForm(configApi.gitlab_wiki_slug_prefixo_pasta || "workshop");
     setErroPastasWikiRuntime(null);
   }, [configApi]);
+
+  useEffect(() => {
+    const precisaVozes =
+      Boolean(configApi?.elevenlabs_configurado) &&
+      (painelConfiguracoesAberto || modalEscopoVideoNarradoAberto || paginaVideoNarradoAberta);
+    if (!precisaVozes) return;
+    let cancelado = false;
+    setCarregandoVozesElevenlabs(true);
+    setErroVozesElevenlabs(null);
+    void listarVozesTtsElevenlabsApiTranscribrothers()
+      .then((vozes) => {
+        if (cancelado) return;
+        setVozesTtsElevenlabsUi(vozes);
+        setVozTtsElevenlabsForm((atual) => {
+          if (atual && vozes.some((v) => v.id === atual)) return atual;
+          const salva = String(configApi?.voz_tts_elevenlabs_efetiva || "");
+          if (salva && vozes.some((v) => v.id === salva)) return salva;
+          return escolherPrimeiraVozTtsElevenlabsPreferindoPtBrTranscribrothers(vozes);
+        });
+      })
+      .catch((e) => {
+        if (cancelado) return;
+        setErroVozesElevenlabs(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelado) setCarregandoVozesElevenlabs(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [
+    configApi?.elevenlabs_configurado,
+    configApi?.voz_tts_elevenlabs_efetiva,
+    modalEscopoVideoNarradoAberto,
+    paginaVideoNarradoAberta,
+    painelConfiguracoesAberto,
+  ]);
 
   const seekSegundos = useCallback((segundos: number) => {
     const v = videoRef.current;
@@ -1377,6 +1602,26 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       setBaixandoMarkdownComImagens(false);
     }
   }, [job?.id, job?.result_markdown, resolverNomeAssetPngParaDownloadComDuasVersoesTranscribrothers]);
+
+  const baixarTextoPlanoTranscricaoComoArquivoTxtTranscribrothers = useCallback(() => {
+    const md = job?.result_markdown;
+    const id = job?.id;
+    if (!md || !id) return;
+    const texto = extrairTextoPlanoParaDownloadTxtTranscricaoDeMarkdownResultadoTranscribrothers(md);
+    if (!texto) {
+      pushToast("Não há texto corrido para baixar.", "info");
+      return;
+    }
+    const nomeBase = obterNomeBaseArquivoDownloadTutorialComTituloH1MarkdownOuJobIdTranscribrothers(md, id);
+    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = `${nomeBase}.txt`;
+    a.rel = "noopener";
+    a.click();
+    URL.revokeObjectURL(href);
+  }, [job?.id, job?.result_markdown, pushToast]);
 
   const abrirTutorialMarkdownEmNovaAbaNavegador = useCallback(async () => {
     const md = job?.result_markdown;
@@ -1727,7 +1972,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const modeloTts = modeloTtsPreferidoUi;
     if (!modeloTts) {
       pushToast(
-        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações ou configure a ElevenLabs (eleven_v4).",
         "error",
       );
       return;
@@ -1779,14 +2024,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }
   }, [job?.id, pushToast, urlAssetNarracaoTtsDocumento]);
 
-  const baixarVideoComNarracaoTtsDocumento = useCallback(() => {
+  const baixarVideoComNarracaoTtsDocumento = useCallback((nomeArquivo?: string) => {
     const url = urlDownloadVideoComNarracaoTts || (job?.id ? `/api/jobs/${job.id}/video-com-narracao-tts` : null);
     if (!url) {
       pushToast("Ainda não há vídeo com narração gerado.", "info");
       return;
     }
-    window.open(url, "_blank", "noopener,noreferrer");
-  }, [job?.id, pushToast, urlDownloadVideoComNarracaoTts]);
+    const nome =
+      (nomeArquivo || "").trim() ||
+      montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers(
+        resolverTituloInicialVideoNarradoAPartirDoH1MarkdownTranscribrothers(job?.result_markdown),
+        { jobId: job?.id },
+      );
+    dispararDownloadArquivoPorUrlComNomeTranscribrothers(url, nome);
+  }, [job?.id, job?.result_markdown, pushToast, urlDownloadVideoComNarracaoTts]);
 
   const [baixandoVideoComLegendasQueimadas, setBaixandoVideoComLegendasQueimadas] = useState(false);
 
@@ -1806,6 +2057,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       const resultado = await baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers(
         job.id,
         {
+          nomeArquivo: montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers(
+            resolverTituloInicialVideoNarradoAPartirDoH1MarkdownTranscribrothers(job.result_markdown),
+            { legendado: true, jobId: job.id },
+          ),
           onStatus: (s) => {
             if (s.status !== "gerando" && s.status !== "pendente") return;
             const pct =
@@ -1893,7 +2148,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       }
       const modeloTts =
         escolherModeloTtsDaListaDisponivelTranscribrothers(
-          modelosParaSelectLiteLLM,
+          modelosTtsNarracaoDisponiveis,
           escopo?.modeloTts || modeloTtsPreferidoUi,
         ) || null;
       const modeloChat = escolherModeloChatDaListaDisponivelTranscribrothers(
@@ -1902,7 +2157,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       );
       if (!modeloTts) {
         pushToast(
-          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações ou configure a ElevenLabs (eleven_v4).",
           "error",
         );
         return;
@@ -1917,12 +2172,34 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       setErro(null);
       setRegenerandoTutorialMarkdown(true);
       try {
-        const vozEscolhida = (escopo?.voz || configApi?.voz_tts_narracao_efetiva || "Kore").trim() || "Kore";
-        const rVoz = await fetch("/api/config/transcribrothers/voz-tts-narracao-runtime", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ voz: vozEscolhida }),
-        });
+        const ehElevenlabs = modeloTtsPareceElevenlabsPeloSlugTranscribrothers(modeloTts);
+        const vozEscolhida = (
+          escopo?.voz ||
+          (ehElevenlabs
+            ? configApi?.voz_tts_elevenlabs_efetiva || vozTtsElevenlabsForm
+            : configApi?.voz_tts_narracao_efetiva || "Kore")
+        ).trim();
+        if (ehElevenlabs && !vozEscolhida) {
+          throw new Error("Selecione uma voz da ElevenLabs antes de gerar o vídeo narrado.");
+        }
+        const rVoz = await fetch(
+          ehElevenlabs
+            ? "/api/config/transcribrothers/provedor-tts-narracao-runtime"
+            : "/api/config/transcribrothers/voz-tts-narracao-runtime",
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              ehElevenlabs
+                ? {
+                    provedor: PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS,
+                    modelo_elevenlabs: MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+                    voz_elevenlabs: vozEscolhida,
+                  }
+                : { voz: vozEscolhida || "Kore" },
+            ),
+          },
+        );
         if (!rVoz.ok) {
           const texto = await rVoz.text();
           throw new Error(texto || `Erro ao gravar voz TTS (HTTP ${rVoz.status})`);
@@ -1931,7 +2208,27 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           Record<string, unknown>;
         const cfgVoz = normalizarRespostaConfigPublicaTranscribrothersDaApi(rawVoz);
         setConfigApi(cfgVoz);
-        setVozTtsNarracaoForm(String(cfgVoz.voz_tts_narracao_efetiva || vozEscolhida));
+        setVozTtsNarracaoForm(String(cfgVoz.voz_tts_narracao_efetiva || vozEscolhida || "Kore"));
+        setProvedorTtsNarracaoForm(
+          normalizarProvedorTtsNarracaoUiTranscribrothers(cfgVoz.tts_provedor_efetivo),
+        );
+        setVozTtsElevenlabsForm(String(cfgVoz.voz_tts_elevenlabs_efetiva || vozEscolhida));
+        if (!ehElevenlabs && cfgVoz.tts_provedor_efetivo === PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS) {
+          const rProv = await fetch("/api/config/transcribrothers/provedor-tts-narracao-runtime", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provedor: PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS }),
+          });
+          if (rProv.ok) {
+            const rawProv = (await rProv.json()) as Partial<ConfigPublicaTranscribrothers> &
+              Record<string, unknown>;
+            const cfgProv = normalizarRespostaConfigPublicaTranscribrothersDaApi(rawProv);
+            setConfigApi(cfgProv);
+            setProvedorTtsNarracaoForm(
+              normalizarProvedorTtsNarracaoUiTranscribrothers(cfgProv.tts_provedor_efetivo),
+            );
+          }
+        }
 
         const perfilTtsEscolhido = escopo?.perfilTts || "padrao";
         const paralelismoTts = escopo?.paralelismoTtsExperimental ?? 3;
@@ -1966,7 +2263,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             ? " motor experimental (voz)"
             : " motor padrão";
         pushToast(
-          `Vídeo narrado na fila (${cfgVoz.voz_tts_narracao_efetiva}${perfilMsg}, temp. ${String(temperaturaTts).replace(".", ",")}, ritmo ${ritmoTts}, legendas ${diretrizConteudoLegendas}, ${paralelismoTts} em paralelo, TTS ${modeloTts}): preparação de legendas IA (${modeloChat}) → narração → MP4.${escopoMsg}`,
+          `Vídeo narrado na fila (${ehElevenlabs ? vozEscolhida : cfgVoz.voz_tts_narracao_efetiva}${perfilMsg}, temp. ${String(temperaturaTts).replace(".", ",")}, ritmo ${ritmoTts}, legendas ${diretrizConteudoLegendas}, ${paralelismoTts} em paralelo, TTS ${modeloTts}): preparação de legendas IA (${modeloChat}) → narração → MP4.${escopoMsg}`,
           "success",
         );
       } catch (e) {
@@ -1978,13 +2275,17 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       }
     },
     [
+      configApi?.tts_provedor_efetivo,
+      configApi?.voz_tts_elevenlabs_efetiva,
       configApi?.voz_tts_narracao_efetiva,
       job?.id,
       job?.result_markdown,
       modeloLitellm,
       modeloTtsPreferidoUi,
       modelosParaSelectLiteLLM,
+      modelosTtsNarracaoDisponiveis,
       pushToast,
+      vozTtsElevenlabsForm,
     ],
   );
 
@@ -1993,7 +2294,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const modeloTts = modeloTtsPreferidoUi;
     if (!modeloTts) {
       pushToast(
-        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+        "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações ou configure a ElevenLabs (eleven_v4).",
         "error",
       );
       return;
@@ -2059,12 +2360,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
       temperaturaTts?: number;
       ritmoTts?: string;
+      tituloArquivo?: string;
     }) => {
       if (!job?.id) return;
       const modeloTts = modeloTtsPreferidoUi;
       if (!modeloTts) {
         pushToast(
-          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações (ex.: gemini/gemini-2.5-flash-preview-tts).",
+          "Nenhum modelo TTS na lista. Adicione um slug com -tts em Configurações ou configure a ElevenLabs (eleven_v4).",
           "error",
         );
         return;
@@ -2076,6 +2378,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           litellmModel: modeloTts,
           temperaturaTts: payload.temperaturaTts,
           ritmoTts: payload.ritmoTts,
+          tituloArquivo: payload.tituloArquivo,
           cues: payload.cues,
           janelas: payload.janelas,
         });
@@ -2173,16 +2476,31 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 
   useEffect(() => {
     setPassoPipelineModalStatusComPainelDescricaoAbertoId(null);
+    setBannerRepeticoesSuspeitasTranscricaoDispensado(false);
+    setModalRevisarRepeticoesSuspeitasTranscricaoAberta(false);
   }, [job?.id]);
 
   useEffect(() => {
     if (!painelRegeneracaoFabAberto) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPainelRegeneracaoFabAberto(false);
+      if (e.key !== "Escape") return;
+      if (
+        modalProgressoJobAberto ||
+        modalPreviewRegeneracaoSecaoAberto ||
+        modalPreviewRegeneracaoTutorialAberto
+      ) {
+        return;
+      }
+      setPainelRegeneracaoFabAberto(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [painelRegeneracaoFabAberto]);
+  }, [
+    painelRegeneracaoFabAberto,
+    modalProgressoJobAberto,
+    modalPreviewRegeneracaoSecaoAberto,
+    modalPreviewRegeneracaoTutorialAberto,
+  ]);
 
   const solicitarExclusaoImagemDoMarkdownTutorialTranscribrothers = useCallback(
     (nomeArquivoOriginal: string, rotuloImagem: string) => {
@@ -2750,7 +3068,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   );
 
   const iniciarInserirImagemAssetNoDocumentoMarkdownTranscribrothers = useCallback(
-    async (nomeArquivoOriginal: string) => {
+    async (nomeArquivoParaSnippet: string) => {
       if (!job?.id) return;
       if (historicoVersaoTutorialSelecionadaId !== null) {
         pushToast("Volte à versão atual do tutorial para inserir imagens.", "info");
@@ -2760,7 +3078,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         pushToast("Não é possível editar o tutorial neste momento.", "info");
         return;
       }
-      const snippet = montarSnippetMarkdownImagemAssetTutorialTranscribrothers(nomeArquivoOriginal);
+      const snippet = montarSnippetMarkdownImagemAssetTutorialTranscribrothers(nomeArquivoParaSnippet);
+      const snippetUsaVersaoAnotada = nomeArquivoParaSnippet.toLowerCase().includes(".anotado.png");
       try {
         await copiarTextoParaAreaTransferenciaNavegadorTranscribrothers(snippet);
       } catch {
@@ -2782,16 +3101,23 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           ta.focus();
           ta.setSelectionRange(novaPosicaoCursor, novaPosicaoCursor);
         });
-        pushToast("Referência da imagem copiada e inserida no cursor do editor.", "success");
+        pushToast(
+          snippetUsaVersaoAnotada
+            ? "Imagem editada inserida no cursor. A captura original foi preservada nos assets."
+            : "Referência da imagem copiada e inserida no cursor do editor.",
+          "success",
+        );
         return;
       }
 
       setInsercaoMarkdownImagemAssetPendente({
         snippetMarkdown: snippet,
-        nomeArquivoOriginal,
+        nomeArquivoOriginal: nomeArquivoParaSnippet,
       });
       pushToast(
-        "Referência copiada. Passe o mouse no tutorial e clique na linha tracejada para inserir a imagem.",
+        snippetUsaVersaoAnotada
+          ? "Imagem editada pronta. Clique na linha do tutorial para inserir. A captura original foi preservada nos assets."
+          : "Referência copiada. Passe o mouse no tutorial e clique na linha tracejada para inserir a imagem.",
         "success",
       );
     },
@@ -2989,6 +3315,51 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     [job?.steps_json?.destino_apos_transcricao],
   );
 
+  const jobMostraDownloadTxtTranscricaoPreview =
+    destinoAposTranscricaoJobAtual === "so_transcricao" ||
+    job?.steps_json?.tipo_entrada_midia === "audio";
+
+  const ocorrenciasRepeticaoSuspeitaMarkdownPreview = useMemo(
+    () =>
+      detectarOcorrenciasRepeticaoSuspeitaEmTextoTranscricaoTranscribrothers(job?.result_markdown ?? ""),
+    [job?.result_markdown],
+  );
+
+  const mostrarBannerRepeticoesSuspeitasTranscricao =
+    job?.status === "completed" &&
+    historicoVersaoTutorialSelecionadaId === null &&
+    !bannerRepeticoesSuspeitasTranscricaoDispensado &&
+    ocorrenciasRepeticaoSuspeitaMarkdownPreview.length > 0;
+
+  const aplicarColapsoRepeticoesSuspeitasSelecionadasTranscricaoTranscribrothers = useCallback(
+    async (idsSelecionados: string[]) => {
+      if (!job?.id || !job.result_markdown) return;
+      const novo = aplicarColapsoOcorrenciasRepeticaoSelecionadasEmTextoTranscricaoTranscribrothers(
+        job.result_markdown,
+        ocorrenciasRepeticaoSuspeitaMarkdownPreview,
+        idsSelecionados,
+      );
+      if (novo === job.result_markdown) {
+        pushToast("Nenhuma alteração a aplicar.", "info");
+        return;
+      }
+      setAplicandoColapsoRepeticoesSuspeitasTranscricao(true);
+      try {
+        const j2 = await patchResultMarkdownJobTranscribrothers(job.id, novo);
+        setJob(j2);
+        setModalRevisarRepeticoesSuspeitasTranscricaoAberta(false);
+        pushToast("Trechos selecionados foram colapsados. A versão anterior ficou no histórico.", "success");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setAplicandoColapsoRepeticoesSuspeitasTranscricao(false);
+      }
+    },
+    [job, ocorrenciasRepeticaoSuspeitaMarkdownPreview, pushToast],
+  );
+
   const tituloFrameDocumentoResultadoTranscribrothers = useMemo(
     () => obterTituloFrameDocumentoPorDestinoAposTranscricaoTranscribrothers(destinoAposTranscricaoJobAtual),
     [destinoAposTranscricaoJobAtual],
@@ -3112,6 +3483,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setModoPainelFabAtualizarTutorial("regeneracao_inteira");
     setFabPresetRegeneracaoInteiraTranscribrothers(null);
     setPainelRegeneracaoFabAberto(false);
+    setModoChatAskOuAgenteDocumento("agente");
+    setMensagensChatAskAgenteDocumento([]);
+    setEnviandoMensagemChatAskDocumento(false);
+    setPreparandoPreviaDocumentoChatAgente(false);
+    enviandoMensagemChatAskDocumentoRef.current = false;
+    epochCargaHistoricoChatAskAgenteRef.current += 1;
     setAnexosContextoFabProjetoEmBranco([]);
     setModalTextoAnexoContextoFabAberta(false);
     setMenuMaisConteudoFabAberto(false);
@@ -3306,37 +3683,265 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }
   }, [job?.id, job?.status, job?.steps_json?.pipeline_fase]);
 
-  const fabRegeneracaoTutorialVisivel =
-    Boolean(job && jobPossuiSnapshotParaRegenerarTutorial) &&
+  const chatAskAgenteDocumentoJobVisivel =
+    jobPodeAbrirChatAskAgenteDocumentoTranscribrothers(job) &&
     Boolean(
       job &&
         (job.status === "completed" ||
           job.status === "failed" ||
           job.status === "generating_tutorial"),
+    ) &&
+    !paginaVideoNarradoAberta &&
+    !modoEdicaoMarkdownTutorialAtivo;
+
+  useEffect(() => {
+    if (!painelRegeneracaoFabAberto || !chatAskAgenteDocumentoJobVisivel || !jobId) return;
+    const epochNoInicio = epochCargaHistoricoChatAskAgenteRef.current;
+    let cancelado = false;
+    void buscarHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId)
+      .then((itens) => {
+        if (cancelado || epochNoInicio !== epochCargaHistoricoChatAskAgenteRef.current) return;
+        setMensagensChatAskAgenteDocumento(
+          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(itens),
+        );
+      })
+      .catch((e) => {
+        if (cancelado || epochNoInicio !== epochCargaHistoricoChatAskAgenteRef.current) return;
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [painelRegeneracaoFabAberto, chatAskAgenteDocumentoJobVisivel, jobId, pushToast]);
+
+  const persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers = useCallback(
+    async (textoInstrucoes: string, tipoPipeline: string) => {
+      if (!jobId) return;
+      const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+      try {
+        await anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
+          papel: "usuario",
+          modo: "agente",
+          texto: textoInstrucoes,
+          estado: null,
+          tipo_pipeline: null,
+        });
+        const historico = await anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
+          papel: "agente",
+          modo: "agente",
+          texto: textoInstrucoes,
+          estado: "gerando",
+          tipo_pipeline: tipoPipeline,
+        });
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        setMensagensChatAskAgenteDocumento(
+          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
+        );
+      } catch (e) {
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      }
+    },
+    [jobId, pushToast],
+  );
+
+  const registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers = useCallback(
+    async (aceitou: boolean) => {
+      if (!jobId) return;
+      const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+      try {
+        const historico = await anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
+          papel: "agente",
+          modo: "agente",
+          texto: aceitou
+            ? TEXTO_MENSAGEM_AGENTE_APLICOU_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS
+            : TEXTO_MENSAGEM_AGENTE_DESCARTOU_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS,
+          estado: null,
+          tipo_pipeline: null,
+        });
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        setMensagensChatAskAgenteDocumento(
+          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
+        );
+      } catch (e) {
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      }
+    },
+    [jobId, pushToast],
+  );
+
+  useEffect(() => {
+    if (previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro) {
+      setPreparandoPreviaDocumentoChatAgente(false);
+    }
+  }, [previewRegeneracaoSecaoMarkdown, previewRegeneracaoTutorialMarkdownDocumentoInteiro]);
+
+  useEffect(() => {
+    if (!preparandoPreviaDocumentoChatAgente) return;
+    if (job?.status === "failed") {
+      setPreparandoPreviaDocumentoChatAgente(false);
+    }
+  }, [job?.status, preparandoPreviaDocumentoChatAgente]);
+
+  useEffect(() => {
+    if (!preparandoPreviaDocumentoChatAgente) return;
+    const id = window.setTimeout(() => {
+      setPreparandoPreviaDocumentoChatAgente(false);
+      pushToast("A prévia demorou demais. Pode tentar de novo no chat.", "error");
+    }, MS_TETO_ESPERA_PREVIA_DOCUMENTO_CHAT_AGENTE_TRANSCRIBROTHERS);
+    return () => window.clearTimeout(id);
+  }, [preparandoPreviaDocumentoChatAgente, pushToast]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    const temSecao = Boolean(previewRegeneracaoSecaoMarkdown);
+    const temDocumentoInteiro = Boolean(previewRegeneracaoTutorialMarkdownDocumentoInteiro);
+    if (!temSecao && !temDocumentoInteiro) return;
+    const chave = temSecao
+      ? `secao:${previewRegeneracaoSecaoMarkdown?.criado_em ?? ""}`
+      : `doc:${previewRegeneracaoTutorialMarkdownDocumentoInteiro?.criado_em ?? ""}`;
+    const ultimoAgente = [...mensagensChatAskAgenteDocumento]
+      .reverse()
+      .find((mensagem) => mensagem.papel === "agente");
+    if (!ultimoAgente) return;
+    if (ultimoAgente.estado === "preview_pronta") {
+      chavePreviewProntaPersistidaChatAgenteRef.current = chave;
+      return;
+    }
+    if (chavePreviewProntaPersistidaChatAgenteRef.current === chave) return;
+    if (persistindoEstadoPreviewProntaChatAgenteRef.current) return;
+    persistindoEstadoPreviewProntaChatAgenteRef.current = true;
+    chavePreviewProntaPersistidaChatAgenteRef.current = chave;
+    const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    void anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
+      papel: "agente",
+      modo: "agente",
+      texto: ultimoAgente.texto,
+      estado: "preview_pronta",
+      tipo_pipeline: ultimoAgente.tipo_pipeline ?? null,
+    })
+      .then((historico) => {
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        setMensagensChatAskAgenteDocumento(
+          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
+        );
+      })
+      .catch((e) => {
+        chavePreviewProntaPersistidaChatAgenteRef.current = null;
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      })
+      .finally(() => {
+        persistindoEstadoPreviewProntaChatAgenteRef.current = false;
+      });
+  }, [
+    jobId,
+    previewRegeneracaoSecaoMarkdown,
+    previewRegeneracaoTutorialMarkdownDocumentoInteiro,
+    mensagensChatAskAgenteDocumento,
+    pushToast,
+  ]);
+
+  useEffect(() => {
+    if (!jobId || !job) return;
+    const temObjetoPreview = Boolean(
+      previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro,
     );
+    const ultimoAgente = [...mensagensChatAskAgenteDocumento]
+      .reverse()
+      .find((mensagem) => mensagem.papel === "agente");
+    if (
+      !turnoAgenteGerandoDevePersistirEstadoFalhouSemPreviaTranscribrothers({
+        statusJob: job.status,
+        temObjetoPreview,
+        estadoUltimoTurnoAgente: ultimoAgente?.estado,
+      })
+    ) {
+      return;
+    }
+    if (!ultimoAgente) return;
+    const chave = `${jobId}:${ultimoAgente.id}`;
+    if (chaveFalhouPersistidaChatAgenteRef.current === chave) return;
+    if (persistindoEstadoFalhouChatAgenteRef.current) return;
+    persistindoEstadoFalhouChatAgenteRef.current = true;
+    chaveFalhouPersistidaChatAgenteRef.current = chave;
+    const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    void anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
+      papel: "agente",
+      modo: "agente",
+      texto: ultimoAgente.texto,
+      estado: "falhou",
+      tipo_pipeline: ultimoAgente.tipo_pipeline ?? null,
+    })
+      .then((historico) => {
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        setMensagensChatAskAgenteDocumento(
+          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
+        );
+      })
+      .catch((e) => {
+        chaveFalhouPersistidaChatAgenteRef.current = null;
+        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
+        pushToast(e instanceof Error ? e.message : String(e), "error");
+      })
+      .finally(() => {
+        persistindoEstadoFalhouChatAgenteRef.current = false;
+      });
+  }, [
+    job,
+    jobId,
+    previewRegeneracaoSecaoMarkdown,
+    previewRegeneracaoTutorialMarkdownDocumentoInteiro,
+    mensagensChatAskAgenteDocumento,
+    pushToast,
+  ]);
 
   const regeneracaoTutorialEmAndamento =
     Boolean(job) && job?.status === "generating_tutorial" && Boolean(jobPossuiSnapshotParaRegenerarTutorial);
 
+  const temObjetoPreviewDocumentoChatAgente = Boolean(
+    previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro,
+  );
+  const mostrarSpinnerPreparandoPreviaChatAgente =
+    chatAskAgenteDeveMostrarSpinnerPreparandoPreviaTranscribrothers({
+      preparandoPrevia: preparandoPreviaDocumentoChatAgente,
+      temObjetoPreview: temObjetoPreviewDocumentoChatAgente,
+    });
+  const composerTravadoPorPreviaChatAgente =
+    composerChatAskAgenteDeveFicarTravadoPorPreviaDocumentoTranscribrothers({
+      enviandoMensagem: enviandoMensagemChatAskDocumento,
+      preparandoPrevia: preparandoPreviaDocumentoChatAgente,
+    });
+
   const jobEmExecucao = Boolean(job && !jobTerminal);
 
   const solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers = useCallback(
-    async (textoInstrucoes: string, extra?: { revisaoProfundaMultifase?: boolean }) => {
+    async (
+      textoInstrucoes: string,
+      extra?: { revisaoProfundaMultifase?: boolean; abrirModalProgresso?: boolean },
+      textoHistoricoUsuario?: string,
+    ) => {
       if (!job) return;
       setErro(null);
       setRegenerandoTutorialMarkdown(true);
       try {
         const j = await regenerarSomenteTutorialMarkdownTranscribrothers(job.id, {
           instrucoesRevisaoHumana: textoInstrucoes,
-          litellmModel: modeloLitellm.trim() || undefined,
+          litellmModel: modeloChatAskAgente.trim() || undefined,
           revisaoProfundaMultifase: extra?.revisaoProfundaMultifase,
           caminhosAssetsPngContextoFab: payloadContextoFabProjetoEmBrancoAtual.caminhos_assets_png_contexto_fab,
           textosContextoFab: payloadContextoFabProjetoEmBrancoAtual.textos_contexto_fab,
         });
         setJob(j);
-        setPainelRegeneracaoFabAberto(false);
         setAnexosContextoFabProjetoEmBranco([]);
-        setModalProgressoJobAberto(true);
+        if (extra?.abrirModalProgresso !== false) {
+          setModalProgressoJobAberto(true);
+          await persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers(
+            textoHistoricoUsuario ?? textoInstrucoes,
+            "tutorial",
+          );
+        }
         pushToast(
           extra?.revisaoProfundaMultifase
             ? "Revisão profunda pedida. Ao terminar, confira a pré-visualização antes de aplicar."
@@ -3347,27 +3952,38 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         const msg = e instanceof Error ? e.message : String(e);
         setErro(msg);
         pushToast(msg, "error");
+        setPreparandoPreviaDocumentoChatAgente(false);
       } finally {
         setRegenerandoTutorialMarkdown(false);
       }
     },
-    [job, modeloLitellm, payloadContextoFabProjetoEmBrancoAtual, pushToast],
+    [job, modeloChatAskAgente, payloadContextoFabProjetoEmBrancoAtual, persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers, pushToast],
   );
 
   const solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers = useCallback(
-    async (textoInstrucoes: string, documentoAutonomoSemVideo: boolean) => {
+    async (
+      textoInstrucoes: string,
+      documentoAutonomoSemVideo: boolean,
+      textoHistoricoUsuario?: string,
+      abrirModalProgresso = true,
+    ) => {
       if (!job) return;
       setErro(null);
       setRegenerandoTutorialMarkdown(true);
       try {
         const j = await regenerarMarkdownReproducaoBugJobApiTranscribrothers(job.id, {
           instrucoesRevisaoHumana: textoInstrucoes,
-          litellmModel: modeloLitellm.trim() || undefined,
+          litellmModel: modeloChatAskAgente.trim() || undefined,
           documentoAutonomoSemVideo,
         });
         setJob(j);
-        setPainelRegeneracaoFabAberto(false);
-        setModalProgressoJobAberto(true);
+        if (abrirModalProgresso) {
+          setModalProgressoJobAberto(true);
+          await persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers(
+            textoHistoricoUsuario ?? textoInstrucoes,
+            "reproducao_bug",
+          );
+        }
         pushToast(
           "Regeneração do roteiro pedida. Ao terminar, confira a pré-visualização antes de aplicar.",
           "success",
@@ -3376,27 +3992,38 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         const msg = e instanceof Error ? e.message : String(e);
         setErro(msg);
         pushToast(msg, "error");
+        setPreparandoPreviaDocumentoChatAgente(false);
       } finally {
         setRegenerandoTutorialMarkdown(false);
       }
     },
-    [job, modeloLitellm, pushToast],
+    [job, modeloChatAskAgente, persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers, pushToast],
   );
 
   const solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers = useCallback(
-    async (textoInstrucoes: string, documentoAutonomoSemVideo: boolean) => {
+    async (
+      textoInstrucoes: string,
+      documentoAutonomoSemVideo: boolean,
+      textoHistoricoUsuario?: string,
+      abrirModalProgresso = true,
+    ) => {
       if (!job) return;
       setErro(null);
       setRegenerandoTutorialMarkdown(true);
       try {
         const j = await regenerarMarkdownNotasPropostaJobApiTranscribrothers(job.id, {
           instrucoesRevisaoHumana: textoInstrucoes,
-          litellmModel: modeloLitellm.trim() || undefined,
+          litellmModel: modeloChatAskAgente.trim() || undefined,
           documentoAutonomoSemVideo,
         });
         setJob(j);
-        setPainelRegeneracaoFabAberto(false);
-        setModalProgressoJobAberto(true);
+        if (abrirModalProgresso) {
+          setModalProgressoJobAberto(true);
+          await persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers(
+            textoHistoricoUsuario ?? textoInstrucoes,
+            "notas_proposta",
+          );
+        }
         pushToast(
           "Regeneração das notas pedida. Ao terminar, confira a pré-visualização antes de aplicar.",
           "success",
@@ -3405,11 +4032,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         const msg = e instanceof Error ? e.message : String(e);
         setErro(msg);
         pushToast(msg, "error");
+        setPreparandoPreviaDocumentoChatAgente(false);
       } finally {
         setRegenerandoTutorialMarkdown(false);
       }
     },
-    [job, modeloLitellm, pushToast],
+    [job, modeloChatAskAgente, persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers, pushToast],
   );
 
   const processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers = useCallback(
@@ -3513,22 +4141,22 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const ajustarAlturaTextareaInstrucoesChatFabTranscribrothers = useCallback(() => {
     const el = refTextareaInstrucoesChatFabTranscribrothers.current;
     if (!el) return;
-    const alturaMinimaPx = 72;
-    const alturaMaximaPx = 280;
-    el.style.height = "0px";
-    const conteudoPx = el.scrollHeight;
-    const altura = Math.min(Math.max(conteudoPx, alturaMinimaPx), alturaMaximaPx);
-    el.style.height = `${altura}px`;
-    el.style.overflowY = conteudoPx > alturaMaximaPx ? "auto" : "hidden";
+    aplicarAlturaTextareaComposerChatAskAgenteTranscribrothers(el);
   }, []);
 
   useEffect(() => {
-    if (!painelRegeneracaoFabAberto || !jobEhProjetoEmBrancoTranscribrothers(job)) return;
+    if (!painelRegeneracaoFabAberto) {
+      ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+      return;
+    }
     ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+    const id = window.setTimeout(() => {
+      ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+    }, 450);
+    return () => window.clearTimeout(id);
   }, [
     instrucoesRegeneracaoTutorialMarkdown,
     painelRegeneracaoFabAberto,
-    job,
     ajustarAlturaTextareaInstrucoesChatFabTranscribrothers,
   ]);
 
@@ -3566,20 +4194,36 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   );
 
   const solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers = useCallback(
-    async (opcoes?: { instrucoesTexto?: string; fecharPainelFab?: boolean }) => {
+    async (opcoes?: {
+      instrucoesTexto?: string;
+      textoHistoricoUsuario?: string;
+      tituloSecaoHeading?: string;
+      interpretarEscopoAutomaticamente?: boolean;
+      edicaoCirurgicaChatAgente?: boolean;
+      caminhosAssetsPngContextoFab?: string[];
+      propostas?: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[];
+      abrirModalProgresso?: boolean;
+    }) => {
     if (!job) return;
     const inst = (opcoes?.instrucoesTexto ?? instrucoesRegeneracaoSecaoMarkdown).trim();
     const trecho = trechoAncoraEdicaoSecaoMarkdownForm.trim();
-    const manual = escopoEdicaoSecaoManualAtivoForm;
+    const cirurgica = opcoes?.edicaoCirurgicaChatAgente === true;
+    const manual = cirurgica
+      ? false
+      : opcoes?.interpretarEscopoAutomaticamente === true
+        ? false
+        : escopoEdicaoSecaoManualAtivoForm;
+    const tituloHeading =
+      (opcoes?.tituloSecaoHeading ?? tituloSecaoSelecionadaParaEdicao).trim();
     if (!inst) {
       pushToast("Descreva o que você quer melhorar.", "error");
       return;
     }
-    if (manual && modoEscopoEdicaoSecaoMarkdownForm !== "secao_inteira" && !trecho) {
+    if (!cirurgica && manual && modoEscopoEdicaoSecaoMarkdownForm !== "secao_inteira" && !trecho) {
       pushToast("Cole o trecho do tutorial que define o escopo.", "error");
       return;
     }
-    if (manual && modoEscopoEdicaoSecaoMarkdownForm === "secao_inteira" && !tituloSecaoSelecionadaParaEdicao.trim()) {
+    if (!cirurgica && manual && modoEscopoEdicaoSecaoMarkdownForm === "secao_inteira" && !tituloHeading) {
       pushToast("Escolha a seção «##» para reescrever por inteiro.", "error");
       return;
     }
@@ -3587,31 +4231,44 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setRegenerandoSecaoMarkdownTutorial(true);
     try {
       const j = (await pedirRegeneracaoSecaoMarkdownTutorialJobApiTranscribrothers(job.id, {
-        tituloSecaoHeading: tituloSecaoSelecionadaParaEdicao.trim() || undefined,
+        tituloSecaoHeading: tituloHeading || undefined,
         instrucoesRevisor: inst,
-        litellmModel: modeloLitellm.trim() || undefined,
+        litellmModel: modeloChatAskAgente.trim() || undefined,
         modoEscopoEdicao: modoEscopoEdicaoSecaoMarkdownForm,
-        trechoAncora: manual ? trecho || undefined : undefined,
-        interpretarEscopoAutomaticamente: !manual,
-        caminhosAssetsPngContextoFab: payloadContextoFabProjetoEmBrancoAtual.caminhos_assets_png_contexto_fab,
+        trechoAncora: cirurgica ? undefined : manual ? trecho || undefined : undefined,
+        interpretarEscopoAutomaticamente: cirurgica ? false : !manual,
+        edicaoCirurgicaChatAgente: cirurgica,
+        propostas: opcoes?.propostas,
+        caminhosAssetsPngContextoFab: mesclarCaminhosImagensPropostaChatAgenteDocumentoTranscribrothers(
+          payloadContextoFabProjetoEmBrancoAtual.caminhos_assets_png_contexto_fab,
+          opcoes?.caminhosAssetsPngContextoFab,
+        ),
         textosContextoFab: payloadContextoFabProjetoEmBrancoAtual.textos_contexto_fab,
       })) as JobStatus;
       setJob(j);
-      if (opcoes?.fecharPainelFab) {
-        setPainelRegeneracaoFabAberto(false);
-        setAnexosContextoFabProjetoEmBranco([]);
+      setAnexosContextoFabProjetoEmBranco([]);
+      const interpretaEscopo = !cirurgica && !manual;
+      if (opcoes?.abrirModalProgresso !== false && !cirurgica) {
+        await persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers(
+          opcoes?.textoHistoricoUsuario ?? inst,
+          "secao",
+        );
       }
-      const interpretaEscopo = !manual;
-      if (interpretaEscopo) {
+      if (opcoes?.abrirModalProgresso !== false && !interpretaEscopo && !cirurgica) {
+        setModalProgressoJobAberto(true);
+      }
+      if (cirurgica) {
+        pushToast("Edição parcial pedida. Confira a pré-visualização antes de aplicar.", "success");
+      } else if (interpretaEscopo) {
         pushToast("Analisando o que você pediu no tutorial…", "success");
       } else {
-        setModalProgressoJobAberto(true);
         pushToast("Edição pedida. Confira a pré-visualização antes de aplicar.", "success");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErro(msg);
       pushToast(msg, "error");
+      setPreparandoPreviaDocumentoChatAgente(false);
     } finally {
       setRegenerandoSecaoMarkdownTutorial(false);
     }
@@ -3623,8 +4280,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       escopoEdicaoSecaoManualAtivoForm,
       modoEscopoEdicaoSecaoMarkdownForm,
       trechoAncoraEdicaoSecaoMarkdownForm,
-      modeloLitellm,
+      modeloChatAskAgente,
       payloadContextoFabProjetoEmBrancoAtual,
+      persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers,
       pushToast,
     ],
   );
@@ -3647,52 +4305,237 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     [job, processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers],
   );
 
-  const enviarPedidoPainelFabAtualizarTutorialTranscribrothers = useCallback(() => {
-    if (modoPainelFabAtualizarTutorial === "edicao_parcial") {
-      void solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers({
-        instrucoesTexto: instrucoesRegeneracaoTutorialMarkdown,
-        fecharPainelFab: true,
-      });
-      return;
+  const anexarFrameDoPlayerChatAskComposerTranscribrothers = useCallback(async () => {
+    if (!jobId) return;
+    const instante = videoRef.current?.currentTime;
+    if (instante == null || !Number.isFinite(instante)) return;
+    try {
+      const resolvido = await resolverFrameChatAskDocumentoJobApiTranscribrothers(jobId, instante);
+      setFrameAnexoComposerChatAsk(resolvido);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      pushToast(msg, "error");
     }
-    if (jobEhReproducaoBugTranscribrothers(job)) {
-      void solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers(
-        instrucoesRegeneracaoTutorialMarkdown,
-        fabPresetRegeneracaoInteiraTranscribrothers === "sem_video",
+  }, [jobId, pushToast]);
+
+  const enviarMensagemChatAskDocumentoDoPainelTranscribrothers = useCallback(async () => {
+    if (!jobId || enviandoMensagemChatAskDocumentoRef.current) return;
+    const mensagem = instrucoesRegeneracaoTutorialMarkdown.trim();
+    if (!mensagem) return;
+    const instanteAnexo = frameAnexoComposerChatAsk?.instante_segundos ?? null;
+    const epochDesteEnvio = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    enviandoMensagemChatAskDocumentoRef.current = true;
+    setEnviandoMensagemChatAskDocumento(true);
+    setFrameAnexoComposerChatAsk(null);
+    const idStream = `ask-assistente-stream-${epochDesteEnvio}`;
+    setMensagensChatAskAgenteDocumento((prev) => [
+      ...prev,
+      { id: `ask-usuario-local-${epochDesteEnvio}`, papel: "usuario", texto: mensagem },
+      { id: idStream, papel: "assistente", texto: "", estado: "escrevendo" },
+    ]);
+    setInstrucoesRegeneracaoTutorialMarkdown("");
+    try {
+      const resposta = await enviarMensagemChatAskDocumentoJobApiEmStreamTranscribrothers(
+        jobId,
+        mensagem,
+        instanteAnexo,
+        modeloChatAskAgente.trim() || null,
+        (texto) => {
+          if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+          setMensagensChatAskAgenteDocumento((prev) =>
+            prev.map((item) => (item.id === idStream ? { ...item, texto } : item)),
+          );
+        },
       );
-      return;
-    }
-    if (jobEhNotasPropostaFuncionalidadeTranscribrothers(job)) {
-      void solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers(
-        instrucoesRegeneracaoTutorialMarkdown,
-        fabPresetRegeneracaoInteiraTranscribrothers === "sem_video",
+      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      setMensagensChatAskAgenteDocumento(
+        mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(resposta.historico),
       );
-      return;
+    } catch (e) {
+      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      const msg = e instanceof Error ? e.message : String(e);
+      pushToast(msg, "error");
+      setMensagensChatAskAgenteDocumento((prev) => [
+        ...prev,
+        { id: `ask-erro-local-${epochDesteEnvio}`, papel: "assistente", texto: msg, ehErro: true },
+      ]);
+    } finally {
+      if (epochCargaHistoricoChatAskAgenteRef.current === epochDesteEnvio) {
+        enviandoMensagemChatAskDocumentoRef.current = false;
+        setEnviandoMensagemChatAskDocumento(false);
+      }
     }
-    if (
-      jobEhProjetoEmBrancoTranscribrothers(job) &&
-      fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
-    ) {
-      pushToast("Revisão profunda não está disponível em projeto em branco.", "info");
-      return;
-    }
-    void solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers(
-      instrucoesRegeneracaoTutorialMarkdown,
-      fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
-        ? { revisaoProfundaMultifase: true }
-        : undefined,
-    );
   }, [
-    job,
-    modoPainelFabAtualizarTutorial,
+    jobId,
     instrucoesRegeneracaoTutorialMarkdown,
-    fabPresetRegeneracaoInteiraTranscribrothers,
-    solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers,
-    solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers,
-    solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers,
-    solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers,
+    frameAnexoComposerChatAsk,
+    modeloChatAskAgente,
     pushToast,
   ]);
+
+  const enviarMensagemChatAgenteDocumentoDoPainelTranscribrothers = useCallback(async () => {
+    if (!jobId || enviandoMensagemChatAskDocumentoRef.current) return;
+    const mensagem = instrucoesRegeneracaoTutorialMarkdown.trim();
+    if (!mensagem) return;
+    const instanteAnexo = frameAnexoComposerChatAsk?.instante_segundos ?? null;
+    const epochDesteEnvio = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    enviandoMensagemChatAskDocumentoRef.current = true;
+    setEnviandoMensagemChatAskDocumento(true);
+    setFrameAnexoComposerChatAsk(null);
+    const idStream = `agente-assistente-stream-${epochDesteEnvio}`;
+    setMensagensChatAskAgenteDocumento((prev) => [
+      ...prev,
+      { id: `agente-usuario-local-${epochDesteEnvio}`, papel: "usuario", texto: mensagem },
+      { id: idStream, papel: "agente", texto: "", estado: "escrevendo" },
+    ]);
+    setInstrucoesRegeneracaoTutorialMarkdown("");
+    try {
+      const resposta = await enviarMensagemChatAgenteDocumentoJobApiEmStreamTranscribrothers(
+        jobId,
+        mensagem,
+        instanteAnexo,
+        modeloChatAskAgente.trim() || null,
+        null,
+        (texto) => {
+          if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+          setMensagensChatAskAgenteDocumento((prev) =>
+            prev.map((item) => (item.id === idStream ? { ...item, texto } : item)),
+          );
+        },
+      );
+      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      setMensagensChatAskAgenteDocumento(
+        mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(resposta.historico),
+      );
+      if (resposta.executar_proposta && resposta.proposta_ferramenta) {
+        setPreparandoPreviaDocumentoChatAgente(true);
+        aplicarPropostaFerramentaChatAgenteRef.current?.(
+          resposta.proposta_ferramenta,
+          caminhosRelativosDeImagensHistoricoChatAskTranscribrothers(resposta.imagens),
+          resposta.propostas_ferramenta,
+        );
+      }
+    } catch (e) {
+      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      const msg = e instanceof Error ? e.message : String(e);
+      pushToast(msg, "error");
+      setMensagensChatAskAgenteDocumento((prev) => [
+        ...prev,
+        { id: `agente-erro-local-${epochDesteEnvio}`, papel: "assistente", texto: msg, ehErro: true },
+      ]);
+    } finally {
+      if (epochCargaHistoricoChatAskAgenteRef.current === epochDesteEnvio) {
+        enviandoMensagemChatAskDocumentoRef.current = false;
+        setEnviandoMensagemChatAskDocumento(false);
+      }
+    }
+  }, [
+    jobId,
+    instrucoesRegeneracaoTutorialMarkdown,
+    frameAnexoComposerChatAsk,
+    modeloChatAskAgente,
+    pushToast,
+  ]);
+
+  const aplicarPropostaFerramentaChatAgenteDocumentoTranscribrothers = useCallback(
+    async (
+      proposta: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
+      caminhosImagensMensagem?: string[],
+      propostas?: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[],
+    ) => {
+      if (propostaFerramentaChatAgenteExigeConfirmacaoForteTranscribrothers(proposta.nome)) {
+        const ok = await pedirConfirmacao({
+          titulo: rotuloBotaoPropostaFerramentaChatAgenteTranscribrothers(proposta.nome),
+          mensagem: textoConfirmacaoPropostaFerramentaChatAgenteTranscribrothers(proposta.nome),
+          rotuloConfirmar: rotuloBotaoPropostaFerramentaChatAgenteTranscribrothers(proposta.nome),
+          varianteConfirmar: "destrutiva",
+        });
+        if (!ok) return;
+      }
+      setPreparandoPreviaDocumentoChatAgente(true);
+      const lote = resolverPropostasEdicaoParcialParaAplicarChatAgenteTranscribrothers(
+        proposta,
+        propostas,
+      );
+      const instrucoes = (proposta.instrucoes || "").trim() || "Pedido combinado no chat.";
+      if (lote.length > 0) {
+        void solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers({
+          instrucoesTexto: instrucoes,
+          textoHistoricoUsuario: instrucoes,
+          tituloSecaoHeading: lote[0]?.titulo_secao_heading || undefined,
+          interpretarEscopoAutomaticamente: false,
+          edicaoCirurgicaChatAgente: true,
+          propostas: lote,
+          caminhosAssetsPngContextoFab: mesclarCaminhosImagensPropostaChatAgenteDocumentoTranscribrothers(
+            ...lote.map((item) => item.caminhos_imagens),
+            caminhosImagensMensagem,
+          ),
+          abrirModalProgresso: false,
+        });
+        return;
+      }
+      if (proposta.nome === "revisao_profunda") {
+        void solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers(
+          instrucoes,
+          { revisaoProfundaMultifase: true, abrirModalProgresso: false },
+          instrucoes,
+        );
+        return;
+      }
+      if (proposta.nome === "sem_video") {
+        if (jobEhReproducaoBugTranscribrothers(job)) {
+          void solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers(
+            instrucoes,
+            true,
+            instrucoes,
+            false,
+          );
+          return;
+        }
+        if (jobEhNotasPropostaFuncionalidadeTranscribrothers(job)) {
+          void solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers(
+            instrucoes,
+            true,
+            instrucoes,
+            false,
+          );
+          return;
+        }
+        void solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers(
+          instrucoes,
+          { abrirModalProgresso: false },
+          instrucoes,
+        );
+        return;
+      }
+      setPreparandoPreviaDocumentoChatAgente(false);
+    },
+    [
+      job,
+      solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers,
+      solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers,
+      solicitarRegeneracaoReproducaoBugMarkdownComTextoInstrucoesTranscribrothers,
+      solicitarRegeneracaoNotasPropostaMarkdownComTextoInstrucoesTranscribrothers,
+      pedirConfirmacao,
+    ],
+  );
+  aplicarPropostaFerramentaChatAgenteRef.current =
+    aplicarPropostaFerramentaChatAgenteDocumentoTranscribrothers;
+
+  const confirmarLimparHistoricoChatAskAgenteDocumentoTranscribrothers = useCallback(async () => {
+    if (!jobId || processandoLimparChatAskDocumento) return;
+    setProcessandoLimparChatAskDocumento(true);
+    try {
+      await limparHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId);
+      setMensagensChatAskAgenteDocumento([]);
+      setConfirmacaoLimparChatAskAberta(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      pushToast(msg, "error");
+    } finally {
+      setProcessandoLimparChatAskDocumento(false);
+    }
+  }, [jobId, processandoLimparChatAskDocumento, pushToast]);
 
   const copiarTranscricaoOriginalParaClipboardTranscribrothers = useCallback(async () => {
     const t = textoPlanoTranscricaoOriginalSnapshotJob;
@@ -3923,14 +4766,16 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     return job.error_message.trim();
   }, [job?.error_message]);
 
-  async function adicionarNovoModeloLitellmNaConfiguracao() {
-    const t = novoSlugModeloLitellm.trim();
+  async function adicionarNovoModeloLitellmNaConfiguracao(slugInformado?: string) {
+    const t = (slugInformado ?? novoSlugModeloLitellm).trim();
     if (!t || verificandoModeloLitellmProbeOrigem) return;
     const lista = adicionarModeloLitellmExtraAoArmazenamentoLocalNavegadorTranscribrothers(t);
     setModelosExtrasNavegador(lista);
     setModeloLitellm(t);
-    setNovoSlugModeloLitellm("");
-    setResultadoProbeNovoModeloLitellm(null);
+    if (!slugInformado) {
+      setNovoSlugModeloLitellm("");
+      setResultadoProbeNovoModeloLitellm(null);
+    }
     try {
       const r = await fetch("/api/config/transcribrothers/modelos-litellm-extras-runtime", {
         method: "PATCH",
@@ -4255,6 +5100,95 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     }
   }
 
+  async function salvarProvedorTtsNarracaoRuntimePersistidoSqliteTranscribrothers() {
+    setErroVozTtsRuntimeSqlite(null);
+    setSalvandoVozTtsRuntimeSqlite(true);
+    try {
+      const provedor = normalizarProvedorTtsNarracaoUiTranscribrothers(provedorTtsNarracaoForm);
+      if (provedor === PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS) {
+        if (!configApi?.elevenlabs_configurado) {
+          throw new Error("Defina ELEVENLABS_API_KEY no servidor para usar a ElevenLabs.");
+        }
+        if (!vozTtsElevenlabsForm.trim()) {
+          throw new Error("Selecione uma voz da ElevenLabs.");
+        }
+      }
+      const r = await fetch("/api/config/transcribrothers/provedor-tts-narracao-runtime", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provedor,
+          modelo_elevenlabs: MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+          voz_elevenlabs:
+            provedor === PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS
+              ? vozTtsElevenlabsForm.trim()
+              : undefined,
+        }),
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      const cfg = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+      setConfigApi(cfg);
+      setProvedorTtsNarracaoForm(normalizarProvedorTtsNarracaoUiTranscribrothers(cfg.tts_provedor_efetivo));
+      setVozTtsElevenlabsForm(String(cfg.voz_tts_elevenlabs_efetiva || vozTtsElevenlabsForm));
+      if (provedor === PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS) {
+        const rVoz = await fetch("/api/config/transcribrothers/voz-tts-narracao-runtime", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voz: vozTtsNarracaoForm }),
+        });
+        if (!rVoz.ok) {
+          const texto = await rVoz.text();
+          throw new Error(texto || `Erro HTTP ${rVoz.status}`);
+        }
+        const rawVoz = (await rVoz.json()) as Partial<ConfigPublicaTranscribrothers> &
+          Record<string, unknown>;
+        const cfgVoz = normalizarRespostaConfigPublicaTranscribrothersDaApi(rawVoz);
+        setConfigApi(cfgVoz);
+        setVozTtsNarracaoForm(String(cfgVoz.voz_tts_narracao_efetiva || vozTtsNarracaoForm));
+        pushToast(`Provedor TTS gravado: LiteLLM (Gemini), voz ${cfgVoz.voz_tts_narracao_efetiva}.`, "success");
+        return;
+      }
+      pushToast(
+        `Provedor TTS gravado: ElevenLabs (${cfg.modelo_tts_elevenlabs_efetivo}, voz ${cfg.voz_tts_elevenlabs_efetiva}).`,
+        "success",
+      );
+    } catch (e) {
+      setErroVozTtsRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoVozTtsRuntimeSqlite(false);
+    }
+  }
+
+  async function limparPreferenciaProvedorTtsNarracaoRuntimeSqliteTranscribrothers() {
+    setErroVozTtsRuntimeSqlite(null);
+    setSalvandoVozTtsRuntimeSqlite(true);
+    try {
+      const r = await fetch("/api/config/transcribrothers/provedor-tts-narracao-runtime", {
+        method: "DELETE",
+      });
+      if (!r.ok) {
+        const texto = await r.text();
+        throw new Error(texto || `Erro HTTP ${r.status}`);
+      }
+      const raw = (await r.json()) as Partial<ConfigPublicaTranscribrothers> & Record<string, unknown>;
+      const cfg = normalizarRespostaConfigPublicaTranscribrothersDaApi(raw);
+      setConfigApi(cfg);
+      setProvedorTtsNarracaoForm(
+        normalizarProvedorTtsNarracaoUiTranscribrothers(cfg.tts_provedor_efetivo),
+      );
+      setVozTtsElevenlabsForm(String(cfg.voz_tts_elevenlabs_efetiva || ""));
+      pushToast("Provedor TTS voltou ao LiteLLM (Gemini).", "success");
+    } catch (e) {
+      setErroVozTtsRuntimeSqlite(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvandoVozTtsRuntimeSqlite(false);
+    }
+  }
+
   function abrirGavetaConfiguracoesTranscribrothers() {
     setPainelConfiguracoesFechando(false);
     setPainelConfiguracoesAberto(true);
@@ -4428,6 +5362,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           Adicionar
         </button>
       </div>
+      <ComponentePainelCatalogoModelosLitellmProxyGavetaConfiguracoesTranscribrothers
+        desabilitado={verificandoModeloLitellmProbeOrigem !== null}
+        aoAdicionarModelo={(slug) => adicionarNovoModeloLitellmNaConfiguracao(slug)}
+      />
       </div>
       ) : null}
 
@@ -4669,54 +5607,125 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       </div>
 
       <div className="tb-drawer-secao-head tb-drawer-secao-head--apos-bloco">
-        <h3 className="tb-drawer-subtitulo">Voz da narração (TTS)</h3>
+        <h3 className="tb-drawer-subtitulo">Narração (TTS)</h3>
         <details className="tb-drawer-micro-ajuda">
           <summary>Sobre</summary>
           <div className="tb-drawer-micro-ajuda-corpo">
             <p>
-              Padrão persistido da voz Gemini TTS 2.5. O lugar principal para escolher (e ouvir amostra) é a modal{" "}
-              <strong>Gerar vídeo narrado</strong>. Aqui você só ajusta o padrão sem disparar a pipeline. Padrão do
-              app: <strong>Kore</strong>.
+              Escolha o provedor, o modelo e a voz. LiteLLM usa Gemini no proxy; ElevenLabs chama a API
+              direta com <strong>eleven_v4</strong> (sem turbo). A modal{" "}
+              <strong>Gerar vídeo narrado</strong> é o lugar principal para ouvir amostra.
             </p>
           </div>
         </details>
       </div>
-      {configApi.voz_tts_narracao_preferencia_sqlite_definida ? (
-        <p className="tb-drawer-badge-runtime-ativo">Preferência de voz TTS na base ativa.</p>
+      {configApi.tts_provedor_preferencia_sqlite_definida ||
+      configApi.voz_tts_narracao_preferencia_sqlite_definida ? (
+        <p className="tb-drawer-badge-runtime-ativo">Preferência de TTS na base ativa.</p>
       ) : (
         <p className="tb-muted tb-drawer-dica-inline">
-          Sem override na base — padrão do app ({configApi.voz_tts_narracao_padrao_app}).
+          Sem override na base — LiteLLM / Gemini ({configApi.voz_tts_narracao_padrao_app}).
         </p>
       )}
-      <label className="tb-label tb-label-spaced" htmlFor="tb-voz-tts-narracao">
-        Voz Gemini (padrão)
+      <label className="tb-label tb-label-spaced" htmlFor="tb-provedor-tts-narracao">
+        Provedor
       </label>
       <select
-        id="tb-voz-tts-narracao"
+        id="tb-provedor-tts-narracao"
         className="tb-select"
-        value={vozTtsNarracaoForm}
-        onChange={(e) => setVozTtsNarracaoForm(e.target.value)}
+        value={provedorTtsNarracaoForm}
+        onChange={(e) =>
+          setProvedorTtsNarracaoForm(normalizarProvedorTtsNarracaoUiTranscribrothers(e.target.value))
+        }
         disabled={salvandoVozTtsRuntimeSqlite}
       >
-        {(configApi.voz_tts_narracao_vozes_disponiveis.length > 0
-          ? configApi.voz_tts_narracao_vozes_disponiveis
-          : [{ id: "Kore", estilo: "Firme" }]
-        ).map((op) => (
-          <option key={op.id} value={op.id}>
-            {op.id} — {op.estilo}
-          </option>
-        ))}
+        <option value={PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS}>LiteLLM (Gemini)</option>
+        <option
+          value={PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS}
+          disabled={!configApi.elevenlabs_configurado}
+        >
+          ElevenLabs{configApi.elevenlabs_configurado ? "" : " — sem ELEVENLABS_API_KEY"}
+        </option>
       </select>
-      <p className="tb-muted tb-drawer-dica-inline">
-        Efetiva agora: <strong>{configApi.voz_tts_narracao_efetiva}</strong>.
-      </p>
+      {provedorTtsNarracaoForm === PROVEDOR_TTS_ELEVENLABS_TRANSCRIBROTHERS ? (
+        <>
+          <label className="tb-label tb-label-spaced" htmlFor="tb-modelo-tts-elevenlabs">
+            Modelo ElevenLabs
+          </label>
+          <select
+            id="tb-modelo-tts-elevenlabs"
+            className="tb-select"
+            value={MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS}
+            disabled
+          >
+            <option value={MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS}>eleven_v4</option>
+          </select>
+          <label className="tb-label tb-label-spaced" htmlFor="tb-voz-tts-elevenlabs">
+            Voz ElevenLabs
+          </label>
+          <select
+            id="tb-voz-tts-elevenlabs"
+            className="tb-select"
+            value={vozTtsElevenlabsForm}
+            onChange={(e) => setVozTtsElevenlabsForm(e.target.value)}
+            disabled={salvandoVozTtsRuntimeSqlite || carregandoVozesElevenlabs}
+          >
+            {vozesTtsElevenlabsUi.length === 0 ? (
+              <option value="">
+                {carregandoVozesElevenlabs ? "Carregando vozes…" : "Nenhuma voz listada"}
+              </option>
+            ) : (
+              <ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers
+                vozes={vozesTtsElevenlabsUi}
+              />
+            )}
+          </select>
+          {erroVozesElevenlabs ? <p className="tb-drawer-erro-mm">{erroVozesElevenlabs}</p> : null}
+          <p className="tb-muted tb-drawer-dica-inline">
+            Vozes em português do Brasil (quando a ElevenLabs marca locale/sotaque) aparecem primeiro.
+          </p>
+          <p className="tb-muted tb-drawer-dica-inline">
+            Efetivo agora: <strong>{configApi.tts_provedor_efetivo}</strong> /{" "}
+            <strong>{configApi.modelo_tts_elevenlabs_efetivo}</strong>
+            {configApi.voz_tts_elevenlabs_efetiva
+              ? ` / voz ${configApi.voz_tts_elevenlabs_efetiva}`
+              : ""}
+            .
+          </p>
+        </>
+      ) : (
+        <>
+          <label className="tb-label tb-label-spaced" htmlFor="tb-voz-tts-narracao">
+            Voz Gemini (padrão)
+          </label>
+          <select
+            id="tb-voz-tts-narracao"
+            className="tb-select"
+            value={vozTtsNarracaoForm}
+            onChange={(e) => setVozTtsNarracaoForm(e.target.value)}
+            disabled={salvandoVozTtsRuntimeSqlite}
+          >
+            {(configApi.voz_tts_narracao_vozes_disponiveis.length > 0
+              ? configApi.voz_tts_narracao_vozes_disponiveis
+              : [{ id: "Kore", estilo: "Firme" }]
+            ).map((op) => (
+              <option key={op.id} value={op.id}>
+                {op.id} — {op.estilo}
+              </option>
+            ))}
+          </select>
+          <p className="tb-muted tb-drawer-dica-inline">
+            Efetiva agora: <strong>{configApi.voz_tts_narracao_efetiva}</strong>.
+          </p>
+        </>
+      )}
       {erroVozTtsRuntimeSqlite ? <p className="tb-drawer-erro-mm">{erroVozTtsRuntimeSqlite}</p> : null}
       <div className="tb-drawer-row-salvar-mm">
         <button
           type="button"
           className="tb-btn-drawer-primario"
           disabled={salvandoVozTtsRuntimeSqlite}
-          onClick={() => void salvarVozTtsNarracaoRuntimePersistidoSqliteTranscribrothers()}
+          onClick={() => void salvarProvedorTtsNarracaoRuntimePersistidoSqliteTranscribrothers()}
         >
           {salvandoVozTtsRuntimeSqlite ? "Salvando…" : "Salvar"}
         </button>
@@ -4724,10 +5733,17 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           type="button"
           className="tb-btn-drawer-secundario"
           disabled={
-            salvandoVozTtsRuntimeSqlite || !configApi.voz_tts_narracao_preferencia_sqlite_definida
+            salvandoVozTtsRuntimeSqlite ||
+            !(
+              configApi.tts_provedor_preferencia_sqlite_definida ||
+              configApi.voz_tts_narracao_preferencia_sqlite_definida
+            )
           }
-          onClick={() => void limparPreferenciaVozTtsNarracaoRuntimeSqliteTranscribrothers()}
-          title={`Volta ao padrão do app (${configApi.voz_tts_narracao_padrao_app})`}
+          onClick={() => {
+            void limparPreferenciaProvedorTtsNarracaoRuntimeSqliteTranscribrothers();
+            void limparPreferenciaVozTtsNarracaoRuntimeSqliteTranscribrothers();
+          }}
+          title="Volta ao LiteLLM / Gemini (Kore)"
         >
           Restaurar padrão
         </button>
@@ -5557,9 +6573,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       </div>
     );
 
+  const classesLayoutPagina = classesLayoutPaginaProjetoCabecalhoForaDaRolagemTranscribrothers();
+
   return (
-    <div className="tb-page">
-      <header className="tb-header tb-header-fixed">
+    <div
+      className={classesLayoutPagina.pagina}
+      style={{ ["--tb-vao-cabecalho-corpo" as string]: `${classesLayoutPagina.vaoCabecalhoPx}px` }}
+    >
+      <header className={classesLayoutPagina.cabecalho}>
         <div className="tb-header-inner">
           <div className="tb-header-bar">
             <div className="tb-header-marca">
@@ -5669,6 +6690,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         </div>
       </header>
 
+      <div className={classesLayoutPagina.corpoRolavel}>
+      <div className={classesLayoutPagina.corpoRolavelInterno}>
       <ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribrothers
         aberto={modalIniciarTranscricaoAberto}
         carregando={carregando}
@@ -5714,6 +6737,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         carregando={regenerandoTutorialMarkdown}
         vozInicial={configApi?.voz_tts_narracao_efetiva || vozTtsNarracaoForm || "Kore"}
         vozesDisponiveis={configApi?.voz_tts_narracao_vozes_disponiveis ?? []}
+        elevenlabsConfigurado={Boolean(configApi?.elevenlabs_configurado)}
+        elevenlabsModelos={configApi?.elevenlabs_modelos ?? [MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS]}
+        vozesElevenlabsDisponiveis={vozesTtsElevenlabsUi}
+        vozElevenlabsInicial={configApi?.voz_tts_elevenlabs_efetiva || vozTtsElevenlabsForm}
+        carregandoVozesElevenlabs={carregandoVozesElevenlabs}
         perfilTtsInicial={
           typeof job?.steps_json?.pipeline_video_narrado_perfil_tts === "string"
             ? job.steps_json.pipeline_video_narrado_perfil_tts
@@ -5822,6 +6850,12 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                   <h2 id="tb-modal-secao-preview-titulo" className="tb-modal-job-titulo">
                     Pré-visualização — {previewRegeneracaoSecaoMarkdown.titulo_secao_heading}
                   </h2>
+                  {previewRegeneracaoSecaoMarkdown.alerta_itens_lista_removidos ? (
+                    <p className="tb-muted tb-banner-interpretacao-escopo-secao" role="status">
+                      <strong>Atenção:</strong>{" "}
+                      {previewRegeneracaoSecaoMarkdown.alerta_itens_lista_removidos}
+                    </p>
+                  ) : null}
                   {previewRegeneracaoSecaoMarkdown.interpretacao_escopo_pedido?.explicacao_curta ? (
                     <p className="tb-muted tb-banner-interpretacao-escopo-secao">
                       <strong>Entendido:</strong>{" "}
@@ -5938,6 +6972,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                             )) as JobStatus;
                             setJob(j);
                             setModalPreviewRegeneracaoSecaoAberto(false);
+                            await registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers(false);
                             pushToast("Pré-visualização descartada.", "success");
                           } catch (e) {
                             pushToast(e instanceof Error ? e.message : String(e), "error");
@@ -5963,6 +6998,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                             )) as JobStatus;
                             setJob(j);
                             setModalPreviewRegeneracaoSecaoAberto(false);
+                            await registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers(true);
                             pushToast("Seção aplicada ao tutorial.", "success");
                           } catch (e) {
                             pushToast(e instanceof Error ? e.message : String(e), "error");
@@ -6081,6 +7117,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                             )) as JobStatus;
                             setJob(j);
                             setModalPreviewRegeneracaoTutorialAberto(false);
+                            await registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers(false);
                             pushToast("Pré-visualização descartada.", "success");
                           } catch (e) {
                             pushToast(e instanceof Error ? e.message : String(e), "error");
@@ -6106,6 +7143,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                             )) as JobStatus;
                             setJob(j);
                             setModalPreviewRegeneracaoTutorialAberto(false);
+                            await registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers(true);
                             pushToast("Tutorial atualizado.", "success");
                           } catch (e) {
                             pushToast(e instanceof Error ? e.message : String(e), "error");
@@ -6124,6 +7162,18 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             document.body,
           )
         : null}
+
+      <ComponenteModalRevisarRepeticoesSuspeitasTranscricaoMarkdownTranscribrothers
+        aberto={modalRevisarRepeticoesSuspeitasTranscricaoAberta}
+        ocorrencias={ocorrenciasRepeticaoSuspeitaMarkdownPreview}
+        processando={aplicandoColapsoRepeticoesSuspeitasTranscricao}
+        onFechar={() => {
+          if (!aplicandoColapsoRepeticoesSuspeitasTranscricao) {
+            setModalRevisarRepeticoesSuspeitasTranscricaoAberta(false);
+          }
+        }}
+        onAplicar={(ids) => void aplicarColapsoRepeticoesSuspeitasSelecionadasTranscricaoTranscribrothers(ids)}
+      />
 
       {modalTranscricaoOriginalAberta && job && conteudoModalTranscricaoOriginal
         ? createPortal(
@@ -6421,8 +7471,22 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         : null}
 
       {jobId ? (
+        <div
+          className={classesDockGavetaChatAskAgenteDocumentoTranscribrothers(
+            painelRegeneracaoFabAberto && chatAskAgenteDocumentoJobVisivel,
+          )}
+        >
         <section
-          className={`tb-grid tb-grid-preview${jobEhProjetoEmBrancoAtual ? " tb-grid-preview--sem-video" : ""}`}
+          className={[
+            "tb-grid",
+            "tb-grid-preview",
+            jobEhProjetoEmBrancoAtual ? "tb-grid-preview--sem-video" : "",
+            classeGridPreviewRolagemDocumentoQuandoChatAbertoTranscribrothers(
+              painelRegeneracaoFabAberto && chatAskAgenteDocumentoJobVisivel,
+            ),
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
           {!jobEhProjetoEmBrancoAtual ? (
           <div className="tb-card tb-grid-col-video">
@@ -6575,7 +7639,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                   <button
                     type="button"
                     className="tb-btn-md-toolbar-icone"
-                    title="Gerar outro formato reutilizando a transcrição (tutorial, notas ou bug)"
+                    title="Gerar outro formato reutilizando a transcrição (tutorial, passo a passo, notas ou bug)"
                     aria-label="Gerar outro formato"
                     disabled={carregandoGerarOutroFormato}
                     onClick={() => setModalGerarOutroFormatoAberto(true)}
@@ -6660,6 +7724,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                       )
                     }
                     onBaixarMarkdown={() => void baixarTutorialMarkdownComoArquivoComImagensEmbutidas()}
+                    onBaixarTxt={baixarTextoPlanoTranscricaoComoArquivoTxtTranscribrothers}
+                    mostrarDownloadTxt={jobMostraDownloadTxtTranscricaoPreview}
                     onBaixarPdf={() => void baixarTutorialPdfComImagensEmbutidas()}
                     onGerarNarracaoTts={() => void gerarNarracaoTtsDoDocumentoMarkdownAtual()}
                     onOuvirNarracaoTts={() => ouvirOuBaixarNarracaoTtsDocumento()}
@@ -6673,9 +7739,53 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                     onBaixarLegendasVttAlinhadas={() => baixarLegendasVttAlinhadasDocumento()}
                   />
                 ) : null}
+                {chatAskAgenteDocumentoJobVisivel ? (
+                  <button
+                    type="button"
+                    className={[
+                      "tb-btn-md-toolbar-icone",
+                      painelRegeneracaoFabAberto ? "tb-btn-md-toolbar-icone--ativo" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    aria-pressed={painelRegeneracaoFabAberto}
+                    aria-label={rotuloBotaoToolbarChatAskAgenteDocumentoTranscribrothers(
+                      painelRegeneracaoFabAberto,
+                    )}
+                    title={rotuloBotaoToolbarChatAskAgenteDocumentoTranscribrothers(
+                      painelRegeneracaoFabAberto,
+                    )}
+                    onClick={() => setPainelRegeneracaoFabAberto((aberto) => !aberto)}
+                  >
+                    <IconeChatAskAgenteHeaderToolbarTranscribrothers />
+                  </button>
+                ) : null}
                 </div>
               </div>
             </div>
+            {mostrarBannerRepeticoesSuspeitasTranscricao ? (
+              <div role="status" className="tb-banner-repeticoes-suspeitas-transcricao">
+                <strong>Repetições suspeitas:</strong>{" "}
+                {ocorrenciasRepeticaoSuspeitaMarkdownPreview.length === 1
+                  ? "encontramos 1 trecho com palavra ou frase repetida em loop."
+                  : `encontramos ${ocorrenciasRepeticaoSuspeitaMarkdownPreview.length} trechos com palavra ou frase repetida em loop.`}{" "}
+                Revise antes de colapsar, para não apagar ênfase real.{" "}
+                <button
+                  type="button"
+                  className="tb-linkbtn"
+                  onClick={() => setModalRevisarRepeticoesSuspeitasTranscricaoAberta(true)}
+                >
+                  Revisar
+                </button>{" "}
+                <button
+                  type="button"
+                  className="tb-linkbtn"
+                  onClick={() => setBannerRepeticoesSuspeitasTranscricaoDispensado(true)}
+                >
+                  Agora não
+                </button>
+              </div>
+            ) : null}
             {dadosVerificacaoSustentacaoTutorialMarkdownDoJob &&
             dadosVerificacaoSustentacaoTutorialMarkdownDoJob.sucesso === true &&
             !dadosVerificacaoSustentacaoTutorialMarkdownDoJob.omitida &&
@@ -6978,161 +8088,71 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             )}
           </div>
         </section>
-      ) : null}
-
-      {fabRegeneracaoTutorialVisivel &&
-      !modalProgressoJobAberto &&
-      !modalTranscricaoOriginalAberta &&
-      !paginaVideoNarradoAberta &&
-      !modalListaJobsServidorAberta &&
-      !modalEscolherVersaoHistoricoTutorialAberta &&
-      !modalGaleriaAssetsImagensAberta &&
-      !modalPreviewRegeneracaoSecaoAberto &&
-      !modalPreviewRegeneracaoTutorialAberto &&
-      !modoEdicaoMarkdownTutorialAtivo &&
-      !modoInserirImagemAssetNoPreviewTutorialAtivo
-        ? createPortal(
-            <div className="tb-fab-regen-wrapper">
-              {painelRegeneracaoFabAberto ? (
-                <button
-                  type="button"
-                  className="tb-fab-regen-backdrop"
-                  aria-label="Fechar painel de regeneração"
-                  onClick={() => setPainelRegeneracaoFabAberto(false)}
-                />
-              ) : null}
-              {painelRegeneracaoFabAberto ? (
-                <div
-                  className={`tb-fab-regen-panel${
-                    jobEhProjetoEmBrancoAtual ? " tb-fab-regen-panel--chat-projeto-em-branco" : ""
-                  }${arrastandoArquivosSobreChatFab ? " tb-fab-regen-panel--arrastando-arquivo" : ""}${
-                    processandoArquivosAnexoContextoFab ? " tb-fab-regen-panel--processando-anexo" : ""
-                  }`}
-                  role="dialog"
-                  aria-label={
-                    jobEhProjetoEmBrancoAtual ? "Chat — atualizar documento" : "Atualizar tutorial"
-                  }
-                  onPaste={
-                    jobEhProjetoEmBrancoAtual
-                      ? tratarColarImagemNoPainelFabProjetoEmBrancoTranscribrothers
-                      : undefined
-                  }
-                  onDragEnter={jobEhProjetoEmBrancoAtual ? aoEntrarArrasteChatFabTranscribrothers : undefined}
-                  onDragLeave={jobEhProjetoEmBrancoAtual ? aoSairArrasteChatFabTranscribrothers : undefined}
-                  onDragOver={
-                    jobEhProjetoEmBrancoAtual
-                      ? (e) => {
-                          e.preventDefault();
-                        }
-                      : undefined
-                  }
-                  onDrop={jobEhProjetoEmBrancoAtual ? aoSoltarArquivosChatFabTranscribrothers : undefined}
-                >
-                  <div className="tb-fab-regen-panel-header">
-                    <div className="tb-fab-regen-panel-title-row">
-                      <span className="tb-fab-regen-panel-title">
-                        {jobEhProjetoEmBrancoAtual
-                          ? "Atualizar documento"
-                          : jobEhReproducaoBugAtual
-                            ? "Atualizar reprodução do bug"
-                            : jobEhNotasPropostaAtual
-                              ? "Atualizar notas de proposta"
-                              : "Atualizar tutorial"}
-                      </span>
-                      <button
-                        type="button"
-                        className="tb-fab-regen-info-hint"
-                        aria-label="Sobre imagens e pixels na regeneração"
-                        title={TEXTO_TOOLTIP_INFO_PIXELS_REGENERACAO_TUTORIAL_FAB_TRANSCRIBROTHERS}
-                      >
-                        (i)
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      className="tb-fab-regen-fechar"
-                      aria-label="Fechar painel"
-                      onClick={() => setPainelRegeneracaoFabAberto(false)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  {jobEhProjetoEmBrancoAtual ? (
-                    <div className="tb-fab-chat-anexos-secao">
-                      {anexosContextoFabProjetoEmBranco.length > 0 ||
-                      processandoArquivosAnexoContextoFab ||
-                      arrastandoArquivosSobreChatFab ? (
-                        <div className="tb-fab-chat-corpo" aria-live="polite">
-                          {processandoArquivosAnexoContextoFab ? (
-                            <p className="tb-muted tb-fab-chat-status">Processando anexos…</p>
-                          ) : null}
-                          {arrastandoArquivosSobreChatFab ? (
-                            <p className="tb-fab-chat-status tb-fab-chat-status--arraste">
-                              Solte para anexar ao pedido
-                            </p>
-                          ) : null}
-                          {anexosContextoFabProjetoEmBranco.length > 0 ? (
-                            <ul className="tb-fab-anexos-lista" aria-label="Anexos do pedido">
-                              {anexosContextoFabProjetoEmBranco.map((anexo, indiceAnexo) => (
-                                <li key={anexo.id} className="tb-fab-anexos-item">
-                                  <span className="tb-fab-anexos-item-rotulo">
-                                    {anexo.tipo === "imagem"
-                                      ? `Imagem · ${anexo.nomeArquivo}`
-                                      : `Texto · ${rotuloExibicaoAnexoTextoContextoFabUiTranscribrothers(anexo, indiceAnexo)}`}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="tb-fab-anexos-remover"
-                                    aria-label="Remover anexo"
-                                    onClick={() =>
-                                      setAnexosContextoFabProjetoEmBranco((prev) =>
-                                        prev.filter((x) => x.id !== anexo.id),
-                                      )
-                                    }
-                                  >
-                                    ×
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      {listaImagensContextoPedidoFabProjetoEmBranco.length > 0 ? (
-                        <details className="tb-fab-refs-imagens-details">
-                          <summary className="tb-fab-refs-imagens-summary">
-                            Imagens que o modelo verá neste pedido
-                          </summary>
-                          <ol className="tb-fab-refs-imagens-ol">
-                            {listaImagensContextoPedidoFabProjetoEmBranco.map((item) => (
-                              <li key={item.caminho} className="tb-fab-refs-imagens-li">
-                                <strong>Figura {item.figura}</strong> — {item.rotulo} —{" "}
-                                <code className="tb-fab-refs-code">{item.caminho}</code>
-                              </li>
-                            ))}
-                          </ol>
-                        </details>
-                      ) : null}
-                    </div>
-                  ) : listaReferenciasFigurasImagensMarkdownTutorialFab.length > 0 ? (
-                    <details className="tb-fab-refs-imagens-details">
-                      <summary className="tb-fab-refs-imagens-summary">
-                        Referências no chat (ordem do tutorial)
-                      </summary>
-                      <ol className="tb-fab-refs-imagens-ol">
-                        {listaReferenciasFigurasImagensMarkdownTutorialFab.map((p, i) => (
-                          <li key={p} className="tb-fab-refs-imagens-li">
-                            <strong>Figura {i + 1}</strong> — <code className="tb-fab-refs-code">{p}</code>
-                          </li>
-                        ))}
-                      </ol>
-                    </details>
-                  ) : (
-                    <p className="tb-muted tb-fab-refs-vazio">
-                      Nenhum <code>![](assets/…png)</code> no documento: cite um arquivo em <code>assets/</code> nas
-                      instruções para o modelo receber essa imagem.
-                    </p>
-                  )}
+        {chatAskAgenteDocumentoJobVisivel ? (
+          <ComponentePainelChatAskAgenteDocumentoJobTranscribrothers
+            aberta={painelRegeneracaoFabAberto}
+            modeloChat={modeloChatAskAgente}
+            modelosChat={modelosChatAskAgenteDisponiveis}
+            aoEscolherModeloChat={(slug) => {
+              setModeloChatAskAgente(slug);
+              salvarModeloChatAskAgentePreferidoNoNavegadorTranscribrothers(slug);
+            }}
+            modo={modoChatAskOuAgenteDocumento}
+            aoAlternarModo={setModoChatAskOuAgenteDocumento}
+            askDisponivel={true}
+            enviandoMensagemAsk={enviandoMensagemChatAskDocumento}
+            preparandoPreviaDocumento={mostrarSpinnerPreparandoPreviaChatAgente}
+            composerTravado={composerTravadoPorPreviaChatAgente}
+            titulo="Chat"
+            aoPedirLimpar={() => setConfirmacaoLimparChatAskAberta(true)}
+            limparDesabilitado={limparChatAskAgenteDeveFicarDesabilitadoTranscribrothers({
+              historicoVazio: mensagensChatAskAgenteDocumento.length === 0,
+              enviando: composerTravadoPorPreviaChatAgente,
+              preparandoPrevia: preparandoPreviaDocumentoChatAgente,
+            })}
+            disabledEnviar={
+              composerTravadoPorPreviaChatAgente ||
+              !jobPodeRegenerarSomenteMarkdown ||
+              !instrucoesRegeneracaoTutorialMarkdown.trim()
+            }
+            textoInstrucoes={instrucoesRegeneracaoTutorialMarkdown}
+            aoMudarTexto={(texto) => {
+              setInstrucoesRegeneracaoTutorialMarkdown(texto);
+              setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
+                preset === "sem_video" ? null : preset,
+              );
+              requestAnimationFrame(() => {
+                ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
+              });
+            }}
+            aoEnviar={() => {
+              if (modoChatAskOuAgenteDocumento === "ask") {
+                void enviarMensagemChatAskDocumentoDoPainelTranscribrothers();
+                return;
+              }
+              void enviarMensagemChatAgenteDocumentoDoPainelTranscribrothers();
+            }}
+            aoAplicarPropostaFerramenta={(proposta, caminhosImagensMensagem, propostas, mensagemId) => {
+              if (mensagemId) {
+                setMensagensChatAskAgenteDocumento((prev) =>
+                  prev.map((mensagem) =>
+                    mensagem.id === mensagemId ? { ...mensagem, executar_proposta: true } : mensagem,
+                  ),
+                );
+              }
+              void aplicarPropostaFerramentaChatAgenteDocumentoTranscribrothers(
+                proposta,
+                caminhosImagensMensagem,
+                propostas,
+              );
+            }}
+            aoIrParaInstanteCitacao={seekSegundos}
+            childrenChips={
+              jobEhNotasPropostaAtual ||
+              jobEhReproducaoBugAtual ||
+              chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("sem_video") ||
+              chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("revisao_profunda") ||
+              chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("edicao_parcial") ? (
                   <div
                     className={`tb-fab-templates-row${
                       jobEhProjetoEmBrancoAtual ? " tb-fab-templates-row--chat" : ""
@@ -7174,7 +8194,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                         Refinar roteiro
                       </button>
                     ) : null}
-                    {jobEhReproducaoBugAtual || jobEhNotasPropostaAtual || !jobEhProjetoEmBrancoAtual ? (
+                    {chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("sem_video") &&
+                    (jobEhReproducaoBugAtual || jobEhNotasPropostaAtual || !jobEhProjetoEmBrancoAtual) ? (
                       <button
                         type="button"
                         className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === "sem_video" ? " tb-fab-template-btn--ativo" : ""}`}
@@ -7185,25 +8206,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                         }
                         title={
                           jobEhReproducaoBugAtual
-                            ? "Roteiro autônomo: só texto e imagens, sem links para o vídeo"
+                            ? "Marca a ferramenta Sem vídeo: o Agente propõe um roteiro só com texto e imagens"
                             : jobEhNotasPropostaAtual
-                              ? "Notas autônomas: só texto e imagens, sem links para o vídeo"
+                              ? "Marca a ferramenta Sem vídeo: o Agente propõe notas só com texto e imagens"
                             : jobEhProjetoEmBrancoAtual
-                              ? "Regenera o documento inteiro só com o Markdown e imagens em assets (sem transcrição de vídeo)"
-                              : "Carrega instruções para tutorial sem depender do vídeo; leia o texto e clique em Enviar quando quiser"
+                              ? "Marca a ferramenta Sem vídeo: o Agente propõe regenerar só com Markdown e imagens"
+                              : "Marca a ferramenta Sem vídeo; o Enviar propõe, não dispara a pipeline"
                         }
                         onClick={() => {
+                          if (fabPresetRegeneracaoInteiraTranscribrothers === "sem_video") {
+                            setFabPresetRegeneracaoInteiraTranscribrothers(null);
+                            return;
+                          }
                           setModoPainelFabAtualizarTutorial("regeneracao_inteira");
                           setFabPresetRegeneracaoInteiraTranscribrothers("sem_video");
-                          setInstrucoesRegeneracaoTutorialMarkdown(
-                            jobEhReproducaoBugAtual
-                              ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_REPRODUCAO_BUG_SEM_VIDEO_TRANSCRIBROTHERS
-                              : jobEhNotasPropostaAtual
-                                ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_NOTAS_PROPOSTA_SEM_VIDEO_TRANSCRIBROTHERS
-                              : jobEhProjetoEmBrancoAtual
-                                ? TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_DOCUMENTO_PROJETO_EM_BRANCO_TRANSCRIBROTHERS
-                                : TEXTO_INSTRUCAO_TEMPLATE_FAB_REGENERACAO_TUTORIAL_SEM_REFERENCIAS_VIDEO_DOCUMENTO_AUTONOMO_TRANSCRIBROTHERS,
-                          );
                         }}
                       >
                         {jobEhProjetoEmBrancoAtual && !jobEhReproducaoBugAtual && !jobEhNotasPropostaAtual
@@ -7211,7 +8227,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                           : "Sem vídeo"}
                       </button>
                     ) : null}
-                    {jobEhProjetoEmBrancoAtual || jobEhReproducaoBugAtual || jobEhNotasPropostaAtual ? null : (
+                    {chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("revisao_profunda") &&
+                    !(jobEhProjetoEmBrancoAtual || jobEhReproducaoBugAtual || jobEhNotasPropostaAtual) ? (
                     <button
                       type="button"
                       className={`tb-fab-template-btn${fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda" ? " tb-fab-template-btn--ativo" : ""}`}
@@ -7220,15 +8237,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                         regeneracaoTutorialEmAndamento ||
                         !jobPodeRegenerarSomenteMarkdown
                       }
-                      title="Prepara revisão profunda (analista, tópicos e consolidação); clique em Enviar quando quiser iniciar"
+                      title="Marca a ferramenta Revisão profunda; o Enviar propõe, não dispara a pipeline"
                       onClick={() => {
+                        if (fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda") {
+                          setFabPresetRegeneracaoInteiraTranscribrothers(null);
+                          return;
+                        }
                         setModoPainelFabAtualizarTutorial("regeneracao_inteira");
                         setFabPresetRegeneracaoInteiraTranscribrothers("revisao_profunda");
                       }}
                     >
                       Revisão profunda
                     </button>
-                    )}
+                    ) : null}
+                    {chipFerramentaChatAgenteDeveAparecerNaGavetaTranscribrothers("edicao_parcial") ? (
                     <button
                       type="button"
                       className={`tb-fab-template-btn${modoPainelFabAtualizarTutorial === "edicao_parcial" ? " tb-fab-template-btn--ativo" : ""}`}
@@ -7239,235 +8261,105 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
                         Boolean(previewRegeneracaoSecaoMarkdown) ||
                         Boolean(previewRegeneracaoTutorialMarkdownDocumentoInteiro)
                       }
-                      title="Altera só a introdução, um trecho ou uma seção ## — descreva abaixo e envie"
+                      title="Marca a ferramenta Edição parcial; o Enviar propõe, não dispara a pipeline"
                       onClick={() => {
+                        if (modoPainelFabAtualizarTutorial === "edicao_parcial") {
+                          setModoPainelFabAtualizarTutorial("regeneracao_inteira");
+                          setFabPresetRegeneracaoInteiraTranscribrothers(null);
+                          return;
+                        }
                         setModoPainelFabAtualizarTutorial("edicao_parcial");
                         setFabPresetRegeneracaoInteiraTranscribrothers(null);
                       }}
                     >
                       Edição parcial
                     </button>
+                    ) : null}
                   </div>
-                  {jobEhProjetoEmBrancoAtual ? (
-                    <div className="tb-fab-chat-composer">
-                      <div className="tb-fab-chat-composer-capsule">
-                        <div className="tb-fab-mais-menu-wrap" ref={refMenuMaisConteudoFabTranscribrothers}>
-                          <button
-                            type="button"
-                            className="tb-fab-mais-btn"
-                            aria-label="Adicionar conteúdo ao pedido"
-                            aria-expanded={menuMaisConteudoFabAberto}
-                            aria-haspopup="menu"
-                            disabled={
-                              processandoArquivosAnexoContextoFab ||
-                              regenerandoTutorialMarkdown ||
-                              regeneracaoTutorialEmAndamento
-                            }
-                            onClick={() => setMenuMaisConteudoFabAberto((aberto) => !aberto)}
-                          >
-                            +
-                          </button>
-                          {menuMaisConteudoFabAberto ? (
-                            <div className="tb-fab-mais-menu" role="menu">
-                              <button
-                                type="button"
-                                className="tb-fab-mais-menu-item"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuMaisConteudoFabAberto(false);
-                                  setModalTextoAnexoContextoFabAberta(true);
-                                }}
-                              >
-                                Texto
-                              </button>
-                              <button
-                                type="button"
-                                className="tb-fab-mais-menu-item"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuMaisConteudoFabAberto(false);
-                                  refInputImagemAnexoContextoFabTranscribrothers.current?.click();
-                                }}
-                              >
-                                Imagem
-                              </button>
-                              <button
-                                type="button"
-                                className="tb-fab-mais-menu-item"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuMaisConteudoFabAberto(false);
-                                  refInputDocumentoAnexoContextoFabTranscribrothers.current?.click();
-                                }}
-                              >
-                                Arquivo (.pdf, .md, .txt)
-                              </button>
-                            </div>
-                          ) : null}
-                          <input
-                            ref={refInputImagemAnexoContextoFabTranscribrothers}
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp,image/gif"
-                            className="tb-fab-anexos-input-file"
-                            aria-hidden
-                            tabIndex={-1}
-                            onChange={(e) => {
-                              const arquivo = e.target.files?.[0];
-                              e.target.value = "";
-                              if (arquivo) {
-                                void processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers(
-                                  arquivo,
-                                );
-                              }
-                            }}
-                          />
-                          <input
-                            ref={refInputDocumentoAnexoContextoFabTranscribrothers}
-                            type="file"
-                            multiple
-                            accept=".md,.txt,.pdf,text/plain,text/markdown,application/pdf"
-                            className="tb-fab-anexos-input-file"
-                            aria-hidden
-                            tabIndex={-1}
-                            onChange={(e) => {
-                              const lista = Array.from(e.target.files ?? []);
-                              e.target.value = "";
-                              if (lista.length > 0) {
-                                void processarListaArquivosAnexoContextoFabTranscribrothers(lista);
-                              }
-                            }}
-                          />
-                        </div>
-                        <textarea
-                          ref={refTextareaInstrucoesChatFabTranscribrothers}
-                          id="tb-fab-instrucoes"
-                          className="tb-input tb-fab-chat-textarea"
-                          rows={3}
-                          value={instrucoesRegeneracaoTutorialMarkdown}
-                          onChange={(e) => {
-                            setInstrucoesRegeneracaoTutorialMarkdown(e.target.value);
-                            setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
-                              preset === "sem_video" ? null : preset,
-                            );
-                            requestAnimationFrame(() => {
-                              ajustarAlturaTextareaInstrucoesChatFabTranscribrothers();
-                            });
-                          }}
-                          placeholder={
-                            modoPainelFabAtualizarTutorial === "edicao_parcial"
-                              ? "O que mudar nesta edição…"
-                              : "Mensagem para a IA (opcional)…"
-                          }
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <label className="tb-label" htmlFor="tb-fab-instrucoes">
-                        {modoPainelFabAtualizarTutorial === "edicao_parcial"
-                          ? "Edição parcial — o que você quer mudar"
-                          : "Regenerar documento inteiro (instruções opcionais)"}
-                      </label>
-                      <textarea
-                        id="tb-fab-instrucoes"
-                        className="tb-input tb-fab-textarea"
-                        rows={4}
-                        value={instrucoesRegeneracaoTutorialMarkdown}
-                        onChange={(e) => {
-                          setInstrucoesRegeneracaoTutorialMarkdown(e.target.value);
-                          setFabPresetRegeneracaoInteiraTranscribrothers((preset) =>
-                            preset === "sem_video" ? null : preset,
-                          );
-                        }}
-                        placeholder={
-                          modoPainelFabAtualizarTutorial === "edicao_parcial"
-                            ? "Ex.: Na intro, deixe mais claro o foco nos relatórios SEEU. Ou: nessa parte da Visão Geral, detalhe com exemplos…"
-                            : "Ex.: tom mais formal. Para UI: «Figura 2» ou cole assets/….png"
-                        }
-                      />
-                    </>
-                  )}
-                  <div
-                    className={
-                      jobEhProjetoEmBrancoAtual ? "tb-fab-chat-rodape" : "tb-fab-regen-rodape-padrao"
-                    }
-                  >
-                    <button
-                      type="button"
-                      className={`tb-primary tb-fab-regen-submit${
-                        jobEhProjetoEmBrancoAtual ? " tb-fab-regen-submit--chat" : ""
-                      }`}
-                      disabled={
-                        modoPainelFabAtualizarTutorial === "edicao_parcial"
-                          ? !jobPermiteModoEdicaoPorSecaoTutorial ||
-                            regenerandoSecaoMarkdownTutorial ||
-                            regeneracaoSecaoEmAndamento ||
-                            Boolean(previewRegeneracaoSecaoMarkdown) ||
-                            Boolean(previewRegeneracaoTutorialMarkdownDocumentoInteiro) ||
-                            !instrucoesRegeneracaoTutorialMarkdown.trim()
-                          : regenerandoTutorialMarkdown ||
-                            regeneracaoTutorialEmAndamento ||
-                            !jobPodeRegenerarSomenteMarkdown
-                      }
-                      onClick={() => void enviarPedidoPainelFabAtualizarTutorialTranscribrothers()}
-                    >
-                      {modoPainelFabAtualizarTutorial === "edicao_parcial"
-                        ? regenerandoSecaoMarkdownTutorial || regeneracaoSecaoEmAndamento
-                          ? "Pedindo…"
-                          : "Enviar"
-                        : regenerandoTutorialMarkdown || regeneracaoTutorialEmAndamento
-                          ? "Enviando…"
-                          : jobEhProjetoEmBrancoAtual
-                            ? "Enviar"
-                            : jobEhReproducaoBugAtual
-                              ? fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
-                                ? "Enviar (sem vídeo)"
-                                : "Enviar refinamento"
-                              : jobEhNotasPropostaAtual
-                                ? fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
-                                  ? "Enviar (sem vídeo)"
-                                  : "Enviar refinamento"
-                              : fabPresetRegeneracaoInteiraTranscribrothers === "revisao_profunda"
-                                ? "Enviar revisão profunda"
-                                : fabPresetRegeneracaoInteiraTranscribrothers === "sem_video"
-                                  ? "Enviar (sem vídeo)"
-                                  : "Enviar regeneração"}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              <button
-                type="button"
-                className="tb-fab-principal"
-                aria-expanded={painelRegeneracaoFabAberto}
-                aria-label={
-                  painelRegeneracaoFabAberto
-                    ? "Fechar opções de atualização"
-                    : jobEhProjetoEmBrancoAtual
-                      ? "Atualizar documento"
-                      : jobEhReproducaoBugAtual
-                        ? "Atualizar reprodução do bug"
-                        : jobEhNotasPropostaAtual
-                          ? "Atualizar notas de proposta"
-                        : "Atualizar tutorial"
-                }
-                title={
-                  jobEhProjetoEmBrancoAtual
-                    ? "Atualizar documento com IA (edição parcial ou documento inteiro)"
-                    : jobEhReproducaoBugAtual
-                      ? "Atualizar roteiro de reprodução do bug (refinar, sem vídeo ou edição parcial)"
-                      : jobEhNotasPropostaAtual
-                        ? "Atualizar notas de proposta (refinar, sem vídeo ou edição parcial)"
-                      : "Atualizar tutorial (regenerar inteiro ou edição parcial)"
-                }
-                onClick={() => setPainelRegeneracaoFabAberto((v) => !v)}
-              >
-                {regeneracaoTutorialEmAndamento ? "…" : "↻"}
-              </button>
-            </div>,
-            document.body,
-          )
-        : null}
+              ) : null
+            }
+            mensagens={mensagensChatAskAgenteDocumento}
+            exibirCartaoVerPreviaNaUltimaMensagemAgente={
+              Boolean(previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro)
+            }
+            aoAbrirPreviaDocumento={() => {
+              if (previewRegeneracaoSecaoMarkdown) {
+                setModalPreviewRegeneracaoSecaoAberto(true);
+                return;
+              }
+              if (previewRegeneracaoTutorialMarkdownDocumentoInteiro) {
+                setModalPreviewRegeneracaoTutorialAberto(true);
+              }
+            }}
+            aoFechar={() => setPainelRegeneracaoFabAberto(false)}
+            rotuloBotaoEnviar={
+              composerTravadoPorPreviaChatAgente ? "Enviando…" : "Enviar"
+            }
+            placeholderCampo={
+              modoChatAskOuAgenteDocumento === "ask"
+                ? "Pergunte sobre o documento…"
+                : "Peça um texto, um frame ou onde encaixar no Markdown…"
+            }
+            rotuloCampo={null}
+            refTextarea={refTextareaInstrucoesChatFabTranscribrothers}
+            referenciasFigurasMarkdown={listaReferenciasFigurasImagensMarkdownTutorialFab}
+            anexosProjetoEmBranco={
+              jobEhProjetoEmBrancoAtual
+                ? {
+                    anexos: anexosContextoFabProjetoEmBranco,
+                    aoRemoverAnexo: (id) =>
+                      setAnexosContextoFabProjetoEmBranco((prev) => prev.filter((x) => x.id !== id)),
+                    processando: processandoArquivosAnexoContextoFab,
+                    arrastando: arrastandoArquivosSobreChatFab,
+                    imagensQueOModeloVera: listaImagensContextoPedidoFabProjetoEmBranco,
+                    menuMaisAberto: menuMaisConteudoFabAberto,
+                    aoAlternarMenuMais: () => setMenuMaisConteudoFabAberto((aberto) => !aberto),
+                    aoFecharMenuMais: () => setMenuMaisConteudoFabAberto(false),
+                    menuMaisDesabilitado:
+                      processandoArquivosAnexoContextoFab ||
+                      regenerandoTutorialMarkdown ||
+                      regeneracaoTutorialEmAndamento,
+                    aoPedirTexto: () => setModalTextoAnexoContextoFabAberta(true),
+                    aoSelecionarImagem: (arquivo) => {
+                      void processarArquivoAnexoImagemContextoFabProjetoEmBrancoTranscribrothers(arquivo);
+                    },
+                    aoSelecionarDocumentos: (lista) => {
+                      void processarListaArquivosAnexoContextoFabTranscribrothers(lista);
+                    },
+                    refMenuMais: refMenuMaisConteudoFabTranscribrothers,
+                    refInputImagem: refInputImagemAnexoContextoFabTranscribrothers,
+                    refInputDocumento: refInputDocumentoAnexoContextoFabTranscribrothers,
+                  }
+                : null
+            }
+            aoColarNoPainel={
+              jobEhProjetoEmBrancoAtual
+                ? tratarColarImagemNoPainelFabProjetoEmBrancoTranscribrothers
+                : undefined
+            }
+            aoDragEnter={
+              jobEhProjetoEmBrancoAtual ? aoEntrarArrasteChatFabTranscribrothers : undefined
+            }
+            aoDragLeave={
+              jobEhProjetoEmBrancoAtual ? aoSairArrasteChatFabTranscribrothers : undefined
+            }
+            aoDrop={
+              jobEhProjetoEmBrancoAtual ? aoSoltarArquivosChatFabTranscribrothers : undefined
+            }
+            aoAnexarFrameDoPlayer={
+              jobEhProjetoEmBrancoAtual ? undefined : anexarFrameDoPlayerChatAskComposerTranscribrothers
+            }
+            anexarFrameDesabilitado={
+              composerTravadoPorPreviaChatAgente ||
+              jobEhProjetoEmBrancoAtual ||
+              !jobTemVideoEntradaParaMuxNarracao
+            }
+            chipFrameAnexo={frameAnexoComposerChatAsk}
+            aoRemoverChipFrameAnexo={() => setFrameAnexoComposerChatAsk(null)}
+          />
+        ) : null}
+        </div>
+      ) : null}
 
       {modoEdicaoMarkdownTutorialAtivo && job ? (
         <ComponenteModalEdicaoMarkdownTutorialDuasColunasPreviewAoVivoTranscribrothers
@@ -7500,6 +8392,21 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         aoCancelar={() => {
           if (!processandoExclusaoImagemTutorialMarkdown) {
             setConfirmacaoExclusaoImagemTutorialMarkdown(null);
+          }
+        }}
+      />
+
+      <ComponenteDialogoConfirmacaoAcaoDestrutivaOverlayTranscribrothers
+        aberto={confirmacaoLimparChatAskAberta}
+        titulo="Limpar o chat deste documento?"
+        mensagem="O histórico Ask e Agente deste job some. Isso não altera o Markdown."
+        rotuloConfirmar="Limpar"
+        rotuloCancelar="Cancelar"
+        processando={processandoLimparChatAskDocumento}
+        aoConfirmar={() => void confirmarLimparHistoricoChatAskAgenteDocumentoTranscribrothers()}
+        aoCancelar={() => {
+          if (!processandoLimparChatAskDocumento) {
+            setConfirmacaoLimparChatAskAberta(false);
           }
         }}
       />
@@ -7538,7 +8445,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             (job?.steps_json as Record<string, unknown> | null | undefined) ?? null
           }
           litellmModelTts={modeloTtsPreferidoUi}
-          modelosLitellmDisponiveis={modelosParaSelectLiteLLM}
+          modelosLitellmDisponiveis={modelosTtsNarracaoDisponiveis}
           onModeloTtsPreferidoAlterado={(m) => setModeloTtsPreferidoSalvo(m)}
           temperaturaTtsInicial={
             typeof job?.steps_json?.pipeline_video_narrado_temperatura_tts === "number"
@@ -7557,13 +8464,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             String(
               (job?.steps_json as { pipeline_video_narrado_voz_tts?: string } | null | undefined)
                 ?.pipeline_video_narrado_voz_tts ||
-                configApi?.voz_tts_narracao_efetiva ||
+                (modeloTtsPareceElevenlabsPeloSlugTranscribrothers(modeloTtsPreferidoUi || "")
+                  ? configApi?.voz_tts_elevenlabs_efetiva || vozTtsElevenlabsForm
+                  : configApi?.voz_tts_narracao_efetiva) ||
                 "Kore",
             )
           }
-          vozesDisponiveis={configApi?.voz_tts_narracao_vozes_disponiveis ?? []}
+          vozesDisponiveis={
+            modeloTtsPareceElevenlabsPeloSlugTranscribrothers(modeloTtsPreferidoUi || "")
+              ? vozesTtsElevenlabsUi
+              : (configApi?.voz_tts_narracao_vozes_disponiveis ?? [])
+          }
+          markdownTutorial={job?.result_markdown ?? null}
           onFechar={() => fecharPaginaVideoNarradoTranscribrothers()}
-          onBaixarVideoMp4={() => baixarVideoComNarracaoTtsDocumento()}
+          onBaixarVideoMp4={(nomeArquivo) => baixarVideoComNarracaoTtsDocumento(nomeArquivo)}
           onBaixarLegendasVtt={() => baixarLegendasVttAlinhadasDocumento()}
           onBaixarNarracaoWav={() => ouvirOuBaixarNarracaoTtsDocumento()}
           onAtualizarNarracaoDasLegendas={() => {
@@ -7597,9 +8511,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           registroAnotacao={mapaAnotacoesImagensTutorial[nomeArquivoImagemAnotacaoModalAberto]}
           processandoGestaoVersoes={processandoAnotacaoImagemTutorial}
           aoFechar={() => setNomeArquivoImagemAnotacaoModalAberto(null)}
-          aoSalvarComSucesso={(j) => {
+          aoSalvarComSucesso={(j, origem) => {
             setJob(j);
-            pushToast("Versão anotada salva. A original foi preservada.", "success");
+            if (origem !== "inserir_documento") {
+              pushToast("Versão anotada salva. A original foi preservada.", "success");
+            }
           }}
           aoAlternarVersaoExibicaoNoTutorial={async (nome, versao) => {
             await aoAlternarVersaoExibicaoImagemTutorial(nome, versao);
@@ -7613,6 +8529,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           aoSolicitarInserirImagemNoDocumentoMarkdown={iniciarInserirImagemAssetNoDocumentoMarkdownTranscribrothers}
         />
       ) : null}
+      </div>
+      </div>
     </div>
   );
 }

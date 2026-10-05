@@ -54,6 +54,8 @@ export type RegeneracaoSecaoMarkdownPreviewStepsJsonTranscribrothers = {
   correcao_redundancia_automatica_classificacao_disparo?: string;
   secao_markdown_depois_antes_correcao_automatica?: string;
   verificacao_redundancia_outras_secoes_antes_correcao_automatica?: VerificacaoRedundanciaSecaoMarkdownTranscribrothers | null;
+  alerta_itens_lista_removidos?: string | null;
+  edicao_cirurgica_chat_agente?: boolean;
 };
 
 export const CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_SECAO_MARKDOWN_TRANSCRIBROTHERS =
@@ -116,6 +118,9 @@ export function extrairPreviewRegeneracaoSecaoMarkdownDeStepsJsonTranscribrother
       typeof o.verificacao_redundancia_outras_secoes_antes_correcao_automatica === "object"
         ? (o.verificacao_redundancia_outras_secoes_antes_correcao_automatica as VerificacaoRedundanciaSecaoMarkdownTranscribrothers)
         : undefined,
+    alerta_itens_lista_removidos:
+      typeof o.alerta_itens_lista_removidos === "string" ? o.alerta_itens_lista_removidos : undefined,
+    edicao_cirurgica_chat_agente: o.edicao_cirurgica_chat_agente === true,
   };
 }
 
@@ -142,12 +147,20 @@ export async function pedirRegeneracaoSecaoMarkdownTutorialJobApiTranscribrother
     modoEscopoEdicao?: ModoEscopoEdicaoSecaoMarkdownTutorialTranscribrothers;
     trechoAncora?: string;
     interpretarEscopoAutomaticamente?: boolean;
+    edicaoCirurgicaChatAgente?: boolean;
+    propostas?: Array<{
+      nome: string;
+      titulo_secao_heading?: string | null;
+      instrucoes?: string | null;
+      caminhos_imagens?: string[];
+    }>;
     caminhosAssetsPngContextoFab?: string[];
     textosContextoFab?: string[];
   },
 ): Promise<Record<string, unknown>> {
   const trecho = opcoes.trechoAncora?.trim() || null;
-  const interpretar = opcoes.interpretarEscopoAutomaticamente ?? !trecho;
+  const cirurgica = opcoes.edicaoCirurgicaChatAgente === true;
+  const interpretar = cirurgica ? false : (opcoes.interpretarEscopoAutomaticamente ?? !trecho);
   const modo = interpretar ? "trecho_local" : (opcoes.modoEscopoEdicao ?? "trecho_local");
   const r = await fetch(
     `/api/jobs/${encodeURIComponent(jobId)}/regenerate-markdown-section`,
@@ -162,6 +175,8 @@ export async function pedirRegeneracaoSecaoMarkdownTutorialJobApiTranscribrother
         modo_escopo_edicao: modo,
         trecho_ancora: trecho,
         interpretar_escopo_automaticamente: interpretar,
+        edicao_cirurgica_chat_agente: cirurgica,
+        propostas: opcoes.propostas ?? null,
         caminhos_assets_png_contexto_fab: opcoes.caminhosAssetsPngContextoFab ?? null,
         textos_contexto_fab: opcoes.textosContextoFab ?? null,
       }),

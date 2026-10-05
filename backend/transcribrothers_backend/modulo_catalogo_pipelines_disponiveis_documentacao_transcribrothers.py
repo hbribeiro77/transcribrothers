@@ -18,12 +18,20 @@ from transcribrothers_backend.modulo_cliente_litellm_geracao_reproducao_bug_mark
 from transcribrothers_backend.modulo_cliente_litellm_geracao_tutorial_markdown import (
     INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
     INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
     INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
     INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS,
+    INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
 )
 from transcribrothers_backend.modulo_cliente_litellm_planejamento_instantes_captura_frames_tutorial_transcribrothers import (
     SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_NOTAS_PROPOSTA_FUNCIONALIDADE_TRANSCRIBROTHERS,
+    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
     SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
+)
+from transcribrothers_backend.modulo_parametros_modo_tutorial_passo_a_passo_software_captura_densa_transcribrothers import (
+    ID_PIPELINE_INICIAL_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
 )
 from transcribrothers_backend.modulo_cliente_litellm_regeneracao_secao_markdown_tutorial_transcribrothers import (
     SYSTEM_PROMPT_REGENERACAO_SECAO_MARKDOWN_TUTORIAL_TRANSCRIBROTHERS,
@@ -171,6 +179,7 @@ def _passo(
 PIPELINES_SISTEMA_EXECUTAVEIS_UPLOAD_TRANSCRIBROTHERS = frozenset(
     {
         "pipeline_inicial_tutorial",
+        ID_PIPELINE_INICIAL_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
         "pipeline_inicial_notas_proposta",
         "pipeline_inicial_reproducao_bug",
         "pipeline_inicial_so_transcricao",
@@ -347,6 +356,62 @@ def _montar_agentes_catalogo_transcribrothers() -> dict[str, AgenteCatalogoDocum
                     "",
                     chave="observacao_sem_prompt_llm_rec",
                     observacao="Timestamps derivados do JSON de cliques RecBrothers; captura via ffmpeg.",
+                ),
+            ],
+        ),
+        "rascunho_tutorial_passo_a_passo_software": _agente(
+            "rascunho_tutorial_passo_a_passo_software",
+            "Rascunho (passo a passo)",
+            "Rascunho denso com um link ?t= por ação da interface, para capturar um screenshot por procedimento.",
+            [
+                _prompt(
+                    "instrucao",
+                    "Rascunho passo a passo sem imagens (user)",
+                    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
+                    chave="instrucao_rascunho_sem_imagens",
+                    fonte_modulo="modulo_cliente_litellm_geracao_tutorial_markdown",
+                ),
+            ],
+        ),
+        "plano_capturas_tutorial_passo_a_passo_software": _agente(
+            "plano_capturas_tutorial_passo_a_passo_software",
+            "Plano capturas (passo a passo)",
+            "Escolhe quase todos os instantes do rascunho, com uma captura por procedimento da interface.",
+            [
+                _prompt(
+                    "system",
+                    "Planejamento de instantes (passo a passo)",
+                    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
+                    chave="system_planejamento_instantes_tutorial",
+                    fonte_modulo="modulo_cliente_litellm_planejamento_instantes_captura_frames_tutorial_transcribrothers",
+                ),
+            ],
+        ),
+        "gerador_tutorial_passo_a_passo_software": _agente(
+            "gerador_tutorial_passo_a_passo_software",
+            "Gerador (passo a passo)",
+            "Gera o tutorial denso em Markdown, com uma imagem por procedimento da interface.",
+            [
+                _prompt(
+                    "instrucao",
+                    "Passo a passo sem imagens anexadas (user)",
+                    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+                    chave="instrucao_tutorial_sem_imagens",
+                    fonte_modulo="modulo_cliente_litellm_geracao_tutorial_markdown",
+                ),
+                _prompt(
+                    "instrucao",
+                    "Passo a passo com imagens anexadas (user)",
+                    INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
+                    chave="instrucao_tutorial_com_imagens",
+                    fonte_modulo="modulo_cliente_litellm_geracao_tutorial_markdown",
+                ),
+                _prompt(
+                    "instrucao",
+                    "Incorporar frames após captura sob demanda (passo a passo)",
+                    INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
+                    chave="instrucao_incorporar_frames_sob_demanda",
+                    fonte_modulo="modulo_cliente_litellm_geracao_tutorial_markdown",
                 ),
             ],
         ),
@@ -681,6 +746,24 @@ def _montar_pipelines_catalogo_transcribrothers() -> list[PipelineCatalogoDocume
             ],
         ),
         _pipeline(
+            ID_PIPELINE_INICIAL_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS,
+            "Fluxo 1 — Vídeo até tutorial passo a passo de software",
+            "Transcrição e capturas densas: um screenshot por procedimento da interface, para quem vai repetir a operação.",
+            [
+                ref(
+                    "preparacao",
+                    "preparacao_transcricao",
+                    "Metadados do job, extração de áudio (ffmpeg) e transcrição do vídeo. É a base antes de qualquer captura ou geração do tutorial.",
+                ),
+                ref("rascunho", "rascunho_tutorial_passo_a_passo_software"),
+                ref("plano_capturas", "plano_capturas_tutorial_passo_a_passo_software"),
+                ref("capturas", "capturas_ffmpeg_plano"),
+                ref("gerador", "gerador_tutorial_passo_a_passo_software"),
+                ref("verificacao_imagens", "verificacao_imagens_duplicadas"),
+                ref("auditor", "auditor_sustentacao_tutorial"),
+            ],
+        ),
+        _pipeline(
             "pipeline_inicial_notas_proposta",
             "Fluxo 1 — Vídeo até notas de proposta",
             "Transcrição de reunião, capturas de evidências visuais e notas de proposta de funcionalidade em Markdown.",
@@ -826,6 +909,7 @@ def mapear_pipeline_sistema_para_destino_apos_transcricao_transcribrothers(
 ) -> str | None:
     return {
         "pipeline_inicial_tutorial": "gerar_tutorial",
+        ID_PIPELINE_INICIAL_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS: "tutorial_passo_a_passo_software",
         "pipeline_inicial_notas_proposta": "notas_proposta_funcionalidade",
         "pipeline_inicial_reproducao_bug": "reproducao_bug",
         "pipeline_inicial_so_transcricao": "so_transcricao",

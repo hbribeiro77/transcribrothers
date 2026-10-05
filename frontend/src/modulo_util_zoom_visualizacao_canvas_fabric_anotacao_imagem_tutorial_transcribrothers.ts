@@ -114,8 +114,18 @@ export function aplicarModoZoomVisualizacaoCanvasFabricAnotacaoImagemTutorialTra
   canvas.requestRenderAll();
 }
 
+type OpcoesExportacaoRegiaoCanvasFabricAnotacaoTranscribrothers = {
+  left?: number;
+  top?: number;
+  width?: number;
+  height?: number;
+};
+
 /** Garante export PNG na resolução do backstore, independente do zoom visual. */
-export function exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas: fabric.Canvas): string {
+export function exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(
+  canvas: fabric.Canvas,
+  regiao?: OpcoesExportacaoRegiaoCanvasFabricAnotacaoTranscribrothers,
+): string {
   const viewportSalvo = canvas.viewportTransform?.slice() ?? [1, 0, 0, 1, 0, 0];
   const precisaRestaurarViewport =
     viewportSalvo[0] !== 1 || viewportSalvo[3] !== 1 || viewportSalvo[4] !== 0 || viewportSalvo[5] !== 0;
@@ -124,7 +134,17 @@ export function exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canva
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
   }
 
-  const dataUrl = canvas.toDataURL({ format: "png" });
+  const dataUrl = canvas.toDataURL({
+    format: "png",
+    ...(regiao
+      ? {
+          left: regiao.left,
+          top: regiao.top,
+          width: regiao.width,
+          height: regiao.height,
+        }
+      : {}),
+  });
 
   if (precisaRestaurarViewport) {
     canvas.setViewportTransform(viewportSalvo);

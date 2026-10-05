@@ -65,6 +65,65 @@ INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBR
     "Mantenha links [MM:SS](?t=...) onde ainda fizer sentido."
 )
 
+INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS = """Você é um editor técnico de procedimento operacional de software. Você recebe o JSON abaixo com a transcrição (áudio já transcrito) e tempos por segmento.
+A lista `frames` está vazia: ainda NÃO existem screenshots — eles serão capturados depois com base nos momentos que você indicar.
+
+Objetivo: tutorial PASSO A PASSO denso, para quem vai repetir a operação na interface. Cada ação na UI (clique, preenchimento, seleção, confirmação, troca de tela) vira um passo próprio.
+
+Regras obrigatórias para este rascunho:
+1) Comece com um título H1 curto.
+2) Organize em passos claros (## e listas). Um procedimento = uma ação na interface.
+3) Em CADA passo, use um link temporal [MM:SS](?t=SEGUNDOS) no instante em que a ação aparece no vídeo.
+4) NÃO use `![](assets/....png)` nem invente caminhos de imagem.
+5) Prefira MAIS links `?t=` (um por ação de cada procedimento). Não agrupe várias telas no mesmo passo.
+6) Não invente conteúdo que contradiga a transcrição.
+7) Não envolva o tutorial inteiro em um único bloco de código; só Markdown normal.
+
+JSON de entrada:
+"""
+
+INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS = (
+    "O bloco «Tutorial Markdown atual» abaixo é um rascunho sem imagens. Produza a versão final completa "
+    "incorporando screenshots com `![](caminho_exato)` usando APENAS caminhos de frames[].arquivo_relativo_markdown "
+    "(você não recebe os pixels — só metadados e caminhos). "
+    "Mantenha o texto útil do rascunho. Coloque uma imagem por procedimento (passo), junto da ação correspondente. "
+    "Não deixe passos de interface sem screenshot se houver frame no instante. "
+    "Mantenha links [MM:SS](?t=...) onde ainda fizer sentido."
+)
+
+INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS = """Você é um editor técnico de procedimento operacional de software. Você recebe o JSON abaixo com a transcrição (áudio já transcrito),
+tempos e a lista `frames` com caminhos relativos dos screenshots que o sistema capturou no disco.
+
+Você NÃO recebe os pixels das imagens — só metadados. Incorpore um screenshot por procedimento da interface usando
+`![](caminho_exato)` conforme frames[].arquivo_relativo_markdown. Não priorize «poucas imagens»: o leitor precisa ver cada tela da ação.
+
+Regras obrigatórias:
+1) Comece com um título H1 curto.
+2) Organize em passos claros (## e listas). Um procedimento = uma ação na UI.
+3) Momentos do vídeo: [MM:SS](?t=SEGUNDOS) com SEGUNDOS inteiro ou decimal.
+4) Inclua imagens usando caminhos relativos exatamente como em frames[].arquivo_relativo_markdown; uma imagem por procedimento quando houver frame correspondente.
+5) Não invente conteúdo que contradiga a transcrição. Se algo estiver ambíguo, diga de forma neutra.
+6) Não envolva o tutorial inteiro em um único bloco de código; só Markdown normal.
+
+JSON de entrada:
+"""
+
+INSTRUCAO_LITELLM_TUTORIAL_PASSO_A_PASSO_SOFTWARE_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS = """Você é um editor técnico de procedimento operacional de software. O leitor vai repetir cada ação na interface.
+Você recebe (1) o JSON abaixo (transcrição e a lista `frames` dos screenshots anexados) e (2) as imagens PNG na mesma ordem de `frames`.
+
+Use a transcrição, o Markdown atual (se fornecido) e o que aparece nas imagens. Cada procedimento da UI deve ter texto + screenshot. Quando citar rótulos de botões, menus, títulos de janelas ou textos fixos de UI legíveis no screenshot, reproduza-os na literalidade entre aspas ou em bloco de citação Markdown, sem parafrasear, salvo se estiver ilegível.
+
+Regras obrigatórias:
+1) Comece com um título H1 curto (ou mantenha o foco se for revisão pontual).
+2) Organize em passos claros (## e listas). Um procedimento = uma ação na UI.
+3) Momentos do vídeo: [MM:SS](?t=SEGUNDOS) com SEGUNDOS inteiro ou decimal.
+4) Inclua imagens com caminhos exatamente como em frames[].arquivo_relativo_markdown; uma imagem por procedimento quando houver frame correspondente.
+5) Não invente conteúdo que contradiga a transcrição nem o visível nas imagens.
+6) Não envolva o tutorial inteiro em um único bloco de código; só Markdown normal.
+
+JSON de entrada:
+"""
+
 INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS = """Você é um editor técnico. Você recebe (1) o JSON abaixo (transcrição e a lista `frames`
 dos screenshots anexados a esta mensagem) e (2) as imagens PNG na mesma ordem de `frames`
 (primeira imagem = frames[0], etc.).

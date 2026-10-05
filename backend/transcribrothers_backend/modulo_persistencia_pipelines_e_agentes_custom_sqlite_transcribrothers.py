@@ -401,7 +401,12 @@ async def atualizar_pipeline_custom_transcribrothers(
         destino = mapear_pipeline_sistema_para_destino_apos_transcricao_transcribrothers(
             str(row.copiado_de or "")
         )
-        if destino in {"gerar_tutorial", "notas_proposta_funcionalidade", "reproducao_bug"}:
+        if destino in {
+            "gerar_tutorial",
+            "tutorial_passo_a_passo_software",
+            "notas_proposta_funcionalidade",
+            "reproducao_bug",
+        }:
             if "audio" in normalizadas:
                 raise ValueError(
                     "Esta pipeline (tutorial, notas ou bug) só aceita entrada de vídeo nesta versão."

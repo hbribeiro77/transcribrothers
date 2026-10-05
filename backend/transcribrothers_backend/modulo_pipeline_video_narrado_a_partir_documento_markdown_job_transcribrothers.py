@@ -521,6 +521,23 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
         voz_tts = await carregar_voz_tts_narracao_do_session_factory_transcribrothers(
             session_factory
         )
+        from transcribrothers_backend.modulo_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers import (
+            provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers,
+        )
+
+        if provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo_tts):
+            from transcribrothers_backend.modulo_persistencia_runtime_config_provedor_tts_narracao_sqlite_transcribrothers import (
+                carregar_provedor_tts_narracao_do_session_factory_transcribrothers,
+            )
+
+            prefs_el = await carregar_provedor_tts_narracao_do_session_factory_transcribrothers(
+                session_factory
+            )
+            voz_tts = (prefs_el.voz_elevenlabs or "").strip()
+            if not voz_tts:
+                raise RuntimeError(
+                    "Selecione uma voz da ElevenLabs em Configurações (Vídeo narrado) antes de gerar."
+                )
         steps["pipeline_video_narrado_voz_tts"] = voz_tts
         steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_PERFIL_TTS_TRANSCRIBROTHERS] = perfil_tts_efetivo
         steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TEMPERATURA_TTS_TRANSCRIBROTHERS] = (

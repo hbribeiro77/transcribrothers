@@ -41,6 +41,7 @@ export function ordenarTodasPipelinesCustomUsuarioCatalogoTranscribrothers(
 
 const ROTULOS_MOLDE_PIPELINE_SISTEMA_TRANSCRIBROTHERS: Record<string, string> = {
   pipeline_inicial_tutorial: "Tutorial",
+  pipeline_inicial_tutorial_passo_a_passo_software: "Passo a passo de software",
   pipeline_inicial_notas_proposta: "Notas de proposta",
   pipeline_inicial_reproducao_bug: "Reprodução de bug",
 };

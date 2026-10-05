@@ -5,7 +5,7 @@ from starlette.testclient import TestClient
 from transcribrothers_backend.main import app
 
 
-def test_get_catalogo_pipelines_disponiveis_retorna_sete_pipelines_transcribrothers() -> None:
+def test_get_catalogo_pipelines_disponiveis_retorna_oito_pipelines_transcribrothers() -> None:
     with TestClient(app) as client:
         r = client.get("/api/pipelines/catalogo")
         assert r.status_code == 200
@@ -13,12 +13,13 @@ def test_get_catalogo_pipelines_disponiveis_retorna_sete_pipelines_transcribroth
         assert "pipeline_identificador" in d
         assert isinstance(d["pipelines"], list)
         pipelines_sistema = [p for p in d["pipelines"] if p.get("origem") == "sistema"]
-        assert len(pipelines_sistema) == 7
+        assert len(pipelines_sistema) == 8
         assert isinstance(d["agentes"], list)
         agentes_sistema = [a for a in d["agentes"] if a.get("origem") == "sistema"]
         assert len(agentes_sistema) >= 20
         ids = {p["id"] for p in pipelines_sistema}
         assert "pipeline_inicial_tutorial" in ids
+        assert "pipeline_inicial_tutorial_passo_a_passo_software" in ids
         assert "pipeline_inicial_so_transcricao" in ids
         assert "regeneracao_markdown" in ids
         assert "edicao_parcial_secao" in ids

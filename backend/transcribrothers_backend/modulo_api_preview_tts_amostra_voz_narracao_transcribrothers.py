@@ -56,12 +56,25 @@ async def gerar_arquivo_preview_tts_amostra_voz_narracao_transcribrothers(
     temperatura_tts: float | None = None,
     ritmo_tts: str | None = None,
 ) -> ResultadoApiPreviewTtsAmostraVozNarracaoTranscribrothers:
-    try:
-        voz_efetiva = normalizar_voz_tts_gemini_transcribrothers(
-            voz or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
-        )
-    except ValueError as e:
-        raise ValueError(str(e)) from e
+    from transcribrothers_backend.modulo_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers import (
+        provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers,
+    )
+
+    modelo = resolver_modelo_tts_para_narracao_documento_transcribrothers(
+        configuracao,
+        litellm_model,
+    )
+    if provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo):
+        voz_efetiva = (voz or "").strip()
+        if not voz_efetiva:
+            raise ValueError("Informe a voz da ElevenLabs para a amostra.")
+    else:
+        try:
+            voz_efetiva = normalizar_voz_tts_gemini_transcribrothers(
+                voz or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+            )
+        except ValueError as e:
+            raise ValueError(str(e)) from e
     try:
         perfil_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
             perfil_tts or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
@@ -70,10 +83,6 @@ async def gerar_arquivo_preview_tts_amostra_voz_narracao_transcribrothers(
         raise ValueError(str(e)) from e
     temperatura_efetiva = normalizar_temperatura_tts_narracao_transcribrothers(temperatura_tts)
     ritmo_efetivo = normalizar_ritmo_tts_narracao_transcribrothers(ritmo_tts)
-    modelo = resolver_modelo_tts_para_narracao_documento_transcribrothers(
-        configuracao,
-        litellm_model,
-    )
     caminho = caminho_preview_tts_amostra_voz_no_data_dir_transcribrothers(data_dir, voz_efetiva)
     caminho.parent.mkdir(parents=True, exist_ok=True)
     resultado = await gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(

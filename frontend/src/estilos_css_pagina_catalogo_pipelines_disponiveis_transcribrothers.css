@@ -1,11 +1,13 @@
 .tb-catalogo-pipelines-pagina {
-  min-height: 100vh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #f8fafc;
 }
 
 .tb-catalogo-pipelines-header {
-  position: sticky;
-  top: 0;
+  flex: 0 0 auto;
   z-index: 20;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
@@ -48,9 +50,13 @@
 }
 
 .tb-catalogo-pipelines-conteudo {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem max(1.25rem, calc((100% - 1100px) / 2));
 }
 
 .tb-catalogo-pipelines-build {

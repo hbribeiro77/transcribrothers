@@ -13,6 +13,12 @@ const MOLDES_PIPELINE_CUSTOM_CRIACAO_TRANSCRIBROTHERS = [
       "Transcreve o áudio, captura telas do vídeo e monta um tutorial em Markdown com imagens e links para o tempo no vídeo.",
   },
   {
+    id: "pipeline_inicial_tutorial_passo_a_passo_software",
+    rotulo: "Passo a passo de software",
+    descricao:
+      "Tutorial denso: um screenshot por procedimento da interface (clique, campo, confirmação). Mais imagens que o tutorial ilustrativo.",
+  },
+  {
     id: "pipeline_inicial_notas_proposta",
     rotulo: "Notas de proposta",
     descricao:

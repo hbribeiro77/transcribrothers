@@ -8,6 +8,14 @@ import {
   rotuloCurtoModeloTtsParaUiTranscribrothers,
 } from "./modulo_api_gerar_narracao_tts_markdown_job_transcribrothers.ts";
 import {
+  MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+  mesclarModelosTtsLitellmComElevenlabsSeConfiguradoTranscribrothers,
+  modeloTtsPareceElevenlabsPeloSlugTranscribrothers,
+} from "./modulo_util_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers.ts";
+import type { VozTtsElevenlabsUiTranscribrothers } from "./modulo_api_listar_vozes_tts_elevenlabs_transcribrothers.ts";
+import { escolherPrimeiraVozTtsElevenlabsPreferindoPtBrTranscribrothers } from "./modulo_util_rotulo_e_grupo_vozes_tts_elevenlabs_pt_br_transcribrothers.ts";
+import { ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers } from "./componente_opcoes_select_vozes_tts_elevenlabs_agrupadas_pt_br_transcribrothers.tsx";
+import {
   carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers,
   salvarModeloTtsNarracaoPreferidoNoNavegadorTranscribrothers,
 } from "./modulo_armazenamento_local_modelo_tts_narracao_preferido_navegador_transcribrothers.ts";
@@ -88,6 +96,11 @@ type Props = {
   /** Lista de modelos da UI (chat + TTS); o select filtra só os com -tts. */
   modelosLitellmDisponiveis?: string[] | null;
   litellmModelTtsInicial?: string | null;
+  elevenlabsConfigurado?: boolean;
+  elevenlabsModelos?: string[] | null;
+  vozesElevenlabsDisponiveis?: VozTtsElevenlabsUiTranscribrothers[];
+  vozElevenlabsInicial?: string | null;
+  carregandoVozesElevenlabs?: boolean;
   onFechar: () => void;
   onConfirmar: (resultado: ResultadoEscopoGeracaoVideoNarradoTranscribrothers) => void;
 };
@@ -105,6 +118,11 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
   diretrizConteudoLegendasInicial,
   modelosLitellmDisponiveis,
   litellmModelTtsInicial,
+  elevenlabsConfigurado = false,
+  elevenlabsModelos,
+  vozesElevenlabsDisponiveis,
+  vozElevenlabsInicial,
+  carregandoVozesElevenlabs = false,
   onFechar,
   onConfirmar,
 }: Props) {
@@ -130,8 +148,15 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     [],
   );
   const opcoesModeloTts = useMemo(
-    () => listarModelosTtsDaListaDisponivelTranscribrothers(modelosLitellmDisponiveis || []),
-    [modelosLitellmDisponiveis],
+    () =>
+      listarModelosTtsDaListaDisponivelTranscribrothers(
+        mesclarModelosTtsLitellmComElevenlabsSeConfiguradoTranscribrothers(
+          modelosLitellmDisponiveis || [],
+          elevenlabsModelos || [MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS],
+          elevenlabsConfigurado,
+        ),
+      ),
+    [elevenlabsConfigurado, elevenlabsModelos, modelosLitellmDisponiveis],
   );
   const [modo, setModo] = useState<"documento_inteiro" | "secoes">("documento_inteiro");
   const [idsSelecionados, setIdsSelecionados] = useState<Set<string>>(() => new Set());
@@ -201,12 +226,32 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     }
     setModo("documento_inteiro");
     setIdsSelecionados(new Set(opcoes.map((o) => o.id)));
-    setVoz((vozInicial || "Kore").trim() || "Kore");
-    setPerfilTts(
-      normalizarPerfilTtsNarracaoTranscribrothers(
-        perfilTtsInicial || PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
-      ),
-    );
+    {
+      const modeloAberto =
+        escolherModeloTtsDaListaDisponivelTranscribrothers(
+          opcoesModeloTts,
+          litellmModelTtsInicial ||
+            carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers(),
+        ) || "";
+      if (modeloTtsPareceElevenlabsPeloSlugTranscribrothers(modeloAberto || litellmModelTtsInicial)) {
+        setVoz(
+          (
+            vozElevenlabsInicial ||
+            escolherPrimeiraVozTtsElevenlabsPreferindoPtBrTranscribrothers(
+              vozesElevenlabsDisponiveis || [],
+            )
+          ).trim(),
+        );
+        setPerfilTts(PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS);
+      } else {
+        setVoz((vozInicial || "Kore").trim() || "Kore");
+        setPerfilTts(
+          normalizarPerfilTtsNarracaoTranscribrothers(
+            perfilTtsInicial || PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS,
+          ),
+        );
+      }
+    }
     setParalelismoTtsExperimental(
       normalizarParalelismoTtsCuesExperimentalTranscribrothers(
         paralelismoTtsExperimentalInicial ??
@@ -236,7 +281,7 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     );
     setModeloTts(
       escolherModeloTtsDaListaDisponivelTranscribrothers(
-        modelosLitellmDisponiveis || [],
+        opcoesModeloTts,
         litellmModelTtsInicial ||
           carregarModeloTtsNarracaoPreferidoSalvoNoNavegadorTranscribrothers(),
       ) || "",
@@ -245,6 +290,7 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
   }, [
     aberto,
     opcoes,
+    opcoesModeloTts,
     vozInicial,
     perfilTtsInicial,
     paralelismoTtsExperimentalInicial,
@@ -253,6 +299,8 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     diretrizConteudoLegendasInicial,
     modelosLitellmDisponiveis,
     litellmModelTtsInicial,
+    vozElevenlabsInicial,
+    vozesElevenlabsDisponiveis,
   ]);
 
   useEffect(() => {
@@ -265,8 +313,14 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
 
   const semSecoesH2 = opcoes.length === 0;
   const podeConfirmarSecoes = idsSelecionados.size > 0;
-  const listaVozes =
-    vozesDisponiveis.length > 0 ? vozesDisponiveis : [{ id: "Kore", estilo: "Firme" }];
+  const ehModeloElevenlabs = modeloTtsPareceElevenlabsPeloSlugTranscribrothers(modeloTts);
+  const listaVozes = ehModeloElevenlabs
+    ? vozesElevenlabsDisponiveis && vozesElevenlabsDisponiveis.length > 0
+      ? vozesElevenlabsDisponiveis
+      : []
+    : vozesDisponiveis.length > 0
+      ? vozesDisponiveis
+      : [{ id: "Kore", estilo: "Firme" }];
 
   const fecharModal = () => {
     if (carregando || gerandoAmostra) return;
@@ -296,7 +350,9 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
       const blob = await gerarPreviewTtsAmostraVozNarracaoApiTranscribrothers({
         voz,
         litellmModel: modeloTts || litellmModelTtsInicial,
-        perfilTts,
+        perfilTts: ehModeloElevenlabs
+          ? PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+          : perfilTts,
         temperaturaTts: normalizarTemperaturaTtsNarracaoTranscribrothers(temperaturaTts),
         ritmoTts: normalizarRitmoTtsNarracaoTranscribrothers(ritmoTts),
       });
@@ -317,8 +373,13 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
 
   const confirmar = () => {
     if (gerandoAmostra) return;
-    const vozEfetiva = (voz || "Kore").trim() || "Kore";
-    const perfilEfetivo = normalizarPerfilTtsNarracaoTranscribrothers(perfilTts);
+    const vozEfetiva = ehModeloElevenlabs
+      ? (voz || "").trim()
+      : (voz || "Kore").trim() || "Kore";
+    if (ehModeloElevenlabs && !vozEfetiva) return;
+    const perfilEfetivo = normalizarPerfilTtsNarracaoTranscribrothers(
+      ehModeloElevenlabs ? PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS : perfilTts,
+    );
     const paralelismoEfetivo = normalizarParalelismoTtsCuesExperimentalTranscribrothers(
       paralelismoTtsExperimental,
     );
@@ -559,8 +620,8 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
                   <div className="tb-escopo-video-narrado-ajuda-popover" role="note">
                     <p>
                       Flash costuma ser mais rápido; Pro tende a ser mais estável/expressivo.
-                      Inclua slugs com <code>-tts</code> em Configurações /{" "}
-                      <code>LITELLM_MODELOS_PROVISIONADOS</code>.
+                      Inclua slugs com <code>-tts</code> em Configurações ou use ElevenLabs (
+                      <code>eleven_v4</code>) se <code>ELEVENLABS_API_KEY</code> estiver no servidor.
                     </p>
                     <p>
                       {opcoesPerfilTts.find((o) => o.id === perfilTts)?.descricao ||
@@ -584,7 +645,21 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
                     value={modeloTts}
                     disabled={carregando || gerandoAmostra || opcoesModeloTts.length === 0}
                     onChange={(e) => {
-                      setModeloTts(e.target.value);
+                      const proximo = e.target.value;
+                      setModeloTts(proximo);
+                      if (modeloTtsPareceElevenlabsPeloSlugTranscribrothers(proximo)) {
+                        setPerfilTts(PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS);
+                        setVoz(
+                          (
+                            vozElevenlabsInicial ||
+                            escolherPrimeiraVozTtsElevenlabsPreferindoPtBrTranscribrothers(
+                              vozesElevenlabsDisponiveis || [],
+                            )
+                          ).trim(),
+                        );
+                      } else {
+                        setVoz((vozInicial || "Kore").trim() || "Kore");
+                      }
                       setErroAmostra(null);
                       liberarAudioAmostra();
                     }}
@@ -607,8 +682,12 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
                   <select
                     id={`${tituloId}-select-perfil-tts`}
                     className="tb-select"
-                    value={perfilTts}
-                    disabled={carregando || gerandoAmostra}
+                    value={
+                      ehModeloElevenlabs
+                        ? PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
+                        : perfilTts
+                    }
+                    disabled={carregando || gerandoAmostra || ehModeloElevenlabs}
                     onChange={(e) => {
                       setPerfilTts(normalizarPerfilTtsNarracaoTranscribrothers(e.target.value));
                       setErroAmostra(null);
@@ -695,24 +774,40 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
               <div className="tb-escopo-video-narrado-voz-linha">
                 <div className="tb-escopo-video-narrado-campo tb-escopo-video-narrado-campo--voz">
                   <label className="tb-label" htmlFor={`${tituloId}-select-voz`}>
-                    Voz Gemini TTS 2.5
+                    {ehModeloElevenlabs ? "Voz ElevenLabs" : "Voz Gemini TTS 2.5"}
                   </label>
                   <select
                     id={`${tituloId}-select-voz`}
                     className="tb-select"
                     value={voz}
-                    disabled={carregando || gerandoAmostra}
+                    disabled={
+                      carregando ||
+                      gerandoAmostra ||
+                      (ehModeloElevenlabs && (carregandoVozesElevenlabs || listaVozes.length === 0))
+                    }
                     onChange={(e) => {
                       setVoz(e.target.value);
                       setErroAmostra(null);
                       liberarAudioAmostra();
                     }}
                   >
-                    {listaVozes.map((op) => (
-                      <option key={op.id} value={op.id}>
-                        {op.id} — {op.estilo}
+                    {listaVozes.length === 0 ? (
+                      <option value="">
+                        {carregandoVozesElevenlabs
+                          ? "Carregando vozes…"
+                          : "Nenhuma voz da ElevenLabs"}
                       </option>
-                    ))}
+                    ) : ehModeloElevenlabs ? (
+                      <ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers
+                        vozes={vozesElevenlabsDisponiveis || []}
+                      />
+                    ) : (
+                      listaVozes.map((op) => (
+                        <option key={op.id} value={op.id}>
+                          {op.id} — {op.estilo}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <button
@@ -750,6 +845,7 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
                   gerandoAmostra ||
                   !modeloTts ||
                   opcoesModeloTts.length === 0 ||
+                  (ehModeloElevenlabs && !voz) ||
                   (modo === "secoes" && !podeConfirmarSecoes)
                 }
                 onClick={confirmar}

@@ -78,15 +78,49 @@ SYSTEM_PROMPT_RESUMO_PLANO_PARA_EDITOR_FINAL_TRANSCRIBROTHERS = """Resumo estrut
 INSTRUCAO_EDITOR_FINAL_REVISAO_PROFUNDA_CONSOLIDACAO_MARKDOWN_TRANSCRIBROTHERS = """Revisão final (consolidação): harmonize voz, ritmo e terminologia em todo o tutorial; remova redundâncias introduzidas por revisões parciais; garanta que cabeçalhos ## e listas ficam coerentes; não apague conteúdo factual nem imagens úteis; não invente passos que não constem da transcrição ou do Markdown já produzido. O resultado deve ser o tutorial completo em Markdown."""
 
 
+def _fatiar_primeiro_objeto_json_balanceado_transcribrothers(texto: str) -> str | None:
+    inicio = texto.find("{")
+    if inicio < 0:
+        return None
+    profundidade = 0
+    em_string = False
+    escape = False
+    for indice, caractere in enumerate(texto[inicio:], start=inicio):
+        if em_string:
+            if escape:
+                escape = False
+            elif caractere == "\\":
+                escape = True
+            elif caractere == '"':
+                em_string = False
+            continue
+        if caractere == '"':
+            em_string = True
+        elif caractere == "{":
+            profundidade += 1
+        elif caractere == "}":
+            profundidade -= 1
+            if profundidade == 0:
+                return texto[inicio : indice + 1]
+    return None
+
+
 def extrair_primeiro_objeto_json_de_texto_llm_transcribrothers(texto: str) -> str:
-    """Remove cercas ```json ... ``` ou devolve o texto trimado."""
+    """Remove cercas ```json ... ``` ou isola o primeiro objeto `{...}` no texto."""
     s = (texto or "").strip()
     if not s:
         raise ValueError("Resposta vazia do modelo na fase de análise.")
     fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", s, re.IGNORECASE)
     if fence:
-        return fence.group(1).strip()
-    return s
+        s = fence.group(1).strip()
+    try:
+        json.loads(s)
+        return s
+    except json.JSONDecodeError:
+        fatia = _fatiar_primeiro_objeto_json_balanceado_transcribrothers(s)
+        if fatia is not None:
+            return fatia
+        return s
 
 
 def parsear_plano_revisao_profunda_de_texto_resposta_llm_transcribrothers(

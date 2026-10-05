@@ -97,6 +97,9 @@ from transcribrothers_backend.modulo_montar_mapa_duracao_segundos_por_id_fonte_v
 from transcribrothers_backend.modulo_validar_cues_janelas_video_antes_narracao_tts_transcribrothers import (
     validar_cues_janelas_video_antes_narracao_tts_transcribrothers,
 )
+from transcribrothers_backend.modulo_normalizar_voz_tts_efetiva_cue_gemini_ou_elevenlabs_transcribrothers import (
+    normalizar_voz_tts_efetiva_para_cue_transcribrothers as _normalizar_voz_tts_efetiva_para_cue_transcribrothers,
+)
 
 FASE_VIDEO_NARRADO_GERANDO_COM_EDICOES_MODAL = "video_narrado_gerando_com_edicoes_modal"
 _NOME_SUBPASTA_WAVS_POR_CUE = "wavs_narracao_por_cue"
@@ -180,22 +183,6 @@ def _concatenar_wavs_pcm16_mono_em_arquivo_transcribrothers(
         wf.setsampwidth(2)
         wf.setframerate(rate)
         wf.writeframes(bytes(pcm))
-
-
-def _normalizar_voz_tts_efetiva_para_cue_transcribrothers(voz: str, voz_padrao: str) -> str:
-    from transcribrothers_backend.modulo_preferencias_voz_tts_gemini_narracao_transcribrothers import (
-        VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
-        normalizar_voz_tts_gemini_transcribrothers,
-    )
-
-    padrao = (voz_padrao or "").strip() or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
-    try:
-        return normalizar_voz_tts_gemini_transcribrothers((voz or "").strip() or padrao)
-    except ValueError:
-        try:
-            return normalizar_voz_tts_gemini_transcribrothers(padrao)
-        except ValueError:
-            return VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
 
 
 def _chave_reuso_wav_cue_narracao_transcribrothers(

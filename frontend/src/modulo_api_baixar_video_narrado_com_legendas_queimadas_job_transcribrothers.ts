@@ -1,5 +1,7 @@
 /** Gera (em background) e baixa o MP4 narrado com legendas VTT queimadas. */
 
+import { montarUrlDownloadVideoNarradoComNomeArquivoQueryTranscribrothers } from "./modulo_util_nome_arquivo_download_video_narrado_titulo_h1_e_sufixo_legendado_transcribrothers.ts";
+
 export type StatusVideoNarradoComLegendasQueimadasApiTranscribrothers = {
   status: "pronto" | "gerando" | "pendente" | "erro";
   erro?: string | null;
@@ -25,7 +27,7 @@ async function lerDetailErroHttpTranscribrothers(resposta: Response): Promise<st
 
 function dispararDownloadPorUrlTranscribrothers(url: string, nomeArquivo: string): void {
   const a = document.createElement("a");
-  a.href = url;
+  a.href = montarUrlDownloadVideoNarradoComNomeArquivoQueryTranscribrothers(url, nomeArquivo);
   a.download = nomeArquivo;
   a.rel = "noopener";
   document.body.appendChild(a);
@@ -72,10 +74,13 @@ export async function baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothe
   jobId: string,
   opcoes?: {
     forcar?: boolean;
+    nomeArquivo?: string;
     onStatus?: (status: StatusVideoNarradoComLegendasQueimadasApiTranscribrothers) => void;
   },
 ): Promise<ResultadoDownloadVideoNarradoComLegendasQueimadasTranscribrothers> {
-  const nomeArquivo = `video_com_narracao_tts_com_legendas_queimadas_${jobId}.mp4`;
+  const nomeArquivo =
+    (opcoes?.nomeArquivo || "").trim() ||
+    `video_com_narracao_tts_com_legendas_queimadas_${jobId}.mp4`;
   const urlDownload = `/api/jobs/${encodeURIComponent(jobId)}/video-com-narracao-tts-com-legendas-queimadas`;
 
   let status = await consultarStatusVideoNarradoComLegendasQueimadasJobApiTranscribrothers(jobId);

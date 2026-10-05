@@ -52,6 +52,14 @@ from transcribrothers_backend.modulo_perfil_motor_sintese_tts_narracao_transcrib
 from transcribrothers_backend.modulo_verificar_modelo_litellm_chat_completions_probe_transcribrothers import (
     modelo_litellm_parece_tts_pelo_slug_transcribrothers,
 )
+from transcribrothers_backend.modulo_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers import (
+    normalizar_modelo_tts_elevenlabs_transcribrothers,
+    provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers,
+    tem_chave_elevenlabs_configurada_transcribrothers,
+)
+from transcribrothers_backend.modulo_sintetizar_pcm16_trecho_tts_elevenlabs_v4_transcribrothers import (
+    sintetizar_pcm16_trecho_tts_elevenlabs_v4_transcribrothers,
+)
 
 NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS = "narracao_tts_documento.wav"
 CHAVE_STEPS_JSON_NARRACAO_TTS_TRANSCRIBROTHERS = "narracao_tts_documento"
@@ -146,13 +154,15 @@ def resolver_modelo_tts_para_narracao_documento_transcribrothers(
     cfg: ConfiguracaoAmbienteTranscribrothers,
     modelo_solicitado: str | None,
 ) -> str:
-    """Usa o modelo pedido se for TTS; senão o primeiro provisionado com -tts; senão LITELLM_MODEL se TTS."""
+    """Usa o modelo pedido se for TTS LiteLLM ou ElevenLabs v4; senão o primeiro provisionado com -tts."""
     pedido = (modelo_solicitado or "").strip()
     if pedido:
+        if provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(pedido):
+            return normalizar_modelo_tts_elevenlabs_transcribrothers(pedido)
         if not modelo_litellm_parece_tts_pelo_slug_transcribrothers(pedido):
             raise ValueError(
                 f"O modelo «{pedido}» não parece TTS (slug sem -tts). "
-                "Escolha um modelo como gemini/gemini-2.5-flash-preview-tts."
+                "Escolha um modelo como gemini/gemini-2.5-flash-preview-tts ou eleven_v4."
             )
         return pedido
     for m in listar_modelos_litellm_provisionados_para_interface(cfg):
@@ -638,8 +648,19 @@ async def _sintetizar_pcm16_trecho_tts_com_retry_via_litellm_transcribrothers(
     max_tentativas: int = _TTS_MAX_TENTATIVAS_POR_TRECHO,
     temperatura: float | None = None,
     ritmo: object = None,
+    configuracao: ConfiguracaoAmbienteTranscribrothers | None = None,
 ) -> bytes:
     """Retry com backoff em choices vazio, HTTP 5xx/429 e timeout."""
+    if provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo):
+        if configuracao is None:
+            raise RuntimeError("ElevenLabs exige a configuração do servidor (ELEVENLABS_API_KEY).")
+        return await sintetizar_pcm16_trecho_tts_elevenlabs_v4_transcribrothers(
+            texto=texto,
+            voice_id=voz,
+            configuracao=configuracao,
+            modelo=modelo,
+            ritmo=ritmo,
+        )
     tentativas = max(1, int(max_tentativas))
     ultimo_erro: Exception | None = None
     perfil = normalizar_perfil_tts_narracao_transcribrothers(perfil_tts)
@@ -1161,26 +1182,39 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
             quantidade_trechos_descartados_antes_tts=len(descartados),
         )
 
-    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(configuracao)
-    if not api_key or not api_base:
-        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-            ok=False,
-            mensagem="Proxy LiteLLM não configurado (LITELLM_API_KEY e LITELLM_ENDPOINT).",
-            modelo=modelo_norm,
-            texto_caracteres=sum(len(t) for t in cues_texto),
-            quantidade_cues=len(cues_texto),
-            quantidade_trechos_descartados_antes_tts=len(descartados),
-        )
-    base_v1 = normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1(api_base)
-    if not base_v1:
-        return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
-            ok=False,
-            mensagem="LITELLM_ENDPOINT inválido.",
-            modelo=modelo_norm,
-            texto_caracteres=sum(len(t) for t in cues_texto),
-            quantidade_cues=len(cues_texto),
-            quantidade_trechos_descartados_antes_tts=len(descartados),
-        )
+    usa_elevenlabs = provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo_norm)
+    if usa_elevenlabs:
+        if not tem_chave_elevenlabs_configurada_transcribrothers(configuracao):
+            return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                ok=False,
+                mensagem="ElevenLabs não configurado (defina ELEVENLABS_API_KEY).",
+                modelo=modelo_norm,
+                texto_caracteres=sum(len(t) for t in cues_texto),
+                quantidade_cues=len(cues_texto),
+                quantidade_trechos_descartados_antes_tts=len(descartados),
+            )
+        api_key, api_base, base_v1 = "", "", "elevenlabs"
+    else:
+        api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(configuracao)
+        if not api_key or not api_base:
+            return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                ok=False,
+                mensagem="Proxy LiteLLM não configurado (LITELLM_API_KEY e LITELLM_ENDPOINT).",
+                modelo=modelo_norm,
+                texto_caracteres=sum(len(t) for t in cues_texto),
+                quantidade_cues=len(cues_texto),
+                quantidade_trechos_descartados_antes_tts=len(descartados),
+            )
+        base_v1 = normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1(api_base)
+        if not base_v1:
+            return ResultadoNarracaoTtsWavsPorCueTranscribrothers(
+                ok=False,
+                mensagem="LITELLM_ENDPOINT inválido.",
+                modelo=modelo_norm,
+                texto_caracteres=sum(len(t) for t in cues_texto),
+                quantidade_cues=len(cues_texto),
+                quantidade_trechos_descartados_antes_tts=len(descartados),
+            )
 
     diretorio_wavs_por_cue.mkdir(parents=True, exist_ok=True)
     httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(configuracao)
@@ -1209,6 +1243,8 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
             quantidade_cues=len(cues_texto),
             quantidade_trechos_descartados_antes_tts=len(descartados),
         )
+    if usa_elevenlabs:
+        perfil_tts_norm = PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS
     temperatura_efetiva = (
         normalizar_temperatura_tts_narracao_transcribrothers(temperatura)
         if temperatura is not None
@@ -1455,6 +1491,7 @@ async def gerar_narracao_tts_wavs_individuais_por_cue_e_concatenar_via_litellm_t
                             perfil_tts=perfil_tts_norm,
                             temperatura=temperatura_efetiva,
                             ritmo=ritmo_efetivo,
+                            configuracao=configuracao,
                         )
                 except httpx.TimeoutException:
                     if diagnostico_experimental is None:
@@ -1741,21 +1778,32 @@ async def gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
             ok=False,
             mensagem="Informe o modelo TTS.",
         )
-    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(configuracao)
-    if not api_key or not api_base:
-        return ResultadoPreviewTtsCueNarracaoTranscribrothers(
-            ok=False,
-            mensagem="Proxy LiteLLM não configurado (LITELLM_API_KEY e LITELLM_ENDPOINT).",
-            modelo=modelo_norm,
-        )
-    base_v1 = normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1(api_base)
-    if not base_v1:
-        return ResultadoPreviewTtsCueNarracaoTranscribrothers(
-            ok=False,
-            mensagem="LITELLM_ENDPOINT inválido.",
-            modelo=modelo_norm,
-        )
-    httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(configuracao)
+    usa_elevenlabs = provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo_norm)
+    if usa_elevenlabs:
+        if not tem_chave_elevenlabs_configurada_transcribrothers(configuracao):
+            return ResultadoPreviewTtsCueNarracaoTranscribrothers(
+                ok=False,
+                mensagem="ElevenLabs não configurado (defina ELEVENLABS_API_KEY).",
+                modelo=modelo_norm,
+            )
+        api_key, api_base, base_v1 = "", "", "elevenlabs"
+        httpx_verify = True
+    else:
+        api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(configuracao)
+        if not api_key or not api_base:
+            return ResultadoPreviewTtsCueNarracaoTranscribrothers(
+                ok=False,
+                mensagem="Proxy LiteLLM não configurado (LITELLM_API_KEY e LITELLM_ENDPOINT).",
+                modelo=modelo_norm,
+            )
+        base_v1 = normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1(api_base)
+        if not base_v1:
+            return ResultadoPreviewTtsCueNarracaoTranscribrothers(
+                ok=False,
+                mensagem="LITELLM_ENDPOINT inválido.",
+                modelo=modelo_norm,
+            )
+        httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(configuracao)
     pedacos = expandir_trechos_cues_para_narracao_tts_respeitando_limite_chars_transcribrothers(
         [texto_norm],
         max_chars=max_chars_trecho,
@@ -1785,6 +1833,7 @@ async def gerar_preview_tts_wav_de_uma_cue_via_litellm_transcribrothers(
                 perfil_tts=perfil_preview,
                 temperatura=temperatura_preview,
                 ritmo=ritmo_preview,
+                configuracao=configuracao,
             )
             pcm_cue.extend(pcm)
     except ErroTtsRespostaVaziaRetryavelTranscribrothers as exc:
