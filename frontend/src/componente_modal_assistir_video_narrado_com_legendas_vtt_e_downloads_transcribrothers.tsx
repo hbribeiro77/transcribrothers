@@ -45,6 +45,7 @@ import {
 import type { JobStatus } from "./tipos_job_status_api_transcribrothers.ts";
 import {
   carregarCuesWebVttDeUrlParaListaUiTranscribrothers,
+  formatarSegundosComoTimestampMinutoSegundoSemMilissegundosUiTranscribrothers,
   formatarSegundosComoTimestampVttCurtoUiTranscribrothers,
   type CueWebVttParaListaUiTranscribrothers,
 } from "./modulo_util_parsear_webvtt_em_cues_para_lista_ui_transcribrothers.ts";
@@ -60,9 +61,6 @@ import {
   ajustarFimCueTimelineAoAudioNarracaoUiTranscribrothers,
   cuePodeAjustarFimAJanelaTelaNaTimelineUiTranscribrothers,
   cuePodeAjustarFimAoAudioNaTimelineUiTranscribrothers,
-  cuePodeDeslocarNaTimelineUiTranscribrothers,
-  DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS,
-  deslocarCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers,
   posicionarInicioCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers,
   resolverDuracaoAudioAtualDaCueParaAjusteTimelineUiTranscribrothers,
 } from "./modulo_util_ajustar_e_deslocar_cues_timeline_narracao_sem_sobreposicao_ui_transcribrothers.ts";
@@ -79,6 +77,27 @@ import {
   alinharJanelasAoNumeroDeCuesTimelineNarracaoUiTranscribrothers,
   type CueTimelineComIdClienteUiTranscribrothers,
 } from "./modulo_util_inserir_e_reordenar_cues_timeline_narracao_video_narrado_ui_transcribrothers.ts";
+import { rotuloOpcaoVozCueNarracaoParaSelectSemHashElevenlabsTranscribrothers } from "./modulo_util_rotulo_opcao_voz_cue_narracao_select_sem_hash_elevenlabs_transcribrothers.ts";
+import { duracaoTelaDifereDoSlotCueNarracaoTranscribrothers } from "./modulo_util_duracao_tela_difere_do_slot_cue_narracao_transcribrothers.ts";
+import { alternarChaveMapaAbertoUiTranscribrothers } from "./modulo_util_alternar_chave_mapa_aberto_ui_transcribrothers.ts";
+import { montarItensMenuAcoesCueVideoNarradoTranscribrothers } from "./modulo_util_itens_menu_acoes_cue_video_narrado_transcribrothers.ts";
+import {
+  ajustarCuesSelecionadasAoAudioEmOrdemTranscribrothers,
+  aplicarVozTtsNasJanelasCuesSelecionadasTranscribrothers,
+  listarIndicesCuesElegiveisNarracaoLoteTranscribrothers,
+  remaparIndicesSelecionadosAposExcluirTranscribrothers,
+  remaparIndicesSelecionadosAposInserirTranscribrothers,
+  remaparIndicesSelecionadosAposReordenarTranscribrothers,
+  type ModoAjusteAudioAposNarracaoLoteTranscribrothers,
+} from "./modulo_util_acoes_lote_cues_narracao_voz_e_ajuste_audio_transcribrothers.ts";
+import {
+  gravarTituloVideoNarradoNoSessionStorageTranscribrothers,
+  lerTituloVideoNarradoDoSessionStorageTranscribrothers,
+  montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers,
+  resolverTituloVideoNarradoPersistidoOuH1Transcribrothers,
+} from "./modulo_util_nome_arquivo_download_video_narrado_titulo_h1_e_sufixo_legendado_transcribrothers.ts";
+import { ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers } from "./componente_opcoes_select_vozes_tts_elevenlabs_agrupadas_pt_br_transcribrothers.tsx";
+import type { VozTtsElevenlabsUiTranscribrothers } from "./modulo_api_listar_vozes_tts_elevenlabs_transcribrothers.ts";
 import {
   DndContext,
   DragOverlay,
@@ -209,9 +228,18 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
   litellmModelChat?: string | null;
   regenerando: boolean;
   vozPadraoJob?: string | null;
-  vozesDisponiveis?: Array<{ id: string; estilo: string }>;
+  vozesDisponiveis?: Array<{
+    id: string;
+    estilo: string;
+    idioma?: string;
+    sotaque?: string;
+    locale?: string;
+    pt_br?: boolean;
+  }>;
+  /** Markdown do tutorial — o H1 vira título editável do vídeo (não reescreve o documento). */
+  markdownTutorial?: string | null;
   onFechar: () => void;
-  onBaixarVideoMp4: () => void;
+  onBaixarVideoMp4: (nomeArquivo?: string) => void;
   onBaixarLegendasVtt: () => void;
   onBaixarNarracaoWav: () => void;
   onAtualizarNarracaoDasLegendas: () => void;
@@ -231,6 +259,7 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
     janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
     temperaturaTts?: number;
     ritmoTts?: RitmoTtsNarracaoTranscribrothers;
+    tituloArquivo?: string;
   }) => void;
   onLegendasSalvas?: () => void | Promise<void>;
   /** Após «tornar atual» uma versão — atualiza URLs do job no pai. */
@@ -394,6 +423,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   regenerando,
   vozPadraoJob = "Kore",
   vozesDisponiveis = [],
+  markdownTutorial = null,
   onFechar,
   onBaixarVideoMp4,
   onBaixarLegendasVtt,
@@ -456,6 +486,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const debounceScrubBarraTempoPendenteRef = useRef<number | null>(null);
   /** Cue escolhida no clique (destaque estável; evita “pular” para a próxima no limite fim==próximo início). */
   const [indiceCueSelecionadaSolo, setIndiceCueSelecionadaSolo] = useState<number | null>(null);
+  const [idsCuesDetalheAberto, setIdsCuesDetalheAberto] = useState<Record<string, true>>({});
+  const [indicesCuesSelecionadasLote, setIndicesCuesSelecionadasLote] = useState<number[]>([]);
+  const [vozTtsLoteForm, setVozTtsLoteForm] = useState("");
+  const [modoAjusteAudioAposNarrarLote, setModoAjusteAudioAposNarrarLote] =
+    useState<ModoAjusteAudioAposNarracaoLoteTranscribrothers>("so_alongar");
+  const [gerandoNarracaoLote, setGerandoNarracaoLote] = useState(false);
+  const [tituloVideoNarradoForm, setTituloVideoNarradoForm] = useState("");
   /** Modal «Origem» (recorte na fonte de tela da cue; índice 0-based). */
   const [indiceCueModalVideoOriginal, setIndiceCueModalVideoOriginal] = useState<number | null>(
     null,
@@ -534,6 +571,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const [indiceAudioTocando, setIndiceAudioTocando] = useState<number | null>(null);
   const [indiceAudioGerandoPreview, setIndiceAudioGerandoPreview] = useState<number | null>(null);
   const [menuRodapeAbertoId, setMenuRodapeAbertoId] = useState<string | null>(null);
+  const [idMenuAcoesCueAberto, setIdMenuAcoesCueAberto] = useState<string | null>(null);
   const [painelDebugCacheAberto, setPainelDebugCacheAberto] = useState(false);
   /** Índices com o campo «Fala (TTS)» expandido manualmente (por padrão fica colapsado). */
   const [indicesFalaTtsExpandidos, setIndicesFalaTtsExpandidos] = useState<Record<number, true>>(
@@ -681,6 +719,49 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     setPreviewAudioPorIndice({});
   }, []);
 
+  const vozesCueParaSelect = useMemo<VozTtsElevenlabsUiTranscribrothers[]>(
+    () =>
+      vozesDisponiveis.map((v) => ({
+        id: v.id,
+        estilo: v.estilo || v.id,
+        idioma: v.idioma || "",
+        sotaque: v.sotaque || "",
+        locale: v.locale || "",
+        pt_br: v.pt_br === true,
+      })),
+    [vozesDisponiveis],
+  );
+
+  useEffect(() => {
+    if (!aberto) return;
+    const primeira = (vozesDisponiveis[0]?.id || "Kore").trim();
+    const padraoJob = (vozPadraoJob || "").trim();
+    setVozTtsLoteForm((atual) => {
+      if (atual && vozesDisponiveis.some((v) => v.id === atual)) return atual;
+      if (padraoJob && vozesDisponiveis.some((v) => v.id === padraoJob)) return padraoJob;
+      return primeira;
+    });
+  }, [aberto, vozPadraoJob, vozesDisponiveis]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const persistidoSteps =
+      typeof stepsJsonJob?.pipeline_video_narrado_titulo_arquivo === "string"
+        ? String(stepsJsonJob.pipeline_video_narrado_titulo_arquivo)
+        : "";
+    const persistidoSession = jobId
+      ? lerTituloVideoNarradoDoSessionStorageTranscribrothers(jobId)
+      : "";
+    setTituloVideoNarradoForm(
+      resolverTituloVideoNarradoPersistidoOuH1Transcribrothers(
+        persistidoSteps || persistidoSession,
+        markdownTutorial,
+      ),
+    );
+    // Só ao abrir o editor — job/steps podem atualizar durante a edição.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aberto, jobId]);
+
   useEffect(() => {
     if (!aberto) return;
     const escolhido = escolherModeloTtsDaListaDisponivelTranscribrothers(
@@ -767,10 +848,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       pararAudioCue();
       limparTodosPreviewsAudioCue();
       setMenuRodapeAbertoId(null);
+      setIdMenuAcoesCueAberto(null);
       setVersoesVideoNarrado([]);
       setVersaoAtualVideoNarradoId(null);
       setTrocandoVersaoVideoNarrado(false);
       setIndiceCueModalVideoOriginal(null);
+      setIndicesCuesSelecionadasLote([]);
+      setIdsCuesDetalheAberto({});
+      setGerandoNarracaoLote(false);
     }
   }, [aberto, limparTodosPreviewsAudioCue, pararAudioCue]);
 
@@ -885,6 +970,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   useEffect(() => {
     if (regenerando || salvandoProjeto) {
       setMenuRodapeAbertoId(null);
+      setIdMenuAcoesCueAberto(null);
     }
   }, [regenerando, salvandoProjeto]);
 
@@ -925,6 +1011,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       }
       debounceScrubBarraTempoPendenteRef.current = null;
       setIndicesFalaTtsExpandidos({});
+      setIndicesCuesSelecionadasLote([]);
+      setIdsCuesDetalheAberto({});
+      setGerandoNarracaoLote(false);
       return;
     }
     if (!urlLegendasVtt) {
@@ -2097,15 +2186,21 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   ]);
 
   const gerarPreviewTtsCueForcandoNovaChamadaUi = useCallback(
-    async (indice: number, opts?: { marcarForcarExport?: boolean }) => {
+    async (
+      indice: number,
+      opts?: { marcarForcarExport?: boolean; silencioso?: boolean },
+    ): Promise<{ ok: boolean; duracaoSegundos: number }> => {
+      const falhou = { ok: false, duracaoSegundos: 0 };
       const cue = cuesRef.current[indice] ?? cues[indice];
-      if (!cue) return;
+      if (!cue) return falhou;
       if (!jobId) {
-        pushToast("Job não disponível para gerar prévia de áudio.", "error");
-        return;
+        if (!opts?.silencioso) {
+          pushToast("Job não disponível para gerar prévia de áudio.", "error");
+        }
+        return falhou;
       }
       const audio = audioCueRef.current;
-      if (!audio) return;
+      if (!audio) return falhou;
 
       audio.pause();
       audio.removeAttribute("src");
@@ -2165,19 +2260,25 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             return copia;
           });
         }
-        audio.src = url;
-        setIndiceAudioTocando(indice);
-        await audio.play();
-        pushToast(
-          opts?.marcarForcarExport
-            ? "Nova narração gerada. Ao gerar o vídeo, este áudio substitui o anterior desta cue."
-            : "Prévia validada nesta cue. Ao gerar o vídeo, este áudio será reaproveitado (sem narrar de novo).",
-          "success",
-        );
+        if (!opts?.silencioso) {
+          audio.src = url;
+          setIndiceAudioTocando(indice);
+          await audio.play();
+          pushToast(
+            opts?.marcarForcarExport
+              ? "Nova narração gerada. Ao gerar o vídeo, este áudio substitui o anterior desta cue."
+              : "Prévia validada nesta cue. Ao gerar o vídeo, este áudio será reaproveitado (sem narrar de novo).",
+            "success",
+          );
+        }
+        return { ok: true, duracaoSegundos: durPreview > 0 ? durPreview : 0 };
       } catch (e: unknown) {
         setIndiceAudioTocando(null);
-        if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
-        pushToast(e instanceof Error ? e.message : "Falha na prévia TTS.", "error");
+        if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return falhou;
+        if (!opts?.silencioso) {
+          pushToast(e instanceof Error ? e.message : "Falha na prévia TTS.", "error");
+        }
+        return falhou;
       } finally {
         setIndiceAudioGerandoPreview(null);
       }
@@ -2453,31 +2554,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     ],
   );
 
-  const deslocarCueNaTimeline = useCallback(
-    (indice: number, sentido: "esquerda" | "direita") => {
-      const delta =
-        sentido === "esquerda"
-          ? -DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS
-          : DELTA_DESLOCAR_CUE_TIMELINE_NARRACAO_SEGUNDOS_TRANSCRIBROTHERS;
-      const r = deslocarCueTimelineNarracaoSemSobreporVizinhasUiTranscribrothers(
-        cues,
-        indice,
-        delta,
-      );
-      if (!r.ok) {
-        pushToast(r.motivo, "info");
-        return;
-      }
-      setCues(
-        garantirIdsClienteNasCuesTimelineNarracaoUiTranscribrothers(
-          r.cues.map((c, i) => ({ ...c, idCliente: cues[i]?.idCliente })),
-        ),
-      );
-      setIndiceCueSelecionadaSolo(indice);
-    },
-    [cues, pushToast],
-  );
-
   const arrastarCueNaTimelineParaInicio = useCallback(
     (indice: number, novoInicioSegundos: number) => {
       const duracaoVideo =
@@ -2521,9 +2597,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     }
     setBaixandoVideoComLegendasQueimadas(true);
     setMenuRodapeAbertoId(null);
+    setIdMenuAcoesCueAberto(null);
     let idToastProgresso: string | null = null;
     try {
       const resultado = await baixarVideoNarradoComLegendasQueimadasJobApiTranscribrothers(jobId, {
+        nomeArquivo: montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers(
+          tituloVideoNarradoForm,
+          { legendado: true, jobId },
+        ),
         onStatus: (s) => {
           if (s.status !== "gerando" && s.status !== "pendente") return;
           const pct =
@@ -2579,6 +2660,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     pushToast,
     pushToastProgresso,
     removerToast,
+    tituloVideoNarradoForm,
     urlLegendasVtt,
     urlVideoMp4,
   ]);
@@ -2602,7 +2684,36 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     regenerando ||
     salvandoProjeto ||
     baixandoVideoComLegendasQueimadas ||
-    trocandoVersaoVideoNarrado;
+    trocandoVersaoVideoNarrado ||
+    gerandoNarracaoLote;
+  const indicesElegiveisLoteTodos = listarIndicesCuesElegiveisNarracaoLoteTranscribrothers(
+    janelas,
+    janelas.map((_, i) => i),
+  );
+  const indicesElegiveisLoteMarcados = listarIndicesCuesElegiveisNarracaoLoteTranscribrothers(
+    janelas,
+    indicesCuesSelecionadasLote,
+  );
+  const todosElegiveisLoteMarcados =
+    indicesElegiveisLoteTodos.length > 0 &&
+    indicesElegiveisLoteTodos.every((i) => indicesElegiveisLoteMarcados.includes(i));
+  const catalogoVozesPareceElevenlabs = vozesCueParaSelect.some(
+    (v) => v.pt_br || Boolean((v.idioma || "").trim()) || Boolean((v.locale || "").trim()),
+  );
+  const vozesLoteSelect =
+    !vozTtsLoteForm.trim() || vozesCueParaSelect.some((v) => v.id === vozTtsLoteForm)
+      ? vozesCueParaSelect
+      : [
+          {
+            id: vozTtsLoteForm,
+            estilo: vozTtsLoteForm,
+            idioma: "",
+            sotaque: "",
+            locale: "",
+            pt_br: false,
+          },
+          ...vozesCueParaSelect,
+        ];
   const projetoSujo = sujas || janelasSujas;
   const podeSalvarProjeto =
     Boolean(jobId) &&
@@ -2733,6 +2844,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         });
         if (!ok) return;
       }
+      if (jobId) {
+        gravarTituloVideoNarradoNoSessionStorageTranscribrothers(jobId, tituloVideoNarradoForm);
+      }
       onGerarVideoComEstasEdicoes({
         cues: cues.map((c, i) => ({
           inicio_segundos: c.inicioSegundos,
@@ -2750,6 +2864,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         })),
         temperaturaTts: temperaturaTtsEfetiva,
         ritmoTts: ritmoTtsEfetivo,
+        tituloArquivo: tituloVideoNarradoForm.trim(),
       });
     })();
   };
@@ -2761,6 +2876,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       copia[indice] = { ...copia[indice], semNarracao: !copia[indice].semNarracao };
       return copia;
     });
+    setIndicesCuesSelecionadasLote((prev) => prev.filter((i) => i !== indice));
   };
 
   const alterarVozTtsDaCue = (indice: number, novaVoz: string) => {
@@ -2779,6 +2895,107 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       delete proximo[indice];
       return proximo;
     });
+  };
+
+  const alternarSelecaoTodasCuesElegiveisLoteUi = () => {
+    const todos = listarIndicesCuesElegiveisNarracaoLoteTranscribrothers(
+      janelas,
+      janelas.map((_, i) => i),
+    );
+    const todosMarcados =
+      todos.length > 0 && todos.every((i) => indicesCuesSelecionadasLote.includes(i));
+    setIndicesCuesSelecionadasLote(todosMarcados ? [] : todos);
+  };
+
+  const narrarCuesSelecionadasLoteUi = async () => {
+    if (ocupado) return;
+    const alvo = listarIndicesCuesElegiveisNarracaoLoteTranscribrothers(
+      janelas,
+      indicesCuesSelecionadasLote,
+    );
+    if (alvo.length === 0) {
+      pushToast("Selecione ao menos uma cue com narração para gerar o áudio.", "info");
+      return;
+    }
+    const janelasComVoz = aplicarVozTtsNasJanelasCuesSelecionadasTranscribrothers(
+      janelas,
+      alvo,
+      vozTtsLoteForm,
+    );
+    janelasRef.current = janelasComVoz;
+    setJanelas(janelasComVoz);
+    setPreviewAudioPorIndice((prev) => {
+      const proximo = { ...prev };
+      for (const i of alvo) {
+        const atual = proximo[i];
+        if (atual) revogarUrlBlobPreviewCueTranscribrothers(atual.urlBlob);
+        delete proximo[i];
+      }
+      return proximo;
+    });
+    setGerandoNarracaoLote(true);
+    const duracoesPorIndice: Record<number, number> = {};
+    let okCount = 0;
+    const toastId = pushToastProgresso({
+      message: `Narrando 1 de ${alvo.length}…`,
+      percentual: 0,
+      indeterminado: false,
+    });
+    try {
+      for (let n = 0; n < alvo.length; n += 1) {
+        atualizarToastProgresso(toastId, {
+          message: `Narrando ${n + 1} de ${alvo.length}…`,
+          percentual: (n / alvo.length) * 100,
+        });
+        const r = await gerarPreviewTtsCueForcandoNovaChamadaUi(alvo[n], {
+          silencioso: true,
+          marcarForcarExport: true,
+        });
+        if (r.ok) {
+          okCount += 1;
+          if (r.duracaoSegundos > 0) {
+            duracoesPorIndice[alvo[n]] = r.duracaoSegundos;
+          }
+        }
+      }
+      atualizarToastProgresso(toastId, {
+        message: `Narrando ${alvo.length} de ${alvo.length}…`,
+        percentual: 100,
+      });
+      if (modoAjusteAudioAposNarrarLote !== "nao_ajustar" && okCount > 0) {
+        setCues((prevCues) => {
+          const r = ajustarCuesSelecionadasAoAudioEmOrdemTranscribrothers(
+            prevCues,
+            alvo.filter((i) => (duracoesPorIndice[i] ?? 0) > 0),
+            duracoesPorIndice,
+            modoAjusteAudioAposNarrarLote,
+          );
+          return r.cues;
+        });
+      }
+      removerToast(toastId);
+      const sufixoAjuste =
+        modoAjusteAudioAposNarrarLote === "so_alongar"
+          ? " Cues alongadas quando o áudio passou do slot."
+          : modoAjusteAudioAposNarrarLote === "ajustar_ao_audio"
+            ? " Tempos ajustados ao áudio."
+            : "";
+      if (okCount === 0) {
+        pushToast("Não foi possível gerar a narração das cues selecionadas.", "error");
+      } else if (okCount === alvo.length) {
+        pushToast(`Narração gerada em ${okCount} cue(s).${sufixoAjuste}`, "success");
+      } else {
+        pushToast(
+          `Narração gerada em ${okCount} de ${alvo.length} cue(s). As demais falharam.${sufixoAjuste}`,
+          "error",
+        );
+      }
+    } catch (e: unknown) {
+      removerToast(toastId);
+      pushToast(e instanceof Error ? e.message : "Falha ao narrar as cues selecionadas.", "error");
+    } finally {
+      setGerandoNarracaoLote(false);
+    }
   };
 
   const adicionarCueDepoisDoSelecionadoUi = () => {
@@ -2815,7 +3032,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     setSugestoesReescritaLegendaPorIndice((prev) =>
       remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
     );
+    setIndicesCuesSelecionadasLote((prev) =>
+      remaparIndicesSelecionadosAposInserirTranscribrothers(prev, r.indiceInserido),
+    );
     setIndiceCueSelecionadaSolo(r.indiceInserido);
+    const idInserido = r.cues[r.indiceInserido]?.idCliente;
+    if (idInserido) {
+      setIdsCuesDetalheAberto((prev) => ({ ...prev, [idInserido]: true }));
+    }
     pushToast(
       "Cue adicionada (janela provisória). Ajuste o trecho em «Origem» e gere a prévia TTS.",
       "success",
@@ -2869,7 +3093,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       setSugestoesReescritaLegendaPorIndice((prev) =>
         remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
       );
+      setIndicesCuesSelecionadasLote((prev) =>
+        remaparIndicesSelecionadosAposInserirTranscribrothers(prev, r.indiceInserido),
+      );
       setIndiceCueSelecionadaSolo(r.indiceInserido);
+      const idSeparador = r.cues[r.indiceInserido]?.idCliente;
+      if (idSeparador) {
+        setIdsCuesDetalheAberto((prev) => ({ ...prev, [idSeparador]: true }));
+      }
 
       const toastId = pushToastProgresso({
         message: "Gerando cartão de seção (vinheta)…",
@@ -2939,6 +3170,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     );
     setSugestoesReescritaLegendaPorIndice((prev) =>
       remaparRecordPorIndiceAposReordenarUiTranscribrothers(prev, indiceDe, indicePara),
+    );
+    setIndicesCuesSelecionadasLote((prev) =>
+      remaparIndicesSelecionadosAposReordenarTranscribrothers(prev, indiceDe, indicePara),
     );
     if (indiceCueSelecionadaSolo === indiceDe) {
       setIndiceCueSelecionadaSolo(indicePara);
@@ -3023,6 +3257,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         });
         return proximo;
       });
+      setIndicesCuesSelecionadasLote((prev) =>
+        remaparIndicesSelecionadosAposExcluirTranscribrothers(prev, indice),
+      );
+      const idRemovido = cues[indice]?.idCliente;
+      if (idRemovido) {
+        setIdsCuesDetalheAberto((prev) => {
+          const next = { ...prev };
+          delete next[idRemovido];
+          return next;
+        });
+      }
       pushToast("Cue excluída da lista. Gere o vídeo para aplicar no MP4.", "info");
     })();
   };
@@ -3098,9 +3343,24 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         />
         <header className="tb-modal-assistir-video-narrado-cabecalho">
           <div className="tb-modal-assistir-video-narrado-cabecalho-topo">
-            <h2 id={tituloId} className="tb-modal-assistir-video-narrado-titulo">
+            <h2 id={tituloId} className="tb-sr-only">
               Editar vídeo narrado
             </h2>
+            <input
+              className="tb-modal-assistir-video-narrado-titulo tb-modal-assistir-video-narrado-titulo-input"
+              value={tituloVideoNarradoForm}
+              onChange={(e) => {
+                const proximo = e.target.value;
+                setTituloVideoNarradoForm(proximo);
+                if (jobId) {
+                  gravarTituloVideoNarradoNoSessionStorageTranscribrothers(jobId, proximo);
+                }
+              }}
+              disabled={ocupado}
+              aria-label="Título do vídeo narrado"
+              title="Título do vídeo (H1 do tutorial). Usado no nome do arquivo ao baixar. Não altera o Markdown."
+              placeholder="Título do vídeo"
+            />
             {versoesVideoNarrado.length > 0 ? (
               <label className="tb-modal-assistir-video-narrado-seletor-versao tb-modal-assistir-video-narrado-seletor-versao--compacto">
                 <span className="tb-sr-only">Versão</span>
@@ -3356,7 +3616,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                     estica; ao esticar, empurra as cues seguintes).
                   </p>
                   <p>
-                    «← →» ou arraste na faixa sob o progresso deslocam a cue sem sobrepor.
+                    Arraste na faixa sob o progresso para ir a outro instante da timeline.
                   </p>
                   <p>
                     «Ouvir»/«Prévia» gera o áudio TTS; se o badge «prévia ok» aparecer, esse áudio
@@ -3365,8 +3625,14 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   <p>
                     «Adicionar cue» insere depois do cartão destacado (clique ou cue do instante
                     atual do vídeo; janela provisória). «Inserir separador» gera um cartão de seção
-                    (vinheta com título e fade) e coloca na timeline. Arraste pelo handle ou use as
-                    setas para reordenar (estilo Trello).
+                    (vinheta com título e fade) e coloca na timeline. Arraste pelo handle para
+                    reordenar (estilo Trello).
+                  </p>
+                  <p>
+                    Use «Ações» na cue (aberta ou fechada) para Fonte, Origem, Regenerar e Excluir.
+                    A seta ↓ à direita abre voz, ajustes de tempo e fala TTS.
+                    Marque as cues e use «Narrar»: a voz do lote é aplicada e cada uma é narrada.
+                    «Só alongar» aumenta o slot se o áudio passar. Cues «Sem narração» ficam de fora.
                   </p>
                   <p>
                     O número (#1, #2…) identifica a cue na lista e no tooltip da timeline.
@@ -3374,6 +3640,85 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 </div>
               </details>
             </div>
+            {cues.length > 0 && !carregandoCues && !erroCues && urlLegendasVtt ? (
+              <div className="tb-modal-assistir-video-narrado-lote-barra">
+                <label className="tb-modal-assistir-video-narrado-lote-marcar-todas">
+                  <input
+                    type="checkbox"
+                    checked={todosElegiveisLoteMarcados}
+                    disabled={ocupado || indicesElegiveisLoteTodos.length === 0}
+                    onChange={alternarSelecaoTodasCuesElegiveisLoteUi}
+                  />
+                  <span>
+                    Todas
+                    {indicesElegiveisLoteMarcados.length > 0
+                      ? ` (${indicesElegiveisLoteMarcados.length})`
+                      : ""}
+                  </span>
+                </label>
+                {indicesElegiveisLoteMarcados.length > 0 ? (
+                  <>
+                    <label
+                      className="tb-modal-assistir-video-narrado-lote-voz"
+                      htmlFor="tb-cue-voz-lote"
+                    >
+                      <span className="tb-sr-only">Voz do lote</span>
+                      <select
+                        id="tb-cue-voz-lote"
+                        className="tb-modal-assistir-video-narrado-cue-voz-select"
+                        value={vozTtsLoteForm}
+                        disabled={ocupado || vozesLoteSelect.length === 0}
+                        title="Voz aplicada ao narrar as selecionadas"
+                        onChange={(e) => setVozTtsLoteForm(e.target.value)}
+                      >
+                        {catalogoVozesPareceElevenlabs ? (
+                          <ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers
+                            vozes={vozesLoteSelect}
+                          />
+                        ) : (
+                          vozesLoteSelect.map((op) => (
+                            <option key={op.id} value={op.id}>
+                              {rotuloOpcaoVozCueNarracaoParaSelectSemHashElevenlabsTranscribrothers(op)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="tb-modal-assistir-video-narrado-lote-acao tb-modal-assistir-video-narrado-lote-acao--narrar"
+                      disabled={ocupado}
+                      title="Aplica a voz do lote e gera a narração TTS das cues selecionadas, em sequência"
+                      onClick={() => void narrarCuesSelecionadasLoteUi()}
+                    >
+                      {gerandoNarracaoLote ? "Narrando…" : "Narrar"}
+                    </button>
+                    <label
+                      className="tb-modal-assistir-video-narrado-lote-ajustar"
+                      htmlFor="tb-lote-modo-ajuste-audio"
+                    >
+                      <span className="tb-sr-only">Ajuste após narrar</span>
+                      <select
+                        id="tb-lote-modo-ajuste-audio"
+                        className="tb-modal-assistir-video-narrado-cue-voz-select"
+                        value={modoAjusteAudioAposNarrarLote}
+                        disabled={ocupado}
+                        title="Só alongar aumenta o slot se o áudio for maior. Ajustar ao áudio também encolhe."
+                        onChange={(e) =>
+                          setModoAjusteAudioAposNarrarLote(
+                            e.target.value as ModoAjusteAudioAposNarracaoLoteTranscribrothers,
+                          )
+                        }
+                      >
+                        <option value="so_alongar">Só alongar</option>
+                        <option value="ajustar_ao_audio">Ajustar ao áudio</option>
+                        <option value="nao_ajustar">Não ajustar</option>
+                      </select>
+                    </label>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
             {!urlLegendasVtt ? (
               <p className="tb-modal-assistir-video-narrado-aviso">
                 Legendas ainda não geradas. Use «Gerar nova narração» ou «Gerar vídeo narrado» na barra do documento.
@@ -3468,17 +3813,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                     duracaoCueSlot,
                     duracaoJanelaTela > 0 ? duracaoJanelaTela : null,
                   );
-                  const podeDeslocarEsq = cuePodeDeslocarNaTimelineUiTranscribrothers(
-                    cues,
-                    i,
-                    "esquerda",
-                  );
-                  const podeDeslocarDir = cuePodeDeslocarNaTimelineUiTranscribrothers(
-                    cues,
-                    i,
-                    "direita",
-                  );
                   const semNarracao = Boolean(janela?.semNarracao);
+                  const detalheAberto = Boolean(idsCuesDetalheAberto[cue.idCliente]);
+                  const mostrarDuracaoTela = duracaoTelaDifereDoSlotCueNarracaoTranscribrothers(
+                    duracaoCueSlot,
+                    duracaoJanelaTela,
+                  );
+                  const rotuloVozCompacto =
+                    rotuloOpcaoVozCueNarracaoParaSelectSemHashElevenlabsTranscribrothers(
+                      listaVozesCue.find((op) => op.id === vozAtual) || { id: vozAtual },
+                    );
+                  const selecionadaLote = indicesCuesSelecionadasLote.includes(i);
                   const janelaProvisoria = Boolean(janela?.janelaProvisoria);
                   const mostrarGapAntes =
                     Boolean(idCueArrastando) &&
@@ -3495,16 +3840,47 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                       liRef={ativa ? (el) => { cueAtivaRef.current = el; } : undefined}
                       className={
                         "tb-modal-assistir-video-narrado-cue-item" +
+                        (detalheAberto
+                          ? " tb-modal-assistir-video-narrado-cue-item--detalhe"
+                          : "") +
                         (ativa ? " tb-modal-assistir-video-narrado-cue-item--ativa" : "") +
                         (semNarracao ? " tb-modal-assistir-video-narrado-cue-item--sem-narracao" : "") +
                         (janelaProvisoria
                           ? " tb-modal-assistir-video-narrado-cue-item--janela-provisoria"
+                          : "") +
+                        (selecionadaLote
+                          ? " tb-modal-assistir-video-narrado-cue-item--lote"
                           : "")
                       }
                     >
                       {(handleArraste) => (
                       <>
                       <div className="tb-modal-assistir-video-narrado-cue-cabecalho">
+                        <div className="tb-modal-assistir-video-narrado-cue-cabecalho-principal">
+                        <label
+                          className="tb-modal-assistir-video-narrado-cue-lote"
+                          title={
+                            semNarracao
+                              ? "Cue sem narração não entra nas ações em lote"
+                              : "Incluir esta cue nas ações em lote"
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selecionadaLote}
+                            disabled={ocupado || semNarracao || !janela}
+                            aria-label={`Selecionar cue ${i + 1} para ações em lote`}
+                            onChange={(e) => {
+                              if (semNarracao || !janela) return;
+                              setIndicesCuesSelecionadasLote((prev) =>
+                                e.target.checked
+                                  ? [...new Set([...prev, i])].sort((a, b) => a - b)
+                                  : prev.filter((x) => x !== i),
+                              );
+                            }}
+                          />
+                        </label>
                         <button
                           type="button"
                           ref={handleArraste.setActivatorNodeRef}
@@ -3526,42 +3902,20 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                         </span>
                         <button
                           type="button"
-                          className="tb-modal-assistir-video-narrado-cue-nudge"
-                          disabled={ocupado || i === 0}
-                          title="Mover cue para cima"
-                          aria-label={`Mover cue ${i + 1} para cima`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            reordenarCueNaListaUi(i, i - 1);
-                          }}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          className="tb-modal-assistir-video-narrado-cue-nudge"
-                          disabled={ocupado || i >= cues.length - 1}
-                          title="Mover cue para baixo"
-                          aria-label={`Mover cue ${i + 1} para baixo`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            reordenarCueNaListaUi(i, i + 1);
-                          }}
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
                           className="tb-modal-assistir-video-narrado-cue-tempo"
-                          title="Selecionar esta legenda (sem play/pause — use «Ir»)"
+                          title={`${formatarSegundosComoTimestampVttCurtoUiTranscribrothers(cue.inicioSegundos)} – ${formatarSegundosComoTimestampVttCurtoUiTranscribrothers(cue.fimSegundos)} · Selecionar esta legenda (sem play/pause — use «Ir»)`}
                           onClick={(e) => {
                             e.stopPropagation();
                             selecionarCueNaListaSemAlterarPlaybackUi(i);
                           }}
                         >
-                          {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(cue.inicioSegundos)}
+                          {formatarSegundosComoTimestampMinutoSegundoSemMilissegundosUiTranscribrothers(
+                            cue.inicioSegundos,
+                          )}
                           {" – "}
-                          {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(cue.fimSegundos)}
+                          {formatarSegundosComoTimestampMinutoSegundoSemMilissegundosUiTranscribrothers(
+                            cue.fimSegundos,
+                          )}
                         </button>
                         <span
                           className="tb-modal-assistir-video-narrado-cue-duracao"
@@ -3571,7 +3925,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             Math.max(0, duracaoCueSlot),
                           ) || "—"}
                         </span>
-                        {podeAjustarATela ? (
+                        {mostrarDuracaoTela ? (
                           <span
                             className="tb-modal-assistir-video-narrado-cue-duracao-tela"
                             title="Duração da janela de tela no vídeo original (difere do slot narrado)"
@@ -3598,6 +3952,20 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             separador
                           </span>
                         ) : null}
+                        <span
+                          className="tb-modal-assistir-video-narrado-cue-voz-compacta"
+                          title={
+                            semNarracao
+                              ? "Cue sem narração"
+                              : vozDiferenteDoPadrao
+                                ? `Voz desta cue (diferente do padrão): ${rotuloVozCompacto}`
+                                : `Voz: ${rotuloVozCompacto}`
+                          }
+                        >
+                          {semNarracao ? "sem fala" : rotuloVozCompacto}
+                          {falaDiferenteDaLegenda ? " · fala≠" : ""}
+                          {vozDesatualizada || regeneracaoForcada ? " · suja" : ""}
+                        </span>
                         <button
                           type="button"
                           className="tb-modal-assistir-video-narrado-cue-ir"
@@ -3609,47 +3977,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                           }}
                         >
                           Ir
-                        </button>
-                        <button
-                          type="button"
-                          className="tb-modal-assistir-video-narrado-cue-original"
-                          disabled={!jobId || !janela || ocupado}
-                          title={
-                            !janela
-                              ? "Janela de tela ainda não disponível para esta cue"
-                              : "Trocar a origem (vídeo de tela) desta cue"
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIndiceCueSelecionadaSolo(i);
-                            setIndiceCueModalEscolherFonte(i);
-                          }}
-                        >
-                          Fonte
-                        </button>
-                        <button
-                          type="button"
-                          className="tb-modal-assistir-video-narrado-cue-original"
-                          disabled={
-                            !jobId ||
-                            (!jobTemVideoEntrada &&
-                              normalizarIdFonteVideoUiTranscribrothers(janela?.idFonteVideo) ===
-                                ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS) ||
-                            !janela ||
-                            ocupado
-                          }
-                          title={
-                            !janela
-                              ? "Janela de tela ainda não disponível para esta cue"
-                              : "Recortar trecho na origem desta cue (só cues com o mesmo vídeo)"
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIndiceCueSelecionadaSolo(i);
-                            setIndiceCueModalVideoOriginal(i);
-                          }}
-                        >
-                          Origem
                         </button>
                         <button
                           type="button"
@@ -3691,31 +4018,109 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                                 ? "Prévia"
                                 : "Ouvir"}
                         </button>
+                        <ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers
+                          rotulo="Ações"
+                          ariaLabel={`Ações da cue ${i + 1}`}
+                          desabilitado={ocupado}
+                          menuAbertoId={idMenuAcoesCueAberto}
+                          idMenu={`cue-acoes-${cue.idCliente}`}
+                          onMenuAbertoIdChange={(id) => {
+                            setMenuRodapeAbertoId(null);
+                            setIdMenuAcoesCueAberto(id);
+                            if (id) selecionarCueNaListaSemAlterarPlaybackUi(i);
+                          }}
+                          posicaoLista="abaixo"
+                          classeTrigger="tb-modal-assistir-video-narrado-cue-menu-acoes-trigger"
+                          itens={montarItensMenuAcoesCueVideoNarradoTranscribrothers({
+                            fonteDesabilitada: !jobId || !janela || ocupado,
+                            tituloFonte: !janela
+                              ? "Janela de tela ainda não disponível para esta cue"
+                              : "Trocar a origem (vídeo de tela) desta cue",
+                            origemDesabilitada:
+                              !jobId ||
+                              (!jobTemVideoEntrada &&
+                                normalizarIdFonteVideoUiTranscribrothers(janela?.idFonteVideo) ===
+                                  ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS) ||
+                              !janela ||
+                              ocupado,
+                            tituloOrigem: !janela
+                              ? "Janela de tela ainda não disponível para esta cue"
+                              : "Recortar trecho na origem desta cue (só cues com o mesmo vídeo)",
+                            regenerarDesabilitada:
+                              ocupado ||
+                              semNarracao ||
+                              gerandoPreview ||
+                              indiceAudioGerandoPreview !== null,
+                            tituloRegenerar:
+                              "Gerar nova narração TTS nesta cue (chama a LLM de novo)",
+                            excluirDesabilitada: ocupado || cues.length <= 1,
+                            tituloExcluir:
+                              cues.length <= 1
+                                ? "É preciso manter ao menos uma cue."
+                                : "Remove esta cue da lista (não entra no MP4 ao gerar)",
+                          }).map((item) => ({
+                            id: item.id,
+                            rotulo: item.rotulo,
+                            desabilitado: item.desabilitado,
+                            titulo: item.titulo,
+                            variante: item.perigoso ? "perigo" : undefined,
+                            onClick: () => {
+                              selecionarCueNaListaSemAlterarPlaybackUi(i);
+                              if (item.id === "fonte") setIndiceCueModalEscolherFonte(i);
+                              else if (item.id === "origem") setIndiceCueModalVideoOriginal(i);
+                              else if (item.id === "regenerar") {
+                                regenerarNarracaoTtsCueForcandoNovaChamadaUi(i);
+                              } else if (item.id === "excluir") {
+                                excluirCueDaListaLocalUi(i);
+                              }
+                            },
+                          }))}
+                        />
+                        </div>
                         <button
                           type="button"
-                          className="tb-modal-assistir-video-narrado-cue-regenerar"
-                          disabled={
-                            ocupado ||
-                            semNarracao ||
-                            gerandoPreview ||
-                            indiceAudioGerandoPreview !== null
+                          className="tb-modal-assistir-video-narrado-cue-expandir"
+                          aria-expanded={detalheAberto}
+                          aria-label={
+                            detalheAberto
+                              ? `Recolher ferramentas da cue ${i + 1}`
+                              : `Expandir ferramentas da cue ${i + 1}`
                           }
-                          title="Gerar nova narração TTS nesta cue (chama a LLM de novo)"
+                          title={detalheAberto ? "Recolher ferramentas" : "Expandir ferramentas"}
+                          disabled={ocupado}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setIndiceCueSelecionadaSolo(i);
-                            regenerarNarracaoTtsCueForcandoNovaChamadaUi(i);
+                            selecionarCueNaListaSemAlterarPlaybackUi(i);
+                            setIdsCuesDetalheAberto((prev) =>
+                              alternarChaveMapaAbertoUiTranscribrothers(prev, cue.idCliente),
+                            );
                           }}
                         >
-                          Regenerar
+                          <span
+                            className="tb-modal-assistir-video-narrado-cue-expandir-icone"
+                            aria-hidden="true"
+                          >
+                            ↓
+                          </span>
                         </button>
                       </div>
+                      <div
+                        className={
+                          "tb-modal-assistir-video-narrado-cue-oficina" +
+                          (detalheAberto
+                            ? " tb-modal-assistir-video-narrado-cue-oficina--aberta"
+                            : "")
+                        }
+                        inert={detalheAberto ? undefined : true}
+                        aria-hidden={detalheAberto ? undefined : true}
+                      >
+                      <div className="tb-modal-assistir-video-narrado-cue-oficina-interno">
                       <div className="tb-modal-assistir-video-narrado-cue-acoes-extras">
                         {janela ? (
                           <label
                             className="tb-modal-assistir-video-narrado-cue-voz"
                             htmlFor={`tb-cue-voz-${i}`}
-                            title="Voz Gemini TTS desta cue"
+                            title="Voz TTS desta cue"
                           >
                             <span className="tb-modal-assistir-video-narrado-cue-voz-rotulo">
                               Voz
@@ -3753,11 +4158,26 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                               disabled={ocupado || semNarracao}
                               onChange={(e) => alterarVozTtsDaCue(i, e.target.value)}
                             >
-                              {listaVozesCue.map((op) => (
-                                <option key={op.id} value={op.id}>
-                                  {op.estilo ? `${op.id} — ${op.estilo}` : op.id}
-                                </option>
-                              ))}
+                              {catalogoVozesPareceElevenlabs ? (
+                                <ComponenteOpcoesSelectVozesTtsElevenlabsAgrupadasPtBrTranscribrothers
+                                  vozes={listaVozesCue.map((op) => ({
+                                    id: op.id,
+                                    estilo: op.estilo || op.id,
+                                    idioma: op.idioma || "",
+                                    sotaque: op.sotaque || "",
+                                    locale: op.locale || "",
+                                    pt_br: op.pt_br === true,
+                                  }))}
+                                />
+                              ) : (
+                                listaVozesCue.map((op) => (
+                                  <option key={op.id} value={op.id}>
+                                    {rotuloOpcaoVozCueNarracaoParaSelectSemHashElevenlabsTranscribrothers(
+                                      op,
+                                    )}
+                                  </option>
+                                ))
+                              )}
                             </select>
                           </label>
                         ) : null}
@@ -3784,40 +4204,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             ) : null}
                           </label>
                         ) : null}
-                        <button
-                          type="button"
-                          className="tb-modal-assistir-video-narrado-cue-excluir"
-                          disabled={ocupado || cues.length <= 1}
-                          title="Remove esta cue da lista (não entra no MP4 ao gerar)"
-                          onClick={() => excluirCueDaListaLocalUi(i)}
-                        >
-                          Excluir
-                        </button>
                       </div>
+                      {podeAjustarAoAudio || podeAjustarATela ? (
                       <div className="tb-modal-assistir-video-narrado-cue-timeline-acoes">
-                        <span className="tb-modal-assistir-video-narrado-cue-timeline-rotulo">
-                          Cue
-                        </span>
-                        <div className="tb-modal-assistir-video-narrado-cue-janela-grupo">
-                          <button
-                            type="button"
-                            className="tb-modal-assistir-video-narrado-cue-nudge"
-                            disabled={ocupado || !podeDeslocarEsq}
-                            title="Deslocar cue −0,25s (sem sobrepor)"
-                            onClick={() => deslocarCueNaTimeline(i, "esquerda")}
-                          >
-                            ←
-                          </button>
-                          <button
-                            type="button"
-                            className="tb-modal-assistir-video-narrado-cue-nudge"
-                            disabled={ocupado || !podeDeslocarDir}
-                            title="Deslocar cue +0,25s (sem sobrepor)"
-                            onClick={() => deslocarCueNaTimeline(i, "direita")}
-                          >
-                            →
-                          </button>
-                        </div>
                         {podeAjustarAoAudio ? (
                           <button
                             type="button"
@@ -3841,8 +4230,22 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                           </button>
                         ) : null}
                       </div>
+                      ) : null}
+                      </div>
+                      </div>
                       <div className="tb-modal-assistir-video-narrado-cue-textos">
                         <div className="tb-modal-assistir-video-narrado-cue-texto-campo">
+                          <div
+                            className={
+                              "tb-modal-assistir-video-narrado-cue-oficina" +
+                              (detalheAberto
+                                ? " tb-modal-assistir-video-narrado-cue-oficina--aberta"
+                                : "")
+                            }
+                            inert={detalheAberto ? undefined : true}
+                            aria-hidden={detalheAberto ? undefined : true}
+                          >
+                          <div className="tb-modal-assistir-video-narrado-cue-oficina-interno">
                           <div className="tb-modal-assistir-video-narrado-cue-texto-rotulo-linha">
                             <span className="tb-modal-assistir-video-narrado-cue-texto-rotulo">
                               Legenda
@@ -3884,6 +4287,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                               </button>
                             ) : null}
                           </div>
+                          </div>
+                          </div>
                           <textarea
                             className={CLASS_TEXTAREA_CUE_LEGENDA_VIDEO_NARRADO}
                             value={cue.texto}
@@ -3921,6 +4326,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             })
                           }
                         />
+                        <div
+                          className={
+                            "tb-modal-assistir-video-narrado-cue-oficina" +
+                            (detalheAberto
+                              ? " tb-modal-assistir-video-narrado-cue-oficina--aberta"
+                              : "")
+                          }
+                          inert={detalheAberto ? undefined : true}
+                          aria-hidden={detalheAberto ? undefined : true}
+                        >
+                        <div className="tb-modal-assistir-video-narrado-cue-oficina-interno">
                         {!semNarracao ? (
                           falaTtsExpandida ? (
                             <div className="tb-modal-assistir-video-narrado-cue-texto-campo">
@@ -3980,6 +4396,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                             </button>
                           )
                         ) : null}
+                        </div>
+                        </div>
                       </div>
                       </>
                       )}
@@ -3998,7 +4416,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                         return (
                           <>
                             <strong>#{idx + 1}</strong>{" "}
-                            {formatarSegundosComoTimestampVttCurtoUiTranscribrothers(c.inicioSegundos)}
+                            {formatarSegundosComoTimestampMinutoSegundoSemMilissegundosUiTranscribrothers(
+                              c.inicioSegundos,
+                            )}
                             {" – "}
                             {(c.texto || "").slice(0, 48)}
                             {(c.texto || "").length > 48 ? "…" : ""}
@@ -4049,12 +4469,21 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
               ariaLabel="Baixar arquivos do vídeo narrado"
               desabilitado={ocupado}
               menuAbertoId={menuRodapeAbertoId}
-              onMenuAbertoIdChange={setMenuRodapeAbertoId}
+              onMenuAbertoIdChange={(id) => {
+                setIdMenuAcoesCueAberto(null);
+                setMenuRodapeAbertoId(id);
+              }}
               itens={[
                 {
                   id: "video",
                   rotulo: "Vídeo (MP4)",
-                  onClick: onBaixarVideoMp4,
+                  onClick: () =>
+                    onBaixarVideoMp4(
+                      montarNomeArquivoDownloadVideoNarradoComTituloTranscribrothers(
+                        tituloVideoNarradoForm,
+                        { jobId: jobId || undefined },
+                      ),
+                    ),
                 },
                 {
                   id: "video-legendas-queimadas",
@@ -4106,7 +4535,10 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
               ariaLabel="Outras ações do vídeo narrado"
               desabilitado={ocupado}
               menuAbertoId={menuRodapeAbertoId}
-              onMenuAbertoIdChange={setMenuRodapeAbertoId}
+              onMenuAbertoIdChange={(id) => {
+                setIdMenuAcoesCueAberto(null);
+                setMenuRodapeAbertoId(id);
+              }}
               itens={[
                 {
                   id: "gerar-nova",

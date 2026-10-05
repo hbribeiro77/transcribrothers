@@ -9,8 +9,25 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  overflow: hidden;
+}
+
+.tb-app-tela-projeto,
+.tb-app-tela-pipelines {
+  height: 100%;
+  overflow: hidden;
 }
 
 a {

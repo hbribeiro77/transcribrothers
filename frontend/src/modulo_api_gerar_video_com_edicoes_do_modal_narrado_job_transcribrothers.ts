@@ -22,6 +22,7 @@ export async function agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribro
     litellmModel?: string | null;
     temperaturaTts?: number | null;
     ritmoTts?: string | null;
+    tituloArquivo?: string | null;
     cues: CueEdicaoModalNarradoParaGerarVideoApiTranscribrothers[];
     janelas?: JanelaEdicaoModalNarradoParaGerarVideoApiTranscribrothers[] | null;
   },
@@ -33,6 +34,7 @@ export async function agendarGerarVideoComEdicoesDoModalNarradoJobApiTranscribro
       litellm_model: (opts.litellmModel || "").trim() || null,
       temperatura_tts: typeof opts.temperaturaTts === "number" ? opts.temperaturaTts : null,
       ritmo_tts: (opts.ritmoTts || "").trim() || null,
+      titulo_arquivo: (opts.tituloArquivo || "").trim() || null,
       cues: opts.cues,
       janelas: opts.janelas ?? null,
     }),

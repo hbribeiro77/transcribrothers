@@ -12,6 +12,13 @@ def test_extrair_json_de_cerca_tripla() -> None:
     assert '"topicos"' in s
 
 
+def test_extrair_primeiro_objeto_json_quando_prosa_vem_antes_das_chaves() -> None:
+    s = extrair_primeiro_objeto_json_de_texto_llm_transcribrothers(
+        'Combinado! Vou aplicar.\n\n{"texto":"Apliquei.","executar":true}'
+    )
+    assert s == '{"texto":"Apliquei.","executar":true}'
+
+
 def test_parsear_plano_valido() -> None:
     txt = '{"topicos": [{"id": "t1", "titulo_secao": "## Passo", "lacunas": ["Falta Y"], "evidencias_transcricao": [{"citacao": "olá mundo"}], "prioridade": 2}]}'
     plano, serial = parsear_plano_revisao_profunda_de_texto_resposta_llm_transcribrothers(txt)

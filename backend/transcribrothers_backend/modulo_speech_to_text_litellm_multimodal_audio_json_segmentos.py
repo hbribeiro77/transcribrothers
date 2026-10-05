@@ -33,10 +33,11 @@ Regras:
 - Prefira segmentos concisos (evite listas enormes de segmentos muito curtos no mesmo trecho).
 """
 
-_PROMPT_TRANSCRICAO_JSON_RETRY_PT = """Repetição: a transcrição anterior falhou (JSON inválido ou resposta cortada).
+_PROMPT_TRANSCRICAO_JSON_RETRY_PT = """Repetição: a transcrição anterior falhou (JSON inválido, resposta cortada ou conteúdo vazio).
 Transcreva de novo o mesmo áudio com fidelidade, mas:
 - Responda APENAS com JSON válido no formato pedido antes (sem markdown).
 - Não repita palavras em loop; se não entender o áudio, use "[trecho inaudível]" uma única vez no segmento.
+- Se não houver fala detectável, use um único segmento com texto "Sem fala detectável no áudio.".
 - Use no máximo ~15 segmentos nesta janela; textos curtos por segmento.
 """
 
@@ -45,6 +46,31 @@ _REGEX_SEGMENTO_JSON_TRANSCRICAO_COMPLETO = re.compile(
 )
 
 _MAX_TENTATIVAS_HTTP_TRANSCRICAO_JSON = 3
+
+
+class ErroConteudoVazioTranscricaoMultimodalTranscribrothers(RuntimeError):
+    """Gateway HTTP 200, mas a mensagem do modelo veio sem texto transcrito (string vazia, null ou lista sem partes)."""
+
+    def __init__(self, mensagem: str | None = None) -> None:
+        super().__init__(mensagem or "Modelo multimodal retornou conteúdo vazio na transcrição.")
+
+
+def extrair_texto_conteudo_message_transcricao_multimodal_transcribrothers(message: dict[str, Any]) -> str:
+    """Alguns gateways devolvem `content` string; outros, lista de partes `{type, text}`."""
+    raw = message.get("content", "")
+    if isinstance(raw, str):
+        return raw.strip()
+    if isinstance(raw, list):
+        partes: list[str] = []
+        for item in raw:
+            if isinstance(item, str):
+                partes.append(item)
+            elif isinstance(item, dict):
+                texto_parte = item.get("text")
+                if isinstance(texto_parte, str):
+                    partes.append(texto_parte)
+        return "".join(partes).strip()
+    return ""
 
 
 def _recortar_primeiro_objeto_json_por_chaves_balanceadas(texto: str) -> str:
@@ -146,12 +172,12 @@ def _colapsar_repeticao_palavra_consecutiva_em_texto_segmento_transcricao(
     *,
     min_repeticoes: int = 6,
 ) -> str:
-    """Reduz alucinações do tipo 'não, não, não…' que estouram o limite de tokens e truncam o JSON."""
-    if not texto or len(texto) < 24:
+    """Reduz alucinações do tipo 'não, não…' ou 'de de de…' que estouram tokens ou poluem o texto."""
+    if not texto or len(texto) < 4:
         return texto
     lim = max(3, int(min_repeticoes))
     padrao = re.compile(
-        rf"(\b[\wáàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+(?:\s+e)?\b)(?:\s*,\s*\1\b){{{lim - 1},}}",
+        rf"(\b[\wáàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]+(?:\s+e)?\b)(?:(?:\s*,\s*|\s+)\1\b){{{lim - 1},}}",
         re.IGNORECASE,
     )
     return padrao.sub(r"\1", texto)
@@ -471,14 +497,18 @@ class TranscriberLiteLLmMultimodalAudioJsonSegmentos:
                 try:
                     choice = body["choices"][0]
                     msg = choice["message"]
-                    conteudo = msg.get("content", "")
+                    if not isinstance(msg, dict):
+                        raise KeyError("message")
+                    conteudo = extrair_texto_conteudo_message_transcricao_multimodal_transcribrothers(msg)
                     finish_reason = choice.get("finish_reason")
                 except (KeyError, IndexError, TypeError) as exc:
                     raise RuntimeError(
                         f"Resposta inesperada do gateway de transcrição (JSON sem choices[0].message): {body!r}"
                     ) from exc
-                if not isinstance(conteudo, str) or not conteudo.strip():
-                    raise RuntimeError("Modelo multimodal retornou conteúdo vazio na transcrição.")
+                if not conteudo:
+                    if tentativa + 1 >= _MAX_TENTATIVAS_HTTP_TRANSCRICAO_JSON:
+                        raise ErroConteudoVazioTranscricaoMultimodalTranscribrothers()
+                    continue
                 try:
                     obj = _extrair_json_do_texto_resposta_llm(conteudo)
                     break

@@ -11,6 +11,8 @@ import type { DestinoImportarTranscricaoProntaTranscribrothers } from "./modulo_
 const DESCRICAO_DESTINO: Record<DestinoAposTranscricaoTranscribrothers, string> = {
   gerar_tutorial:
     "Transcreve o áudio, captura telas do vídeo e monta um tutorial em Markdown com imagens e links para o tempo no vídeo.",
+  tutorial_passo_a_passo_software:
+    "Tutorial denso de software: um screenshot por procedimento da interface (clique, campo, confirmação). Mais imagens que o tutorial ilustrativo.",
   projeto_em_branco: "Cria um documento vazio para edição manual (sem pipeline de vídeo).",
   reproducao_bug:
     "Monta um passo a passo de reprodução do bug com capturas de tela e IA. Com JSON de cliques (RecBrothers ou manual), alinha aos cliques; sem JSON, infere passos da transcrição e das telas.",
@@ -25,6 +27,7 @@ const MAPEAMENTO_PIPELINE_SISTEMA_COPIADO_DE_PARA_DESTINO_TRANSCRIBROTHERS: Reco
   DestinoAposTranscricaoTranscribrothers
 > = {
   pipeline_inicial_tutorial: "gerar_tutorial",
+  pipeline_inicial_tutorial_passo_a_passo_software: "tutorial_passo_a_passo_software",
   pipeline_inicial_notas_proposta: "notas_proposta_funcionalidade",
   pipeline_inicial_reproducao_bug: "reproducao_bug",
   pipeline_inicial_so_transcricao: "so_transcricao",
@@ -640,6 +643,24 @@ export function ModalStepperIniciarTranscricaoEscolherVideoEDestinoTranscribroth
                         <span className="tb-stepper-iniciar-transcricao-opcao-titulo">Gerar tutorial</span>
                         <span className="tb-muted tb-stepper-iniciar-transcricao-opcao-desc">
                           {DESCRICAO_DESTINO.gerar_tutorial}
+                        </span>
+                      </label>
+                      <label
+                        className={`tb-stepper-iniciar-transcricao-opcao-destino${destino === "tutorial_passo_a_passo_software" && !pipelineCustomId ? " tb-stepper-iniciar-transcricao-opcao-destino--selecionada" : ""}`}
+                      >
+                        <input
+                          type="radio"
+                          name="destino-transcricao"
+                          value="tutorial_passo_a_passo_software"
+                          checked={destino === "tutorial_passo_a_passo_software" && !pipelineCustomId}
+                          onChange={() => {
+                            setDestino("tutorial_passo_a_passo_software");
+                            setPipelineCustomId(null);
+                          }}
+                        />
+                        <span className="tb-stepper-iniciar-transcricao-opcao-titulo">Passo a passo de software</span>
+                        <span className="tb-muted tb-stepper-iniciar-transcricao-opcao-desc">
+                          {DESCRICAO_DESTINO.tutorial_passo_a_passo_software}
                         </span>
                       </label>
                       <label

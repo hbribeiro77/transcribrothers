@@ -1,5 +1,6 @@
 export type FerramentaAnotacaoImagemTutorialTranscribrothers =
   | "selecionar"
+  | "recortar"
   | "destaque"
   | "retangulo"
   | "elipse"

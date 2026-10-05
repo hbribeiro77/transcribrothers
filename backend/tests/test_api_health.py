@@ -55,3 +55,8 @@ def test_config_publica_transcribrothers_retorna_modelos() -> None:
         assert "voz_tts_narracao_vozes_disponiveis" in data
         assert isinstance(data["voz_tts_narracao_vozes_disponiveis"], list)
         assert len(data["voz_tts_narracao_vozes_disponiveis"]) == 30
+        assert data["tts_provedor_efetivo"] in ("litellm", "elevenlabs")
+        assert isinstance(data["elevenlabs_configurado"], bool)
+        assert data["elevenlabs_modelos"] == ["eleven_v4"]
+        assert isinstance(data["modelo_tts_elevenlabs_efetivo"], str)
+        assert isinstance(data["voz_tts_elevenlabs_efetiva"], str)

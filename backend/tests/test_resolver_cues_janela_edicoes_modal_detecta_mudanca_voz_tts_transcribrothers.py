@@ -59,6 +59,22 @@ def test_mudanca_de_voz_em_uma_cue_entra_nos_indices_tts(tmp_path: Path) -> None
     assert indices == [0]
 
 
+def test_voice_id_elevenlabs_nao_vira_kore(tmp_path: Path) -> None:
+    work = tmp_path / "job"
+    _gravar_manifest_minimo(work, voz="Kore")
+    cues, indices, _mapa = _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
+        work=work,
+        textos_desejados=["primeira cue", "segunda cue"],
+        flags_sem_narracao=[False, False],
+        vozes_desejadas=["nPczCjzI2devNBz1zQrb", "Kore"],
+        voz_padrao="Kore",
+        janelas_brutas=None,
+    )
+    assert cues[0].voz_tts == "nPczCjzI2devNBz1zQrb"
+    assert cues[1].voz_tts == "Kore"
+    assert indices == [0]
+
+
 def test_mesma_voz_nao_marca_tts(tmp_path: Path) -> None:
     work = tmp_path / "job"
     _gravar_manifest_minimo(work, voz="Kore")

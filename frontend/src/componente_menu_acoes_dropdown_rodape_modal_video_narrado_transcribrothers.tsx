@@ -1,10 +1,11 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 
 export type ItemMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers = {
   id: string;
   rotulo: string;
   desabilitado?: boolean;
   titulo?: string;
+  variante?: "perigo";
   onClick: () => void;
 };
 
@@ -19,6 +20,8 @@ type PropsComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers = {
   idMenu: string;
   onMenuAbertoIdChange: (id: string | null) => void;
   badge?: boolean;
+  posicaoLista?: "acima" | "abaixo";
+  classeTrigger?: string;
 };
 
 function IconeChevronBaixoMenuAcoesRodapeTranscribrothers() {
@@ -46,9 +49,12 @@ export function ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothe
   idMenu,
   onMenuAbertoIdChange,
   badge = false,
+  posicaoLista = "acima",
+  classeTrigger,
 }: PropsComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothers) {
   const listaId = useId();
   const ref = useRef<HTMLDivElement | null>(null);
+  const listaRef = useRef<HTMLUListElement | null>(null);
   const aberto = menuAbertoId === idMenu;
 
   useEffect(() => {
@@ -62,13 +68,29 @@ export function ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothe
     const fecharSeEscape = (evento: KeyboardEvent) => {
       if (evento.key === "Escape") onMenuAbertoIdChange(null);
     };
+    const fecharSeScroll = () => onMenuAbertoIdChange(null);
     document.addEventListener("mousedown", fecharSeCliqueFora);
     window.addEventListener("keydown", fecharSeEscape);
+    window.addEventListener("scroll", fecharSeScroll, true);
     return () => {
       document.removeEventListener("mousedown", fecharSeCliqueFora);
       window.removeEventListener("keydown", fecharSeEscape);
+      window.removeEventListener("scroll", fecharSeScroll, true);
     };
   }, [aberto, onMenuAbertoIdChange]);
+
+  useLayoutEffect(() => {
+    if (!aberto || posicaoLista !== "abaixo") return;
+    const trigger = ref.current?.querySelector("button");
+    const lista = listaRef.current;
+    if (!trigger || !lista) return;
+    const r = trigger.getBoundingClientRect();
+    lista.style.position = "fixed";
+    lista.style.top = `${Math.round(r.bottom + 4)}px`;
+    lista.style.right = `${Math.round(window.innerWidth - r.right)}px`;
+    lista.style.left = "auto";
+    lista.style.bottom = "auto";
+  }, [aberto, posicaoLista, itens.length]);
 
   return (
     <div
@@ -81,31 +103,52 @@ export function ComponenteMenuAcoesDropdownRodapeModalVideoNarradoTranscribrothe
       <button
         type="button"
         className={
-          (variante === "primario" ? "tb-primary" : "tb-linkbtn") +
-          " tb-modal-video-narrado-menu-acoes-trigger"
+          (classeTrigger
+            ? classeTrigger
+            : (variante === "primario" ? "tb-primary" : "tb-linkbtn") +
+              " tb-modal-video-narrado-menu-acoes-trigger")
         }
         aria-label={ariaLabel}
         aria-haspopup="menu"
         aria-expanded={aberto}
         aria-controls={listaId}
         disabled={desabilitado}
-        onClick={() => onMenuAbertoIdChange(aberto ? null : idMenu)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onMenuAbertoIdChange(aberto ? null : idMenu);
+        }}
       >
         <span>{rotulo}</span>
         {badge ? <span className="tb-modal-video-narrado-menu-acoes-badge" aria-hidden="true" /> : null}
         <IconeChevronBaixoMenuAcoesRodapeTranscribrothers />
       </button>
       {aberto ? (
-        <ul id={listaId} className="tb-modal-video-narrado-menu-acoes-lista" role="menu">
+        <ul
+          id={listaId}
+          ref={listaRef}
+          className={
+            "tb-modal-video-narrado-menu-acoes-lista" +
+            (posicaoLista === "abaixo"
+              ? " tb-modal-video-narrado-menu-acoes-lista--abaixo"
+              : "")
+          }
+          role="menu"
+        >
           {itens.map((item) => (
             <li key={item.id} role="none">
               <button
                 type="button"
                 role="menuitem"
-                className="tb-modal-video-narrado-menu-acoes-item"
+                className={
+                  "tb-modal-video-narrado-menu-acoes-item" +
+                  (item.variante === "perigo"
+                    ? " tb-modal-video-narrado-menu-acoes-item--perigo"
+                    : "")
+                }
                 disabled={item.desabilitado}
                 title={item.titulo}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   onMenuAbertoIdChange(null);
                   item.onClick();
                 }}

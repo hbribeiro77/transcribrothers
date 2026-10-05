@@ -72,6 +72,7 @@ async def executar_regeneracao_secao_markdown_tutorial_em_background(
     modo_escopo_edicao: ModoEscopoEdicaoSecaoMarkdownTutorialTranscribrothers = "trecho_local",
     trecho_ancora: str | None = None,
     interpretar_escopo_automaticamente: bool = False,
+    edicao_cirurgica_chat_agente: bool = False,
 ) -> None:
     data_dir = configuracao.transcribrothers_data_dir.resolve()
     work = _diretorio_trabalho_job(data_dir, job_id)
@@ -101,6 +102,28 @@ async def executar_regeneracao_secao_markdown_tutorial_em_background(
         instrucoes_efetivas = (instrucoes_revisor or "").strip()
         titulo_efetivo = titulo_secao_heading
         indice_efetivo = indice_secao
+        if edicao_cirurgica_chat_agente:
+            from transcribrothers_backend.modulo_montar_pedido_edicao_parcial_cirurgica_chat_agente_transcribrothers import (
+                montar_pedido_edicao_parcial_cirurgica_chat_agente_transcribrothers,
+            )
+
+            caminhos_img = steps.get("regeneracao_fab_contexto_caminhos_assets_png")
+            caminhos_lista = (
+                [str(x) for x in caminhos_img if isinstance(x, str)]
+                if isinstance(caminhos_img, list)
+                else []
+            )
+            pedido_cirurgico = montar_pedido_edicao_parcial_cirurgica_chat_agente_transcribrothers(
+                markdown=md_atual,
+                titulo_secao_heading=titulo_efetivo,
+                texto_rascunho=instrucoes_efetivas,
+                caminhos_imagens=caminhos_lista,
+            )
+            modo_efetivo = "trecho_local"
+            trecho_efetivo = pedido_cirurgico["trecho_ancora"]
+            instrucoes_efetivas = pedido_cirurgico["instrucoes"]
+            titulo_efetivo = pedido_cirurgico["titulo_secao_heading"]
+            interpretar_escopo_automaticamente = False
 
         from transcribrothers_backend.modulo_resolver_escopo_edicao_secao_markdown_validacao_e_refinamento_litellm_transcribrothers import (
             resolver_escopo_edicao_secao_markdown_tutorial_com_ia_e_validacao_transcribrothers,
@@ -184,17 +207,17 @@ async def executar_regeneracao_secao_markdown_tutorial_em_background(
 
         eh_projeto_em_branco = job_steps_indicam_projeto_em_branco_transcribrothers(steps)
         assets_dir = work / "assets_exportados_para_markdown"
-        if eh_projeto_em_branco and assets_dir.is_dir():
-            caminhos_ctx_fab = steps.get("regeneracao_fab_contexto_caminhos_assets_png")
-            extras_ctx: list[str] = []
-            if isinstance(caminhos_ctx_fab, list):
-                extras_ctx = [str(x) for x in caminhos_ctx_fab if isinstance(x, str)]
+        caminhos_ctx_fab = steps.get("regeneracao_fab_contexto_caminhos_assets_png")
+        extras_ctx: list[str] = []
+        if isinstance(caminhos_ctx_fab, list):
+            extras_ctx = [str(x) for x in caminhos_ctx_fab if isinstance(x, str)]
+        if assets_dir.is_dir() and (eh_projeto_em_branco or extras_ctx):
             rels = montar_pool_rels_completos_disponiveis_regeneracao_tutorial_transcribrothers(
                 markdown=md_atual,
                 rels_snapshot=rels,
                 assets_dir=assets_dir,
                 caminhos_assets_png_contexto_fab_extra=extras_ctx,
-                eh_projeto_em_branco=True,
+                eh_projeto_em_branco=eh_projeto_em_branco,
             )
             textos_ctx_fab = steps.get("regeneracao_fab_contexto_textos")
             if isinstance(textos_ctx_fab, list):
@@ -326,6 +349,18 @@ async def executar_regeneracao_secao_markdown_tutorial_em_background(
         }
         if ajustes_assets_png:
             preview_blob["assets_png_caminhos_corrigidos_automaticamente"] = ajustes_assets_png
+        if edicao_cirurgica_chat_agente:
+            from transcribrothers_backend.modulo_montar_pedido_edicao_parcial_cirurgica_chat_agente_transcribrothers import (
+                resumir_alerta_se_edicao_removeu_itens_lista_transcribrothers,
+            )
+
+            alerta_itens = resumir_alerta_se_edicao_removeu_itens_lista_transcribrothers(
+                corpo_secao,
+                secao_nova.strip(),
+            )
+            if alerta_itens:
+                preview_blob["alerta_itens_lista_removidos"] = alerta_itens
+            preview_blob["edicao_cirurgica_chat_agente"] = True
 
         _levantar_se_cancelamento_regeneracao_secao_transcribrothers(job_id)
 
@@ -522,6 +557,7 @@ def agendar_regeneracao_secao_markdown_tutorial_em_task_assincrona(
     modo_escopo_edicao: ModoEscopoEdicaoSecaoMarkdownTutorialTranscribrothers = "trecho_local",
     trecho_ancora: str | None = None,
     interpretar_escopo_automaticamente: bool = False,
+    edicao_cirurgica_chat_agente: bool = False,
 ) -> None:
     import asyncio
 
@@ -537,5 +573,6 @@ def agendar_regeneracao_secao_markdown_tutorial_em_task_assincrona(
             modo_escopo_edicao=modo_escopo_edicao,
             trecho_ancora=trecho_ancora,
             interpretar_escopo_automaticamente=interpretar_escopo_automaticamente,
+            edicao_cirurgica_chat_agente=edicao_cirurgica_chat_agente,
         )
     )

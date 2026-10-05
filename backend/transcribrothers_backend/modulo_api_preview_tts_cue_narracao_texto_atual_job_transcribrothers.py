@@ -49,16 +49,25 @@ async def gerar_arquivo_preview_tts_cue_narracao_job_transcribrothers(
         normalizar_voz_tts_gemini_transcribrothers,
     )
 
+    from transcribrothers_backend.modulo_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers import (
+        provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers,
+    )
+
     modelo = resolver_modelo_tts_para_narracao_documento_transcribrothers(
         configuracao,
         litellm_model,
     )
-    try:
-        voz_efetiva = normalizar_voz_tts_gemini_transcribrothers(
-            voz or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
-        )
-    except ValueError:
-        voz_efetiva = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    if provedor_tts_parece_elevenlabs_pelo_modelo_transcribrothers(modelo):
+        voz_efetiva = (voz or "").strip()
+        if not voz_efetiva:
+            raise RuntimeError("Informe a voz da ElevenLabs para a prévia.")
+    else:
+        try:
+            voz_efetiva = normalizar_voz_tts_gemini_transcribrothers(
+                voz or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+            )
+        except ValueError:
+            voz_efetiva = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
     try:
         perfil_efetivo = normalizar_perfil_tts_narracao_transcribrothers(
             perfil_tts or PERFIL_TTS_NARRACAO_PADRAO_TRANSCRIBROTHERS

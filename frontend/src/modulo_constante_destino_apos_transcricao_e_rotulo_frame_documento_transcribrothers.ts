@@ -2,6 +2,7 @@
 
 export type DestinoAposTranscricaoTranscribrothers =
   | "gerar_tutorial"
+  | "tutorial_passo_a_passo_software"
   | "projeto_em_branco"
   | "reproducao_bug"
   | "notas_proposta_funcionalidade"
@@ -12,6 +13,7 @@ export const DESTINO_APOS_TRANSCRICAO_PADRAO_NOVO_PROJETO_TRANSCRIBROTHERS: Dest
 
 const DESTINOS_VALIDOS: readonly DestinoAposTranscricaoTranscribrothers[] = [
   "gerar_tutorial",
+  "tutorial_passo_a_passo_software",
   "projeto_em_branco",
   "reproducao_bug",
   "notas_proposta_funcionalidade",
@@ -24,6 +26,7 @@ export const ROTULO_TITULO_FRAME_DOCUMENTO_POR_DESTINO_APOS_TRANSCRICAO_TRANSCRI
   string
 > = {
   gerar_tutorial: "Tutorial",
+  tutorial_passo_a_passo_software: "Passo a passo",
   projeto_em_branco: "Documento",
   reproducao_bug: "Reprodução do bug",
   notas_proposta_funcionalidade: "Notas de proposta",

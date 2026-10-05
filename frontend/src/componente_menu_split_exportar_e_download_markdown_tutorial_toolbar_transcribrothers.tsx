@@ -122,6 +122,8 @@ export type PropsComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTran
   onAvisoGitlabNaoConfigurado: () => void;
   onAvisoGitlabWikiNaoConfigurado: () => void;
   onBaixarMarkdown: () => void;
+  onBaixarTxt?: () => void;
+  mostrarDownloadTxt?: boolean;
   onBaixarPdf: () => void;
   onGerarNarracaoTts: () => void;
   onOuvirNarracaoTts: () => void;
@@ -157,6 +159,8 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
   onAvisoGitlabNaoConfigurado,
   onAvisoGitlabWikiNaoConfigurado,
   onBaixarMarkdown,
+  onBaixarTxt,
+  mostrarDownloadTxt = false,
   onBaixarPdf,
   onGerarNarracaoTts,
   onOuvirNarracaoTts,
@@ -280,6 +284,11 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
     onBaixarMarkdown();
   }
 
+  function executarDownloadTxt() {
+    setMenuDownloadAberto(false);
+    onBaixarTxt?.();
+  }
+
   function executarDownloadPdf() {
     setMenuDownloadAberto(false);
     onBaixarPdf();
@@ -357,6 +366,20 @@ export function ComponenteMenuSplitExportarEDownloadMarkdownTutorialToolbarTrans
         </div>
         {menuDownloadAberto ? (
           <ul id={menuDownloadId} className="tb-toolbar-split-menu" role="menu">
+            {mostrarDownloadTxt && onBaixarTxt ? (
+              <li role="none">
+                <button
+                  type="button"
+                  className="tb-toolbar-split-menu-item tb-toolbar-split-menu-item--com-detalhe"
+                  role="menuitem"
+                  disabled={downloadDesabilitado}
+                  onClick={() => executarDownloadTxt()}
+                >
+                  <span className="tb-toolbar-split-menu-item-rotulo-principal">Texto da transcrição</span>
+                  <span className="tb-muted tb-toolbar-split-menu-item-detalhe">.txt só com o texto corrido</span>
+                </button>
+              </li>
+            ) : null}
             <li role="none">
               <button
                 type="button"

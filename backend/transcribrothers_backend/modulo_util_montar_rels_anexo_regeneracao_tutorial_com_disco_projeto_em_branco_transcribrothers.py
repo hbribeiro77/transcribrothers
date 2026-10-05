@@ -51,14 +51,14 @@ def montar_pool_rels_completos_disponiveis_regeneracao_tutorial_transcribrothers
             _adicionar_rel_se_png_existe_no_disco_transcribrothers(
                 nome_para_par, rel_md, assets_dir, float(i) * 0.001
             )
-        extras = caminhos_assets_png_contexto_fab_extra or []
-        for i, rel_extra in enumerate(extras):
-            _adicionar_rel_se_png_existe_no_disco_transcribrothers(
-                nome_para_par,
-                rel_extra,
-                assets_dir,
-                1000.0 + float(i) * 0.001,
-            )
+    extras = caminhos_assets_png_contexto_fab_extra or []
+    for i, rel_extra in enumerate(extras):
+        _adicionar_rel_se_png_existe_no_disco_transcribrothers(
+            nome_para_par,
+            rel_extra,
+            assets_dir,
+            1000.0 + float(i) * 0.001,
+        )
 
     return sorted(nome_para_par.values(), key=lambda par: float(par[0]))
 

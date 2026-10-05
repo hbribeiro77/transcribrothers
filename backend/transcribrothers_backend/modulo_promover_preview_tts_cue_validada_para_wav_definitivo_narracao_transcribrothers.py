@@ -12,9 +12,8 @@ from typing import Any
 from transcribrothers_backend.modulo_persistencia_manifest_cues_narracao_janelas_video_job_transcribrothers import (
     normalizar_texto_cue_para_comparacao_narracao_transcribrothers,
 )
-from transcribrothers_backend.modulo_preferencias_voz_tts_gemini_narracao_transcribrothers import (
-    VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
-    normalizar_voz_tts_gemini_transcribrothers,
+from transcribrothers_backend.modulo_normalizar_voz_tts_efetiva_cue_gemini_ou_elevenlabs_transcribrothers import (
+    normalizar_voz_tts_efetiva_para_cue_transcribrothers,
 )
 from transcribrothers_backend.modulo_validar_e_ajustar_janelas_video_cues_sem_sobreposicao_transcribrothers import (
     nome_subpasta_wavs_narracao_por_cue_transcribrothers,
@@ -57,12 +56,7 @@ class MetaPreviewTtsCueNarracaoTranscribrothers:
 
 
 def _normalizar_voz_meta_transcribrothers(voz: str | None) -> str:
-    try:
-        return normalizar_voz_tts_gemini_transcribrothers(
-            (voz or "").strip() or VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
-        )
-    except ValueError:
-        return VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
+    return normalizar_voz_tts_efetiva_para_cue_transcribrothers(voz or "", "")
 
 
 def gravar_meta_preview_tts_cue_narracao_transcribrothers(

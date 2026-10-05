@@ -45,6 +45,7 @@ class ConfiguracaoAmbienteTranscribrothers(BaseSettings):
     google_drive_api_key: str = ""
     openai_api_key: str = ""
     litellm_api_key: str = ""
+    elevenlabs_api_key: str = ""
     litellm_endpoint: str = ""
     litellm_http_verify_ssl: bool = True
     litellm_ssl_ca_bundle: str = ""

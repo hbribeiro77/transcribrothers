@@ -88,12 +88,15 @@ const ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS: Record<
 const ROTULO_PASSO_PREPARACAO_TRANSCRIBROTHERS = "Preparação";
 const ROTULO_PASSO_PREPARACAO_REUTILIZACAO_TRANSCRIBROTHERS = "Preparação (reutilização)";
 const ROTULO_PASSO_RASCUNHO_TUTORIAL_TRANSCRIBROTHERS = "Rascunho (tutorial)";
+const ROTULO_PASSO_RASCUNHO_PASSO_A_PASSO_TRANSCRIBROTHERS = "Rascunho (passo a passo)";
 const ROTULO_PASSO_RASCUNHO_NOTAS_TRANSCRIBROTHERS = "Rascunho (notas)";
 const ROTULO_PASSO_PLANO_CAPTURAS_TUTORIAL_TRANSCRIBROTHERS = "Plano capturas (tutorial)";
+const ROTULO_PASSO_PLANO_CAPTURAS_PASSO_A_PASSO_TRANSCRIBROTHERS = "Plano capturas (passo a passo)";
 const ROTULO_PASSO_PLANO_CAPTURAS_NOTAS_TRANSCRIBROTHERS = "Plano capturas (notas)";
 const ROTULO_PASSO_CAPTURAS_TRANSCRIBROTHERS = "Capturas";
 const ROTULO_PASSO_CAPTURAS_RECBROTHERS_TRANSCRIBROTHERS = "Capturas (RecBrothers)";
 const ROTULO_PASSO_GERADOR_TUTORIAL_TRANSCRIBROTHERS = "Gerador (tutorial)";
+const ROTULO_PASSO_GERADOR_PASSO_A_PASSO_TRANSCRIBROTHERS = "Gerador (passo a passo)";
 const ROTULO_PASSO_GERADOR_NOTAS_TRANSCRIBROTHERS = "Gerador (notas)";
 const ROTULO_PASSO_GERADOR_BUG_TRANSCRIBROTHERS = "Gerador (bug)";
 const ROTULO_PASSO_GERADOR_REGENERACAO_TRANSCRIBROTHERS = "Gerador (regeneração)";
@@ -114,7 +117,7 @@ const ROTULO_PASSO_LIMPEZA_LEGENDAS_IA_TRANSCRIBROTHERS = "Preparar legendas";
 const ROTULO_PASSO_NARRACAO_TTS_TRANSCRIBROTHERS = "Narração (TTS)";
 const ROTULO_PASSO_MUX_VIDEO_TRANSCRIBROTHERS = "Montar MP4";
 
-type DestinoPipelineInicialModalStatusTranscribrothers = "tutorial" | "notas" | "bug";
+type DestinoPipelineInicialModalStatusTranscribrothers = "tutorial" | "passo_a_passo" | "notas" | "bug";
 
 type PassoSnapshotPipelineCustomStepsJsonTranscribrothers = {
   id: string;
@@ -127,12 +130,15 @@ type PassoSnapshotPipelineCustomStepsJsonTranscribrothers = {
 const HANDLER_AGENTE_PARA_ID_PASSO_MODAL_STATUS_JOB_TRANSCRIBROTHERS: Record<string, IdPassoPipelineHorizontalModalStatusTranscribrothers> = {
   preparacao_transcricao: "preparacao",
   rascunho_tutorial_sob_demanda: "rascunho",
+  rascunho_tutorial_passo_a_passo_software: "rascunho",
   rascunho_notas_proposta: "rascunho",
   plano_capturas_tutorial: "plano_capturas",
+  plano_capturas_tutorial_passo_a_passo_software: "plano_capturas",
   plano_capturas_notas: "plano_capturas",
   capturas_ffmpeg_plano: "capturas",
   capturas_ffmpeg_rec_brothers: "capturas",
   gerador_tutorial_markdown: "gerador",
+  gerador_tutorial_passo_a_passo_software: "gerador",
   gerador_notas_proposta: "gerador",
   gerador_reproducao_bug: "gerador",
   verificacao_imagens_duplicadas: "verificacao_imagens",
@@ -233,6 +239,7 @@ function destinoPipelineInicialDeStepsTranscribrothers(
   const destino = steps?.destino_apos_transcricao;
   if (destino === "notas_proposta_funcionalidade") return "notas";
   if (destino === "reproducao_bug") return "bug";
+  if (destino === "tutorial_passo_a_passo_software") return "passo_a_passo";
   return "tutorial";
 }
 
@@ -249,6 +256,12 @@ function rotulosFluxoPipelineInicialPorDestinoTranscribrothers(
     return {
       titulo: "Fluxo 1 — Vídeo até reprodução de bug",
       descricao: "Transcrição opcional, capturas nos cliques RecBrothers e roteiro Markdown para reproduzir o bug.",
+    };
+  }
+  if (destino === "passo_a_passo") {
+    return {
+      titulo: "Fluxo 1 — Vídeo até tutorial passo a passo de software",
+      descricao: "Transcrição e capturas densas: um screenshot por procedimento da interface.",
     };
   }
   return ROTULOS_FLUXO_PIPELINE_MODAL_STATUS_JOB_TRANSCRIBROTHERS.pipeline_inicial;
@@ -825,11 +838,17 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
 
   const destino = destinoPipelineInicialDeStepsTranscribrothers(steps);
   const rotuloRascunho =
-    destino === "notas" ? ROTULO_PASSO_RASCUNHO_NOTAS_TRANSCRIBROTHERS : ROTULO_PASSO_RASCUNHO_TUTORIAL_TRANSCRIBROTHERS;
+    destino === "notas"
+      ? ROTULO_PASSO_RASCUNHO_NOTAS_TRANSCRIBROTHERS
+      : destino === "passo_a_passo"
+        ? ROTULO_PASSO_RASCUNHO_PASSO_A_PASSO_TRANSCRIBROTHERS
+        : ROTULO_PASSO_RASCUNHO_TUTORIAL_TRANSCRIBROTHERS;
   const rotuloPlanoCapturas =
     destino === "notas"
       ? ROTULO_PASSO_PLANO_CAPTURAS_NOTAS_TRANSCRIBROTHERS
-      : ROTULO_PASSO_PLANO_CAPTURAS_TUTORIAL_TRANSCRIBROTHERS;
+      : destino === "passo_a_passo"
+        ? ROTULO_PASSO_PLANO_CAPTURAS_PASSO_A_PASSO_TRANSCRIBROTHERS
+        : ROTULO_PASSO_PLANO_CAPTURAS_TUTORIAL_TRANSCRIBROTHERS;
   const rotuloCapturas =
     destino === "bug" ? ROTULO_PASSO_CAPTURAS_RECBROTHERS_TRANSCRIBROTHERS : ROTULO_PASSO_CAPTURAS_TRANSCRIBROTHERS;
   const rotuloGerador =
@@ -837,7 +856,9 @@ function montarPassosPipelineInicialUploadVideoTranscribrothers(
       ? ROTULO_PASSO_GERADOR_NOTAS_TRANSCRIBROTHERS
       : destino === "bug"
         ? ROTULO_PASSO_GERADOR_BUG_TRANSCRIBROTHERS
-        : ROTULO_PASSO_GERADOR_TUTORIAL_TRANSCRIBROTHERS;
+        : destino === "passo_a_passo"
+          ? ROTULO_PASSO_GERADOR_PASSO_A_PASSO_TRANSCRIBROTHERS
+          : ROTULO_PASSO_GERADOR_TUTORIAL_TRANSCRIBROTHERS;
   const rotuloAuditor =
     destino === "notas" ? ROTULO_PASSO_AUDITOR_NOTAS_TRANSCRIBROTHERS : ROTULO_PASSO_AUDITOR_TUTORIAL_TRANSCRIBROTHERS;
 

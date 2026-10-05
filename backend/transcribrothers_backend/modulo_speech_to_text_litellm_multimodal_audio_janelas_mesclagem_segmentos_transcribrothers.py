@@ -23,10 +23,12 @@ from transcribrothers_backend.modulo_speech_to_text_com_segmentos_openai_compat 
     SegmentoTranscricaoComTempo,
 )
 from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_json_segmentos import (
+    ErroConteudoVazioTranscricaoMultimodalTranscribrothers,
     TranscriberLiteLLmMultimodalAudioJsonSegmentos,
 )
 
 _DURACAO_MINIMA_SUBDIVIDIR_JANELA_TRANSCRICAO_SEGUNDOS = 6.0
+TEXTO_PLACEHOLDER_JANELA_TRANSCRICAO_CONTEUDO_VAZIO_TRANSCRIBROTHERS = "[trecho inaudível]"
 
 
 def _erro_parse_json_resposta_modelo_transcricao(exc: BaseException) -> bool:
@@ -36,11 +38,33 @@ def _erro_parse_json_resposta_modelo_transcricao(exc: BaseException) -> bool:
     return "interpretar o JSON retornado pelo modelo de transcrição" in msg
 
 
-async def _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transcribrothers(
+def montar_resultado_placeholder_janela_transcricao_conteudo_vazio_transcribrothers(
+    *,
+    duracao_segundos: float,
+) -> ResultadoTranscricaoComSegmentos:
+    dur = max(0.0, float(duracao_segundos))
+    texto = TEXTO_PLACEHOLDER_JANELA_TRANSCRICAO_CONTEUDO_VAZIO_TRANSCRIBROTHERS
+    return ResultadoTranscricaoComSegmentos(
+        texto_completo=texto,
+        segmentos=[
+            SegmentoTranscricaoComTempo(
+                inicio_segundos=0.0,
+                fim_segundos=dur,
+                texto=texto,
+            )
+        ],
+        idioma_detectado="pt",
+    )
+
+
+def _deve_subdividir_janela_apos_falha_transcricao_transcribrothers(duracao_segundos: float) -> bool:
+    return float(duracao_segundos) > _DURACAO_MINIMA_SUBDIVIDIR_JANELA_TRANSCRICAO_SEGUNDOS
+
+
+async def _transcrever_metades_janela_transcricao_multimodal_transcribrothers(
     *,
     transcriber: TranscriberLiteLLmMultimodalAudioJsonSegmentos,
     caminho_audio_completo: Path,
-    caminho_janela: Path,
     inicio_segundos: float,
     duracao_segundos: float,
     formato_audio_inline: str,
@@ -48,15 +72,8 @@ async def _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transc
     forcar_mono: bool,
     diretorio_temporario_janelas: Path,
     sufixo_arquivo_temp: str,
+    erro_original: BaseException,
 ) -> ResultadoTranscricaoComSegmentos:
-    """Tenta a janela inteira; em JSON truncado/inválido, subdivide o trecho e mescla (offset local)."""
-    try:
-        return await transcriber.transcrever_arquivo_audio_com_segmentos(caminho_janela)
-    except ValueError as exc:
-        if not _erro_parse_json_resposta_modelo_transcricao(exc):
-            raise
-        if duracao_segundos <= _DURACAO_MINIMA_SUBDIVIDIR_JANELA_TRANSCRICAO_SEGUNDOS:
-            raise
     fmt = str(formato_audio_inline or "wav").strip().lower()
     if fmt not in ("wav", "mp3", "opus", "aac"):
         fmt = "wav"
@@ -78,7 +95,12 @@ async def _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transc
             caminho_saida=saida,
         )
         try:
-            res = await transcriber.transcrever_arquivo_audio_com_segmentos(saida)
+            try:
+                res = await transcriber.transcrever_arquivo_audio_com_segmentos(saida)
+            except ErroConteudoVazioTranscricaoMultimodalTranscribrothers:
+                res = montar_resultado_placeholder_janela_transcricao_conteudo_vazio_transcribrothers(
+                    duracao_segundos=loc_dur,
+                )
         finally:
             try:
                 saida.unlink(missing_ok=True)
@@ -86,8 +108,93 @@ async def _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transc
                 pass
         parciais.append((loc_inicio, res))
     if not parciais:
-        raise exc
+        raise erro_original
     return _mesclar_resultados_transcricao_com_offset_temporal_segundos(parciais)
+
+
+async def _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transcribrothers(
+    *,
+    transcriber: TranscriberLiteLLmMultimodalAudioJsonSegmentos,
+    caminho_audio_completo: Path,
+    caminho_janela: Path,
+    inicio_segundos: float,
+    duracao_segundos: float,
+    formato_audio_inline: str,
+    bitrate_audio_kbps: int,
+    forcar_mono: bool,
+    diretorio_temporario_janelas: Path,
+    sufixo_arquivo_temp: str,
+) -> ResultadoTranscricaoComSegmentos:
+    """Tenta a janela; JSON inválido ou content vazio: subdivide (se couber) ou usa placeholder."""
+    try:
+        return await transcriber.transcrever_arquivo_audio_com_segmentos(caminho_janela)
+    except ErroConteudoVazioTranscricaoMultimodalTranscribrothers as exc_vazio:
+        if not _deve_subdividir_janela_apos_falha_transcricao_transcribrothers(duracao_segundos):
+            return montar_resultado_placeholder_janela_transcricao_conteudo_vazio_transcribrothers(
+                duracao_segundos=duracao_segundos,
+            )
+        return await _transcrever_metades_janela_transcricao_multimodal_transcribrothers(
+            transcriber=transcriber,
+            caminho_audio_completo=caminho_audio_completo,
+            inicio_segundos=inicio_segundos,
+            duracao_segundos=duracao_segundos,
+            formato_audio_inline=formato_audio_inline,
+            bitrate_audio_kbps=bitrate_audio_kbps,
+            forcar_mono=forcar_mono,
+            diretorio_temporario_janelas=diretorio_temporario_janelas,
+            sufixo_arquivo_temp=sufixo_arquivo_temp,
+            erro_original=exc_vazio,
+        )
+    except ValueError as exc:
+        if not _erro_parse_json_resposta_modelo_transcricao(exc):
+            raise
+        if not _deve_subdividir_janela_apos_falha_transcricao_transcribrothers(duracao_segundos):
+            raise
+        return await _transcrever_metades_janela_transcricao_multimodal_transcribrothers(
+            transcriber=transcriber,
+            caminho_audio_completo=caminho_audio_completo,
+            inicio_segundos=inicio_segundos,
+            duracao_segundos=duracao_segundos,
+            formato_audio_inline=formato_audio_inline,
+            bitrate_audio_kbps=bitrate_audio_kbps,
+            forcar_mono=forcar_mono,
+            diretorio_temporario_janelas=diretorio_temporario_janelas,
+            sufixo_arquivo_temp=sufixo_arquivo_temp,
+            erro_original=exc,
+        )
+
+
+async def _transcrever_arquivo_janela_litellm_resiliente_ou_placeholder_conteudo_vazio_transcribrothers(
+    *,
+    transcriber: TranscriberLiteLLmMultimodalAudioJsonSegmentos,
+    caminho_audio_completo: Path,
+    caminho_janela: Path,
+    inicio_segundos: float,
+    duracao_segundos: float,
+    formato_audio_inline: str,
+    bitrate_audio_kbps: int,
+    forcar_mono: bool,
+    diretorio_temporario_janelas: Path,
+    sufixo_arquivo_temp: str,
+) -> ResultadoTranscricaoComSegmentos:
+    """Garante que content vazio não derruba o gather: placeholder se a camada resiliente ainda levantar."""
+    try:
+        return await _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transcribrothers(
+            transcriber=transcriber,
+            caminho_audio_completo=caminho_audio_completo,
+            caminho_janela=caminho_janela,
+            inicio_segundos=inicio_segundos,
+            duracao_segundos=duracao_segundos,
+            formato_audio_inline=formato_audio_inline,
+            bitrate_audio_kbps=bitrate_audio_kbps,
+            forcar_mono=forcar_mono,
+            diretorio_temporario_janelas=diretorio_temporario_janelas,
+            sufixo_arquivo_temp=sufixo_arquivo_temp,
+        )
+    except ErroConteudoVazioTranscricaoMultimodalTranscribrothers:
+        return montar_resultado_placeholder_janela_transcricao_conteudo_vazio_transcribrothers(
+            duracao_segundos=duracao_segundos,
+        )
 
 
 def _listar_janelas_temporais_segundos_para_transcricao_multimodal(
@@ -298,7 +405,7 @@ async def transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_t
                     caminho_saida=saida,
                 )
                 t0 = time.perf_counter()
-                parcial = await _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transcribrothers(
+                parcial = await _transcrever_arquivo_janela_litellm_resiliente_ou_placeholder_conteudo_vazio_transcribrothers(
                     transcriber=transcriber,
                     caminho_audio_completo=caminho_audio_completo,
                     caminho_janela=saida,
@@ -411,7 +518,7 @@ async def transcrever_wav_litellm_multimodal_em_janelas_com_callback_progresso_t
                     )
                 t0 = time.perf_counter()
                 try:
-                    parcial = await _transcrever_arquivo_janela_litellm_resiliente_falha_parse_json_transcribrothers(
+                    parcial = await _transcrever_arquivo_janela_litellm_resiliente_ou_placeholder_conteudo_vazio_transcribrothers(
                         transcriber=transcriber,
                         caminho_audio_completo=caminho_audio_completo,
                         caminho_janela=saida,

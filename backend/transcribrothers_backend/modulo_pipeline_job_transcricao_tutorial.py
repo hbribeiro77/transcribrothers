@@ -16,14 +16,9 @@ from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline i
     StatusJobTranscribrothers,
 )
 from transcribrothers_backend.modulo_cliente_litellm_geracao_tutorial_markdown import (
-    INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
-    INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS,
-    INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
-    INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS,
     gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames,
 )
 from transcribrothers_backend.modulo_cliente_litellm_planejamento_instantes_captura_frames_tutorial_transcribrothers import (
-    SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
     planejar_instantes_captura_frames_tutorial_com_litellm_transcribrothers,
 )
 from transcribrothers_backend.modulo_pipeline_captura_frames_png_tutorial_sob_demanda_transcribrothers import (
@@ -52,6 +47,9 @@ from transcribrothers_backend.modulo_persistencia_runtime_config_transcricao_mul
 from transcribrothers_backend.modulo_resolver_configuracao_agente_pipeline_custom_transcribrothers import (
     resolver_modelo_agente_pipeline_custom_transcribrothers,
     resolver_prompt_agente_pipeline_custom_transcribrothers,
+)
+from transcribrothers_backend.modulo_parametros_modo_tutorial_passo_a_passo_software_captura_densa_transcribrothers import (
+    resolver_parametros_captura_tutorial_markdown_transcribrothers,
 )
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     resolver_api_key_e_api_base_para_chamada_litellm,
@@ -120,16 +118,15 @@ def _resolver_instrucao_prefixo_gerador_tutorial_markdown_de_steps_transcribroth
     ui = _instrucao_litellm_prefixo_custom_de_steps_para_geracao_tutorial_transcribrothers(steps)
     if ui:
         return ui
-    if not steps.get("pipeline_custom_agentes"):
-        return None
-    chave = "instrucao_tutorial_com_imagens" if usar_visao else "instrucao_tutorial_sem_imagens"
+    params = resolver_parametros_captura_tutorial_markdown_transcribrothers(steps)
     default = (
-        INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_COM_IMAGENS_PADRAO_TRANSCRIBROTHERS
-        if usar_visao
-        else INSTRUCAO_LITELLM_TUTORIAL_MARKDOWN_SEM_IMAGENS_PADRAO_TRANSCRIBROTHERS
+        params.instrucao_gerador_com_imagens if usar_visao else params.instrucao_gerador_sem_imagens
     )
+    if not steps.get("pipeline_custom_agentes"):
+        return default if params.denso else None
+    chave = "instrucao_tutorial_com_imagens" if usar_visao else "instrucao_tutorial_sem_imagens"
     return resolver_prompt_agente_pipeline_custom_transcribrothers(
-        "gerador_tutorial_markdown",
+        params.handler_gerador,
         chave,
         steps,
         default,
@@ -586,6 +583,18 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         )
         captura_sob_demanda = bool(configuracao.tutorial_captura_frames_sob_demanda)
         steps["tutorial_captura_frames_sob_demanda"] = captura_sob_demanda
+        params_tutorial = resolver_parametros_captura_tutorial_markdown_transcribrothers(steps)
+        steps["tutorial_modo_captura_densa"] = params_tutorial.denso
+        max_frames_por_minuto_tutorial = (
+            int(params_tutorial.max_frames_per_minute_override)
+            if params_tutorial.max_frames_per_minute_override is not None
+            else int(configuracao_exec_transcricao_mm.max_frames_per_minute)
+        )
+        max_frames_total_tutorial = (
+            int(params_tutorial.tutorial_max_frames_total_override)
+            if params_tutorial.tutorial_max_frames_total_override is not None
+            else int(configuracao_exec_transcricao_mm.tutorial_max_frames_total)
+        )
         rels: list[tuple[float, str]] = []
         md_rascunho: str | None = None
 
@@ -598,7 +607,7 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                 transcricao=transcricao,
                 caminhos_frames_rel_job=[],
                 modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
-                    "rascunho_tutorial_sob_demanda", steps, modelo_litellm, configuracao
+                    params_tutorial.handler_rascunho, steps, modelo_litellm, configuracao
                 ),
                 api_key=api_key_litellm,
                 api_base=api_base_litellm,
@@ -609,18 +618,22 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                 ),
                 httpx_timeout_read_segundos=float(configuracao.litellm_http_timeout_read_segundos),
                 instrucao_prefixo_litellm_custom=resolver_prompt_agente_pipeline_custom_transcribrothers(
-                    "rascunho_tutorial_sob_demanda",
+                    params_tutorial.handler_rascunho,
                     "instrucao_rascunho_sem_imagens",
                     steps,
-                    INSTRUCAO_LITELLM_TUTORIAL_RASCUNHO_SEM_IMAGENS_CAPTURA_FRAMES_SOB_DEMANDA_TRANSCRIBROTHERS,
+                    params_tutorial.instrucao_rascunho_sem_imagens,
                 ),
                 steps_para_log_decisoes_ia=steps,
                 log_etapa_geracao_tutorial="geracao_rascunho_tutorial_sem_imagens",
             )
             steps["tutorial_rascunho_sem_imagens_ok"] = True
 
-            margem_links = float(
-                configuracao_exec_transcricao_mm.tutorial_margem_minima_segundos_entre_links_temporais_captura
+            margem_links = (
+                float(params_tutorial.margem_minima_segundos_entre_links_override)
+                if params_tutorial.margem_minima_segundos_entre_links_override is not None
+                else float(
+                    configuracao_exec_transcricao_mm.tutorial_margem_minima_segundos_entre_links_temporais_captura
+                )
             )
             candidatos_captura = extrair_candidatos_timestamps_captura_do_rascunho_tutorial_transcribrothers(
                 md_rascunho,
@@ -630,8 +643,8 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
             steps["frames_candidatos_rascunho_total"] = len(candidatos_captura)
             max_capturas_teto = limite_maximo_capturas_frames_tutorial_transcribrothers(
                 dur if dur > 0 else 1.0,
-                max_frames_per_minute=configuracao_exec_transcricao_mm.max_frames_per_minute,
-                tutorial_max_frames_total=configuracao_exec_transcricao_mm.tutorial_max_frames_total,
+                max_frames_per_minute=max_frames_por_minuto_tutorial,
+                tutorial_max_frames_total=max_frames_total_tutorial,
             )
             timestamps_pre_planejados: list[float] | None = None
             if candidatos_captura:
@@ -647,7 +660,7 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                         margem_minima_segundos_entre_links=margem_links,
                         max_capturas_apos_limites=max_capturas_teto,
                         modelo_litellm=resolver_modelo_agente_pipeline_custom_transcribrothers(
-                            "plano_capturas_tutorial", steps, modelo_litellm, configuracao
+                            params_tutorial.handler_plano, steps, modelo_litellm, configuracao
                         ),
                         api_key=api_key_litellm,
                         api_base=api_base_litellm,
@@ -655,11 +668,12 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                         configuracao=configuracao_exec_transcricao_mm,
                         steps_para_log_decisoes_ia=steps,
                         system_prompt_override=resolver_prompt_agente_pipeline_custom_transcribrothers(
-                            "plano_capturas_tutorial",
+                            params_tutorial.handler_plano,
                             "system_planejamento_instantes_tutorial",
                             steps,
-                            SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_TRANSCRIBROTHERS,
+                            params_tutorial.system_planejamento_instantes,
                         ),
+                        max_instantes_plano=params_tutorial.max_instantes_planejamento,
                     )
                 )
                 steps["planejamento_instantes_captura_frames"] = meta_planej
@@ -669,8 +683,8 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                 markdown_rascunho_tutorial=md_rascunho,
                 transcricao=transcricao,
                 duracao_video_segundos=dur,
-                max_frames_per_minute=configuracao_exec_transcricao_mm.max_frames_per_minute,
-                tutorial_max_frames_total=configuracao_exec_transcricao_mm.tutorial_max_frames_total,
+                max_frames_per_minute=max_frames_por_minuto_tutorial,
+                tutorial_max_frames_total=max_frames_total_tutorial,
                 margem_minima_segundos_entre_links_temporais=margem_links,
                 timestamps_pre_planejados=timestamps_pre_planejados,
             )
@@ -718,7 +732,7 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
                 indices_segmentos = [0]
             indices_segmentos = amostrar_indices_por_limite_por_minuto(
                 n_itens=n_seg,
-                max_por_minuto=configuracao.max_frames_per_minute,
+                max_por_minuto=max_frames_por_minuto_tutorial,
                 duracao_video_segundos=dur
                 if dur > 0
                 else max(
@@ -728,7 +742,7 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
             )
             indices_segmentos = reduzir_lista_indice_para_no_maximo_n_itens_transcribrothers(
                 indices_segmentos,
-                configuracao.tutorial_max_frames_total,
+                max_frames_total_tutorial,
             )
             timestamps_legado = [
                 max(0.0, (transcricao.segmentos[i].inicio_segundos + transcricao.segmentos[i].fim_segundos) / 2.0)
@@ -774,17 +788,17 @@ async def executar_pipeline_job_transcricao_tutorial_em_background(
         instrucoes_revisao_final: str | None = None
         if captura_sob_demanda and md_rascunho:
             instrucoes_revisao_final = resolver_prompt_agente_pipeline_custom_transcribrothers(
-                "gerador_tutorial_markdown",
+                params_tutorial.handler_gerador,
                 "instrucao_incorporar_frames_sob_demanda",
                 steps,
-                INSTRUCOES_REVISAO_LITELLM_INCORPORAR_FRAMES_APOS_CAPTURA_SOB_DEMANDA_TRANSCRIBROTHERS,
+                params_tutorial.instrucao_incorporar_frames,
             )
 
         md = await gerar_tutorial_markdown_com_litellm_a_partir_de_transcricao_e_frames(
             transcricao=transcricao_para_tutorial,
             caminhos_frames_rel_job=rels,
             modelo=resolver_modelo_agente_pipeline_custom_transcribrothers(
-                "gerador_tutorial_markdown", steps, modelo_litellm, configuracao
+                params_tutorial.handler_gerador, steps, modelo_litellm, configuracao
             ),
             api_key=api_key_litellm,
             api_base=api_base_litellm,

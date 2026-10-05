@@ -100,6 +100,20 @@ export function formatarSegundosComoTimestampVttCurtoUiTranscribrothers(segundos
   return `${m}:${String(s).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
 }
 
+/** Cabeçalho da lista: m:ss (ou h:mm:ss), sem milissegundos. */
+export function formatarSegundosComoTimestampMinutoSegundoSemMilissegundosUiTranscribrothers(
+  segundos: number,
+): string {
+  const totalSegundos = Math.max(0, Math.round(segundos));
+  const h = Math.floor(totalSegundos / 3600);
+  const m = Math.floor((totalSegundos % 3600) / 60);
+  const s = totalSegundos % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export async function carregarCuesWebVttDeUrlParaListaUiTranscribrothers(
   urlVtt: string,
 ): Promise<CueWebVttParaListaUiTranscribrothers[]> {

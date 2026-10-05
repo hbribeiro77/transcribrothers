@@ -20,6 +20,7 @@ import {
 } from "./modulo_util_estilos_formas_anotacao_imagem_tutorial_fabric_js_transcribrothers.ts";
 import {
   IconeAjustarAreaVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers,
+  IconeCopiarImagemEditadaAnotacaoTutorialTranscribrothers,
   IconeExcluirSelecaoAnotacaoImagemTutorialTranscribrothers,
   IconeFerramentaAnotacaoImagemTutorialTranscribrothers,
   obterRotuloAcessivelFerramentaAnotacaoImagemTutorialTranscribrothers,
@@ -29,10 +30,17 @@ import {
   exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers,
   obterCoordenadasCanvasFabricAPartirDeEventoPonteiroAnotacaoImagemTutorialTranscribrothers,
 } from "./modulo_util_zoom_visualizacao_canvas_fabric_anotacao_imagem_tutorial_transcribrothers.ts";
+import { calcularRetanguloRecorteNormalizadoCanvasAnotacaoImagemTutorialTranscribrothers } from "./modulo_util_calcular_retangulo_recorte_normalizado_canvas_anotacao_imagem_tutorial_transcribrothers.ts";
+import {
+  converterDataUrlPngParaBlobTranscribrothers,
+  copiarBlobImagemPngParaAreaTransferenciaNavegadorTranscribrothers,
+} from "./modulo_util_copiar_blob_imagem_png_para_area_transferencia_navegador_transcribrothers.ts";
+import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_hook_uso_toasts_feedback_acoes_ui_transcribrothers.tsx";
 import type {
   FerramentaAnotacaoImagemTutorialTranscribrothers,
   ModoZoomVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers,
 } from "./tipos_ferramenta_anotacao_imagem_tutorial_transcribrothers.ts";
+import { resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers } from "./modulo_util_resolver_nome_arquivo_e_persistencia_anotacao_para_inserir_no_documento_tutorial_transcribrothers.ts";
 import "./estilos_css_modal_editor_anotacao_imagem_tutorial_fabric_js_transcribrothers.css";
 
 type ArrastoFormaAnotacaoTranscribrothers =
@@ -40,7 +48,8 @@ type ArrastoFormaAnotacaoTranscribrothers =
   | { tipo: "linha"; x1: number; y1: number; preview?: fabric.Line }
   | { tipo: "destaque"; x1: number; y1: number; preview?: fabric.Rect }
   | { tipo: "retangulo"; x1: number; y1: number; preview?: fabric.Rect }
-  | { tipo: "elipse"; x1: number; y1: number; preview?: fabric.Ellipse };
+  | { tipo: "elipse"; x1: number; y1: number; preview?: fabric.Ellipse }
+  | { tipo: "recortar"; x1: number; y1: number; preview?: fabric.Rect };
 
 const TAMANHO_MINIMO_FORMA_ARRASTE_PX_TRANSCRIBROTHERS = 6;
 
@@ -60,7 +69,7 @@ type PropsModalEditorAnotacaoImagemTutorialTranscribrothers = {
   nomeArquivoOriginal: string;
   registroAnotacao?: RegistroAnotacaoImagemTutorialApiTranscribrothers;
   aoFechar: () => void;
-  aoSalvarComSucesso: (job: JobStatus) => void;
+  aoSalvarComSucesso: (job: JobStatus, origem?: "salvar_manual" | "inserir_documento") => void;
   aoAlternarVersaoExibicaoNoTutorial?: (
     nomeArquivoOriginal: string,
     versao: "original" | "anotado",
@@ -68,7 +77,7 @@ type PropsModalEditorAnotacaoImagemTutorialTranscribrothers = {
   aoRemoverAnotacaoSalva?: (nomeArquivoOriginal: string) => void | Promise<void>;
   aoSincronizarMarkdownComVersaoAnotada?: (nomeArquivoOriginal: string) => void | Promise<void>;
   processandoGestaoVersoes?: boolean;
-  aoSolicitarInserirImagemNoDocumentoMarkdown?: (nomeArquivoOriginal: string) => void | Promise<void>;
+  aoSolicitarInserirImagemNoDocumentoMarkdown?: (nomeArquivoParaSnippet: string) => void | Promise<void>;
 };
 
 function marcarObjetoComoDestaqueSemitransparenteTranscribrothers(obj: fabric.Object): void {
@@ -123,6 +132,16 @@ function criarRetanguloVazadoAnotacaoTranscribrothers(
     height,
     ...obterEstiloContornoFormaVazadaAnotacaoImagemTutorialTranscribrothers(cor),
   });
+}
+
+function obterEstiloRetanguloPreviewRecorteAnotacaoImagemTutorialTranscribrothers(): fabric.IRectOptions {
+  return {
+    fill: "rgba(15, 23, 42, 0.12)",
+    stroke: "#0f172a",
+    strokeWidth: 1,
+    strokeDashArray: [6, 4],
+    opacity: 1,
+  };
 }
 
 function criarElipseVazadaAnotacaoTranscribrothers(
@@ -220,6 +239,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
 }: PropsModalEditorAnotacaoImagemTutorialTranscribrothers) {
   const { pedirConfirmacao, elementoDialogoConfirmacao } =
     usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
+  const { pushToast } = usarToastFeedbackAcoesUiTranscribrothers();
   const fabricMountRef = useRef<HTMLDivElement | null>(null);
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -233,10 +253,12 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   const corAnotacaoRef = useRef(COR_PADRAO_FERRAMENTAS_ANOTACAO_IMAGEM_TUTORIAL_TRANSCRIBROTHERS);
   const ferramentaRef = useRef<FerramentaAnotacaoImagemTutorialTranscribrothers>("selecionar");
   const geracaoCarregamentoImagemFundoCanvasRef = useRef(0);
+  const recorteAplicadoNestaSessaoCanvasRef = useRef(false);
 
   const [ferramenta, setFerramenta] = useState<FerramentaAnotacaoImagemTutorialTranscribrothers>("selecionar");
   const [corAnotacao, setCorAnotacao] = useState(COR_PADRAO_FERRAMENTAS_ANOTACAO_IMAGEM_TUTORIAL_TRANSCRIBROTHERS);
   const [salvando, setSalvando] = useState(false);
+  const [inserindoNoDocumento, setInserindoNoDocumento] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [processandoGestaoLocal, setProcessandoGestaoLocal] = useState(false);
@@ -277,7 +299,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   const exibindoAnotadaNoModal = versaoImagemExibidaNoModal === "anotado";
 
   const processandoAlgumaAcao =
-    salvando || processandoGestaoVersoes || processandoGestaoLocal;
+    salvando || inserindoNoDocumento || processandoGestaoVersoes || processandoGestaoLocal;
 
   useEffect(() => {
     corAnotacaoRef.current = corAnotacao;
@@ -336,6 +358,60 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     [aplicarModoCanvas],
   );
 
+  const substituirCanvasPelaImagemDataUrlAposRecorteTranscribrothers = useCallback(
+    (dataUrl: string) => {
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+
+      const geracao = ++geracaoCarregamentoImagemFundoCanvasRef.current;
+      setCarregando(true);
+      setErro(null);
+      arrastoFormaRef.current = null;
+
+      fabric.Image.fromURL(
+        dataUrl,
+        (img) => {
+          if (geracao !== geracaoCarregamentoImagemFundoCanvasRef.current) return;
+          const canvasAtual = fabricRef.current;
+          if (!canvasAtual) return;
+
+          if (!img.width || !img.height) {
+            setErro("Não foi possível aplicar o recorte.");
+            setCarregando(false);
+            return;
+          }
+
+          canvasAtual.clear();
+          canvasAtual.setWidth(img.width);
+          canvasAtual.setHeight(img.height);
+          img.set({
+            left: 0,
+            top: 0,
+            selectable: false,
+            evented: false,
+          });
+          imagemFundoRef.current = img;
+          dimensoesImagemFundoCanvasRef.current = {
+            largura: img.width ?? 0,
+            altura: img.height ?? 0,
+          };
+          canvasAtual.add(img);
+          canvasAtual.sendToBack(img);
+          recorteAplicadoNestaSessaoCanvasRef.current = true;
+          aplicarModoCanvas(canvasAtual, "selecionar");
+          setFerramenta("selecionar");
+          canvasAtual.requestRenderAll();
+          setCarregando(false);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => sincronizarZoomVisualizacaoCanvasAnotacaoTranscribrothers());
+          });
+        },
+        { crossOrigin: "anonymous" },
+      );
+    },
+    [aplicarModoCanvas, sincronizarZoomVisualizacaoCanvasAnotacaoTranscribrothers],
+  );
+
   const carregarImagemFundoNoCanvasAnotacaoTranscribrothers = useCallback(
     (nomeArquivo: string) => {
       const canvas = fabricRef.current;
@@ -345,6 +421,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
       setCarregando(true);
       setErro(null);
       arrastoFormaRef.current = null;
+      recorteAplicadoNestaSessaoCanvasRef.current = false;
 
       const url =
         urlAssetPngJobParaNomeArquivoTranscribrothers(jobId, nomeArquivo) +
@@ -474,6 +551,21 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
         return;
       }
 
+      if (ferramenta === "recortar") {
+        const preview = new fabric.Rect({
+          left: x,
+          top: y,
+          width: 1,
+          height: 1,
+          ...obterEstiloRetanguloPreviewRecorteAnotacaoImagemTutorialTranscribrothers(),
+          selectable: false,
+          evented: false,
+        });
+        canvas.add(preview);
+        arrastoFormaRef.current = { tipo: "recortar", x1: x, y1: y, preview };
+        return;
+      }
+
       if (ferramenta === "seta" || ferramenta === "linha") {
         const linha = new fabric.Line([x, y, x, y], {
           stroke: corAtual,
@@ -576,6 +668,17 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
         return;
       }
 
+      if (arrasto.tipo === "recortar") {
+        const left = Math.min(arrasto.x1, x);
+        const top = Math.min(arrasto.y1, y);
+        const width = Math.max(1, Math.abs(x - arrasto.x1));
+        const height = Math.max(1, Math.abs(y - arrasto.y1));
+        arrasto.preview.set({ left, top, width, height });
+        arrasto.preview.setCoords();
+        canvas.requestRenderAll();
+        return;
+      }
+
       if (arrasto.tipo === "retangulo") {
         const atualizado = criarRetanguloVazadoAnotacaoTranscribrothers(arrasto.x1, arrasto.y1, x, y, corAtual);
         if (!atualizado) return;
@@ -629,6 +732,35 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
           canvas.setActiveObject(arrasto.preview);
         }
         finalizarFerramentaDesenhoEVoltarSelecionar(canvas);
+        return;
+      }
+
+      if (arrasto.tipo === "recortar") {
+        if (arrasto.preview) {
+          canvas.remove(arrasto.preview);
+        }
+        const dimensoes = dimensoesImagemFundoCanvasRef.current;
+        const regiao = calcularRetanguloRecorteNormalizadoCanvasAnotacaoImagemTutorialTranscribrothers(
+          arrasto.x1,
+          arrasto.y1,
+          x,
+          y,
+          dimensoes?.largura ?? canvas.getWidth() ?? 0,
+          dimensoes?.altura ?? canvas.getHeight() ?? 0,
+        );
+        if (!regiao) {
+          finalizarFerramentaDesenhoEVoltarSelecionar(canvas);
+          return;
+        }
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        try {
+          const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas, regiao);
+          substituirCanvasPelaImagemDataUrlAposRecorteTranscribrothers(dataUrl);
+        } catch (e) {
+          setErro(e instanceof Error ? e.message : "Não foi possível aplicar o recorte.");
+          finalizarFerramentaDesenhoEVoltarSelecionar(canvas);
+        }
         return;
       }
 
@@ -689,7 +821,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
       canvas.off("mouse:move", onMouseMove);
       canvas.off("mouse:up", onMouseUp);
     };
-  }, [ferramenta, finalizarFerramentaDesenhoEVoltarSelecionar]);
+  }, [ferramenta, finalizarFerramentaDesenhoEVoltarSelecionar, substituirCanvasPelaImagemDataUrlAposRecorteTranscribrothers]);
 
   const aoAlterarCorAnotacao = useCallback((novaCor: string) => {
     setCorAnotacao(novaCor);
@@ -714,28 +846,79 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     canvas.requestRenderAll();
   }, []);
 
-  const salvar = useCallback(async () => {
+  const persistirCanvasComoPngAnotadoTranscribrothers = useCallback(async (): Promise<JobStatus> => {
     const canvas = fabricRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      throw new Error("Canvas de anotação indisponível.");
+    }
+    const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
+    const blob = await converterDataUrlPngParaBlobTranscribrothers(dataUrl);
+    return gravarPngAnotadoScreenshotTutorialJobApiTranscribrothers(jobId, nomeArquivoOriginal, blob);
+  }, [jobId, nomeArquivoOriginal]);
+
+  const salvar = useCallback(async () => {
     setSalvando(true);
     setErro(null);
     try {
-      const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
-      const resp = await fetch(dataUrl);
-      const blob = await resp.blob();
-      const job = await gravarPngAnotadoScreenshotTutorialJobApiTranscribrothers(
-        jobId,
-        nomeArquivoOriginal,
-        blob,
-      );
-      aoSalvarComSucesso(job);
+      const job = await persistirCanvasComoPngAnotadoTranscribrothers();
+      aoSalvarComSucesso(job, "salvar_manual");
       aoFechar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
     } finally {
       setSalvando(false);
     }
-  }, [aoFechar, aoSalvarComSucesso, jobId, nomeArquivoOriginal]);
+  }, [aoFechar, aoSalvarComSucesso, persistirCanvasComoPngAnotadoTranscribrothers]);
+
+  const inserirImagemCanvasNoDocumentoMarkdownTranscribrothers = useCallback(async () => {
+    if (!aoSolicitarInserirImagemNoDocumentoMarkdown) return;
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const decisao = resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers({
+      nomeArquivoOriginal,
+      recorteFoiAplicado: recorteAplicadoNestaSessaoCanvasRef.current,
+      totalObjetosCanvas: canvas.getObjects().length,
+      jaExisteArquivoAnotado: Boolean(registroAnotacao?.tem_arquivo_anotado),
+      exibindoVersaoAnotadaNoCanvas: versaoImagemExibidaNoModal === "anotado",
+    });
+    setErro(null);
+    setInserindoNoDocumento(true);
+    try {
+      if (decisao.precisaPersistirAnotacao) {
+        const job = await persistirCanvasComoPngAnotadoTranscribrothers();
+        aoSalvarComSucesso(job, "inserir_documento");
+        recorteAplicadoNestaSessaoCanvasRef.current = false;
+      }
+      await aoSolicitarInserirImagemNoDocumentoMarkdown(decisao.nomeArquivoParaSnippet);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setInserindoNoDocumento(false);
+    }
+  }, [
+    aoSalvarComSucesso,
+    aoSolicitarInserirImagemNoDocumentoMarkdown,
+    nomeArquivoOriginal,
+    persistirCanvasComoPngAnotadoTranscribrothers,
+    registroAnotacao?.tem_arquivo_anotado,
+    versaoImagemExibidaNoModal,
+  ]);
+
+  const copiarImagemEditadaParaAreaTransferenciaTranscribrothers = useCallback(async () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    setErro(null);
+    try {
+      const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
+      const blob = await converterDataUrlPngParaBlobTranscribrothers(dataUrl);
+      await copiarBlobImagemPngParaAreaTransferenciaNavegadorTranscribrothers(blob);
+      pushToast("Imagem editada copiada para a área de transferência.", "success");
+    } catch (e) {
+      const mensagem = e instanceof Error ? e.message : "Não foi possível copiar a imagem.";
+      setErro(mensagem);
+      pushToast(mensagem, "error");
+    }
+  }, [pushToast]);
 
   const executarAcaoGestaoVersao = useCallback(
     async (acao: () => void | Promise<void>) => {
@@ -774,6 +957,7 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
 
   const ferramentasBarra: FerramentaAnotacaoImagemTutorialTranscribrothers[] = [
     "selecionar",
+    "recortar",
     "destaque",
     "retangulo",
     "elipse",
@@ -791,17 +975,17 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
         role="document"
       >
         <header className="tb-anotacao-modal-cabecalho">
-          <h2>Anotar screenshot</h2>
+          <h2>Editar screenshot</h2>
           <p className="tb-anotacao-modal-sub">
-            A captura original é preservada; a versão anotada é salva em paralelo (
-            <code>.anotado.png</code>). Destaque e formas vazadas: arraste para definir o tamanho.
+            A captura original é preservada; a versão editada é salva em paralelo (
+            <code>.anotado.png</code>). Recorte, destaque e formas: arraste para definir a área.
           </p>
           <button type="button" className="tb-anotacao-modal-fechar" onClick={aoFechar} aria-label="Fechar">
             ×
           </button>
         </header>
 
-        <div className="tb-anotacao-modal-ferramentas" role="toolbar" aria-label="Ferramentas de anotação">
+        <div className="tb-anotacao-modal-ferramentas" role="toolbar" aria-label="Ferramentas de edição">
           <div className="tb-anotacao-ferramentas-esquerda">
             <div className="tb-anotacao-ferramentas-grupo-icone" role="group" aria-label="Formas e seleção">
             {ferramentasBarra.map((id) => {
@@ -840,15 +1024,26 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
             />
           </div>
           <div className="tb-anotacao-ferramentas-direita tb-anotacao-ferramentas-acoes-direita">
+            <button
+              type="button"
+              className="tb-linkbtn tb-anotacao-modal-btn-copiar-imagem"
+              disabled={processandoAlgumaAcao || carregando}
+              title="Copiar a imagem editada para a área de transferência"
+              aria-label="Copiar imagem editada"
+              onClick={() => void copiarImagemEditadaParaAreaTransferenciaTranscribrothers()}
+            >
+              <IconeCopiarImagemEditadaAnotacaoTutorialTranscribrothers />
+              Copiar imagem editada
+            </button>
             {aoSolicitarInserirImagemNoDocumentoMarkdown ? (
               <button
                 type="button"
                 className="tb-linkbtn tb-anotacao-modal-btn-inserir-documento"
                 disabled={processandoAlgumaAcao || carregando}
-                title="Copiar referência da imagem e escolher onde inserir no tutorial"
-                onClick={() => void aoSolicitarInserirImagemNoDocumentoMarkdown(nomeArquivoOriginal)}
+                title="Grava a edição (se houver) e escolhe onde inserir no tutorial a imagem anotada"
+                onClick={() => void inserirImagemCanvasNoDocumentoMarkdownTranscribrothers()}
               >
-                Inserir no documento
+                {inserindoNoDocumento ? "Inserindo…" : "Inserir no documento"}
               </button>
             ) : null}
             <button

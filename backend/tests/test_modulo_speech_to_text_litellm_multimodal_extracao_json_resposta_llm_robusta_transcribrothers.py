@@ -80,6 +80,21 @@ def test_colapsar_repeticao_palavra_nao_em_loop() -> None:
     assert out == "não"
 
 
+def test_colapsar_repeticao_palavra_separada_so_por_espaco_tipo_de_de_de() -> None:
+    texto = "e aí de de de de de de de de de de de de de falaram do prazo"
+    out = _colapsar_repeticao_palavra_consecutiva_em_texto_segmento_transcricao(texto)
+    assert "de de de de" not in out
+    assert out.startswith("e aí de ")
+    assert "falaram do prazo" in out
+
+
+def test_colapsar_repeticao_curta_abaixo_de_24_caracteres() -> None:
+    texto = "de de de de de de de"
+    assert len(texto) < 24
+    out = _colapsar_repeticao_palavra_consecutiva_em_texto_segmento_transcricao(texto)
+    assert out.lower() == "de"
+
+
 def test_recupera_segmentos_completos_de_json_truncado() -> None:
     raw = (
         '{"idioma":"pt","segmentos":['

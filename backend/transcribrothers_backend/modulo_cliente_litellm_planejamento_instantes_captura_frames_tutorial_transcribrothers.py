@@ -48,6 +48,20 @@ Regras:
 6) Campos na raiz: `instantes_segundos_para_capturar` (lista de números), `mensagem_resumo` (pt-BR, curta).
 """
 
+SYSTEM_PROMPT_PLANEJAMENTO_INSTANTES_CAPTURA_FRAMES_TUTORIAL_PASSO_A_PASSO_SOFTWARE_TRANSCRIBROTHERS = """\
+Você escolhe quais instantes de um vídeo merecem screenshot para um tutorial PASSO A PASSO de software.
+
+Entrada: rascunho do tutorial (com links [MM:SS](?t=SEGUNDOS)), lista de candidatos (segundos exatos) e resumo da transcrição.
+
+Regras:
+1) Responda APENAS com um objeto JSON (sem Markdown à volta).
+2) Cada procedimento da interface deve ter screenshot. Inclua o candidato de cada passo do rascunho, salvo se dois candidatos mostrarem exatamente o mesmo estado visual (diferença pequena na mesma tela).
+3) `instantes_segundos_para_capturar`: subconjunto dos candidatos (use os valores numéricos exatos da lista de candidatos).
+4) Não descarte passos só para reduzir quantidade. O documento precisa de uma imagem por procedimento.
+5) Só omita candidato se for redundante com o instante imediatamente anterior (mesma tela, sem mudança visível).
+6) Campos na raiz: `instantes_segundos_para_capturar` (lista de números), `mensagem_resumo` (pt-BR, curta).
+"""
+
 
 class ResultadoPlanejamentoInstantesCapturaFramesJsonTranscribrothers(BaseModel):
     instantes_segundos_para_capturar: list[float] = Field(default_factory=list)
@@ -56,17 +70,22 @@ class ResultadoPlanejamentoInstantesCapturaFramesJsonTranscribrothers(BaseModel)
     @field_validator("instantes_segundos_para_capturar")
     @classmethod
     def _limitar_instantes(cls, v: list[float]) -> list[float]:
-        return [float(x) for x in v[:64]]
+        return [float(x) for x in v[:256]]
 
 
 def parsear_resultado_planejamento_instantes_captura_de_texto_llm_transcribrothers(
     texto_bruto: str,
+    *,
+    max_instantes: int = 64,
 ) -> ResultadoPlanejamentoInstantesCapturaFramesJsonTranscribrothers:
     raw_json = extrair_primeiro_objeto_json_de_texto_llm_transcribrothers(texto_bruto)
     data = json.loads(raw_json)
     if not isinstance(data, dict):
         raise ValueError("JSON raiz deve ser um objeto.")
-    return ResultadoPlanejamentoInstantesCapturaFramesJsonTranscribrothers.model_validate(data)
+    parsed = ResultadoPlanejamentoInstantesCapturaFramesJsonTranscribrothers.model_validate(data)
+    teto = max(1, int(max_instantes))
+    parsed.instantes_segundos_para_capturar = parsed.instantes_segundos_para_capturar[:teto]
+    return parsed
 
 
 def alinhar_instantes_plano_litellm_aos_candidatos_transcribrothers(
@@ -171,6 +190,7 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
     modo_notas_proposta_funcionalidade: bool = False,
     system_prompt_override: str | None = None,
+    max_instantes_plano: int | None = None,
 ) -> tuple[list[float], dict[str, Any]]:
     """
     Devolve instantes alinhados aos candidatos e metadados para `steps_json`.
@@ -230,7 +250,10 @@ async def planejar_instantes_captura_frames_tutorial_com_litellm_transcribrother
             log_resumo_pedido=f"{len(candidatos)} candidatos; teto {max_capturas_apos_limites}",
             log_metadados={"candidatos": len(candidatos)},
         )
-        parsed = parsear_resultado_planejamento_instantes_captura_de_texto_llm_transcribrothers(texto)
+        parsed = parsear_resultado_planejamento_instantes_captura_de_texto_llm_transcribrothers(
+            texto,
+            max_instantes=int(max_instantes_plano) if max_instantes_plano is not None else 64,
+        )
         alinhados = alinhar_instantes_plano_litellm_aos_candidatos_transcribrothers(
             parsed.instantes_segundos_para_capturar,
             candidatos,

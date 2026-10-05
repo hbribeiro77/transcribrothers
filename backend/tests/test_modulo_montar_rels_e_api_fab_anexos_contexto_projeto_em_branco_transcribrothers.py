@@ -7,7 +7,10 @@ from pathlib import Path
 
 from starlette.testclient import TestClient
 
-from transcribrothers_backend.main import app
+from transcribrothers_backend.main import (
+    _mesclar_contexto_fab_pedido_em_steps_json_transcribrothers,
+    app,
+)
 from transcribrothers_backend.modulo_armazenamento_sqlite_modelos_job_pipeline import (
     JobPipelineTranscribrothers,
     OrigemEntradaJobTranscribrothers,
@@ -43,6 +46,32 @@ def test_pool_rels_projeto_em_branco_inclui_fab_ctx_extra_no_disco(tmp_path: Pat
 
     caminhos = [rel for _, rel in pool]
     assert rel_extra in caminhos
+
+
+def test_pool_rels_tutorial_normal_inclui_png_extra_do_chat(tmp_path: Path) -> None:
+    assets = tmp_path / "assets_exportados_para_markdown"
+    assets.mkdir(parents=True)
+    nome = "screenshot_tutorial_transcribrothers_frame_no_offset_ms_0000075800_indice_0099.png"
+    (assets / nome).write_bytes(_BYTES_PNG_MINIMO_TRANSCRIBROTHERS)
+    rel_extra = f"assets/{nome}"
+    pool = montar_pool_rels_completos_disponiveis_regeneracao_tutorial_transcribrothers(
+        markdown="# Tutorial\n\nSem imagens.",
+        rels_snapshot=[],
+        assets_dir=assets,
+        caminhos_assets_png_contexto_fab_extra=[rel_extra],
+        eh_projeto_em_branco=False,
+    )
+    assert rel_extra in [rel for _, rel in pool]
+
+
+def test_mesclar_contexto_fab_tutorial_normal_grava_png_extra_quando_nao_exige_branco() -> None:
+    saida = _mesclar_contexto_fab_pedido_em_steps_json_transcribrothers(
+        {"pipeline_fase": "ok"},
+        caminhos_assets_png_contexto_fab=["assets/tela_chat_758.png"],
+        textos_contexto_fab=None,
+        exigir_projeto_em_branco=False,
+    )
+    assert saida["regeneracao_fab_contexto_caminhos_assets_png"] == ["assets/tela_chat_758.png"]
 
 
 def test_post_fab_anexo_imagem_projeto_em_branco_grava_png_com_prefixo() -> None:

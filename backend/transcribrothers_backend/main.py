@@ -125,6 +125,21 @@ from transcribrothers_backend.modulo_persistencia_runtime_config_voz_tts_narraca
     gravar_preferencias_voz_tts_narracao_runtime_sqlite_transcribrothers,
     resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistencia_runtime_config_provedor_tts_narracao_sqlite_transcribrothers import (
+    apagar_override_provedor_tts_narracao_runtime_sqlite_transcribrothers,
+    gravar_preferencias_provedor_tts_narracao_runtime_sqlite_transcribrothers,
+    resolver_preferencias_provedor_tts_narracao_efetivas_transcribrothers,
+)
+from transcribrothers_backend.modulo_provedor_e_modelo_tts_elevenlabs_narracao_transcribrothers import (
+    MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS,
+    PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS,
+    listar_modelos_tts_elevenlabs_para_interface_transcribrothers,
+    tem_chave_elevenlabs_configurada_transcribrothers,
+)
+from transcribrothers_backend.modulo_cliente_elevenlabs_text_to_speech_e_vozes_transcribrothers import (
+    FalhaClienteElevenlabsTranscribrothers,
+    listar_vozes_elevenlabs_via_get_v1_voices_transcribrothers,
+)
 from transcribrothers_backend.modulo_preferencias_voz_tts_gemini_narracao_transcribrothers import (
     VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
     listar_vozes_tts_gemini_disponiveis_transcribrothers,
@@ -196,6 +211,10 @@ from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_trans
 )
 from transcribrothers_backend.modulo_verificar_modelo_litellm_chat_completions_probe_transcribrothers import (
     verificar_modelo_litellm_via_chat_completions_probe_transcribrothers,
+)
+from transcribrothers_backend.modulo_listar_modelos_litellm_no_proxy_via_get_v1_models_transcribrothers import (
+    FalhaListarModelosLitellmProxyTranscribrothers,
+    obter_catalogo_modelos_litellm_no_proxy_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_extrair_texto_plano_para_narracao_tts_a_partir_markdown_tutorial_transcribrothers import (
     extrair_texto_plano_para_narracao_tts_a_partir_markdown_tutorial_transcribrothers,
@@ -319,6 +338,10 @@ from transcribrothers_backend.modulo_ffmpeg_extrair_audio_e_capturar_frames_por_
 from transcribrothers_backend.modulo_ffmpeg_queimar_legendas_vtt_no_video_mp4_narrado_transcribrothers import (
     NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS,
     video_narrado_com_legendas_queimadas_esta_atualizado_transcribrothers,
+)
+from transcribrothers_backend.modulo_sanitizar_nome_arquivo_download_video_narrado_content_disposition_transcribrothers import (
+    CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TITULO_ARQUIVO_TRANSCRIBROTHERS,
+    resolver_nome_arquivo_download_video_narrado_content_disposition_transcribrothers,
 )
 from transcribrothers_backend.modulo_util_gerar_arquivo_vtt_a_partir_cues_legendas_transcribrothers import (
     NOME_ARQUIVO_LEGENDAS_DOCUMENTO_ALINHADAS_VTT_TRANSCRIBROTHERS,
@@ -475,6 +498,8 @@ class CorpoRegenerarSecaoMarkdownTutorialTranscribrothers(BaseModel):
     modo_escopo_edicao: Literal["secao_inteira", "trecho_local", "a_partir_de"] = "trecho_local"
     trecho_ancora: str | None = Field(default=None, max_length=32_000)
     interpretar_escopo_automaticamente: bool = True
+    edicao_cirurgica_chat_agente: bool = False
+    propostas: list[dict[str, Any]] | None = None
     caminhos_assets_png_contexto_fab: list[str] | None = None
     textos_contexto_fab: list[str] | None = None
 
@@ -703,11 +728,23 @@ class RespostaConfigPublicaTranscribrothers(BaseModel):
     voz_tts_narracao_padrao_app: str = VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS
     voz_tts_narracao_preferencia_sqlite_definida: bool = False
     voz_tts_narracao_vozes_disponiveis: list[dict[str, str]] = Field(default_factory=list)
+    tts_provedor_efetivo: str = PROVEDOR_TTS_LITELLM_TRANSCRIBROTHERS
+    tts_provedor_preferencia_sqlite_definida: bool = False
+    elevenlabs_configurado: bool = False
+    elevenlabs_modelos: list[str] = Field(default_factory=list)
+    modelo_tts_elevenlabs_efetivo: str = MODELO_TTS_ELEVENLABS_V4_TRANSCRIBROTHERS
+    voz_tts_elevenlabs_efetiva: str = ""
 
 
 class CorpoPatchEncodeVideoNarradoRuntimeTranscribrothers(BaseModel):
     resolucao: str = Field(default=RESOLUCAO_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS)
     fps: int = Field(default=FPS_ENCODE_VIDEO_NARRADO_PADRAO_TRANSCRIBROTHERS, ge=1, le=120)
+
+
+class CorpoPatchProvedorTtsNarracaoRuntimeTranscribrothers(BaseModel):
+    provedor: str = Field(min_length=1, max_length=32)
+    modelo_elevenlabs: str | None = Field(default=None, max_length=64)
+    voz_elevenlabs: str | None = Field(default=None, max_length=128)
 
 
 class CorpoPatchVozTtsNarracaoRuntimeTranscribrothers(BaseModel):
@@ -892,6 +929,19 @@ class CorpoVerificarModeloLitellmChatProbeTranscribrothers(BaseModel):
         return s
 
 
+class ItemCatalogoModeloLitellmProxyApiTranscribrothers(BaseModel):
+    id: str
+    owned_by: str = ""
+    categoria: str
+    util_para_tutorial: bool
+    na_allowlist: bool
+
+
+class RespostaCatalogoModelosLitellmProxyApiTranscribrothers(BaseModel):
+    modelos: list[ItemCatalogoModeloLitellmProxyApiTranscribrothers]
+    allowlist_ausente_no_proxy: list[str]
+
+
 class RespostaVerificarModeloLitellmChatProbeTranscribrothers(BaseModel):
     """Resultado do probe barato de chat (não valida STT nem visão)."""
 
@@ -1000,7 +1050,7 @@ class RespostaResolverCueTtsPendenteTimeoutExperimentalTranscribrothers(BaseMode
 
 
 class CorpoPreviewTtsAmostraVozNarracaoTranscribrothers(BaseModel):
-    voz: str = Field(default=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS, min_length=1, max_length=64)
+    voz: str = Field(default=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS, min_length=1, max_length=128)
     litellm_model: str | None = None
     perfil_tts: str | None = None
     temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
@@ -1076,6 +1126,7 @@ class CorpoGerarVideoComEdicoesDoModalNarradoTranscribrothers(BaseModel):
     litellm_model: str | None = None
     temperatura_tts: float | None = Field(default=None, ge=0.2, le=1.0)
     ritmo_tts: str | None = None
+    titulo_arquivo: str | None = Field(default=None, max_length=200)
     cues: list[CueLegendaDocumentoAlinhadaEditadaApiTranscribrothers]
     janelas: list[JanelaVideoCueEditadaApiTranscribrothers] | None = None
 
@@ -1279,6 +1330,9 @@ async def _montar_resposta_config_publica_transcribrothers(
         prefs_voz_tts, voz_tts_sqlite = (
             await resolver_preferencias_voz_tts_narracao_efetivas_transcribrothers(session)
         )
+        prefs_provedor_tts, provedor_tts_sqlite = (
+            await resolver_preferencias_provedor_tts_narracao_efetivas_transcribrothers(session)
+        )
         await sincronizar_cache_modelos_litellm_extras_da_session_transcribrothers(session)
     janela_ef, paralelas_ef, formato_ef, bitrate_ef, mono_ef = (
         resolver_janela_paralelas_formato_bitrate_mono_efetivos_com_overrides_sqlite_transcribrothers(
@@ -1369,6 +1423,12 @@ async def _montar_resposta_config_publica_transcribrothers(
         voz_tts_narracao_padrao_app=VOZ_TTS_GEMINI_PADRAO_TRANSCRIBROTHERS,
         voz_tts_narracao_preferencia_sqlite_definida=bool(voz_tts_sqlite),
         voz_tts_narracao_vozes_disponiveis=listar_vozes_tts_gemini_disponiveis_transcribrothers(),
+        tts_provedor_efetivo=prefs_provedor_tts.provedor,
+        tts_provedor_preferencia_sqlite_definida=bool(provedor_tts_sqlite),
+        elevenlabs_configurado=tem_chave_elevenlabs_configurada_transcribrothers(cfg),
+        elevenlabs_modelos=listar_modelos_tts_elevenlabs_para_interface_transcribrothers(),
+        modelo_tts_elevenlabs_efetivo=prefs_provedor_tts.modelo_elevenlabs,
+        voz_tts_elevenlabs_efetiva=prefs_provedor_tts.voz_elevenlabs,
     )
 
 
@@ -1889,6 +1949,38 @@ async def verificar_modelo_litellm_chat_completions_probe_na_configuracao_transc
 
 
 @app.get(
+    "/api/config/transcribrothers/modelos-litellm-no-proxy",
+    response_model=RespostaCatalogoModelosLitellmProxyApiTranscribrothers,
+)
+async def obter_catalogo_modelos_litellm_no_proxy_para_interface_transcribrothers(
+    request: Request,
+) -> RespostaCatalogoModelosLitellmProxyApiTranscribrothers:
+    """Lista slugs do GET /v1/models no proxy, cruzados com a allowlist do app. Não expõe a chave."""
+    cfg = obter_cfg(request)
+    allowlist = listar_modelos_litellm_permitidos_efetivos_transcribrothers(cfg)
+    try:
+        catalogo = await obter_catalogo_modelos_litellm_no_proxy_transcribrothers(
+            configuracao=cfg,
+            allowlist=allowlist,
+        )
+    except FalhaListarModelosLitellmProxyTranscribrothers as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return RespostaCatalogoModelosLitellmProxyApiTranscribrothers(
+        modelos=[
+            ItemCatalogoModeloLitellmProxyApiTranscribrothers(
+                id=item.id,
+                owned_by=item.owned_by,
+                categoria=item.categoria,
+                util_para_tutorial=item.util_para_tutorial,
+                na_allowlist=item.na_allowlist,
+            )
+            for item in catalogo.modelos
+        ],
+        allowlist_ausente_no_proxy=list(catalogo.allowlist_ausente_no_proxy),
+    )
+
+
+@app.get(
     "/api/config/transcribrothers/prompts-fixos-revisao-profunda-e-verificacao-sustentacao-tutorial",
     response_model=RespostaPromptsFixosRevisaoProfundaEVerificacaoSustentacaoTutorialTranscribrothers,
 )
@@ -2290,6 +2382,53 @@ async def apagar_preferencia_runtime_voz_tts_narracao_volta_ao_padrao_app_transc
 
 
 @app.patch(
+    "/api/config/transcribrothers/provedor-tts-narracao-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def atualizar_preferencia_runtime_provedor_tts_narracao_via_sqlite_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+    body: CorpoPatchProvedorTtsNarracaoRuntimeTranscribrothers,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        try:
+            await gravar_preferencias_provedor_tts_narracao_runtime_sqlite_transcribrothers(
+                session,
+                provedor=body.provedor,
+                modelo_elevenlabs=body.modelo_elevenlabs,
+                voz_elevenlabs=body.voz_elevenlabs,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.delete(
+    "/api/config/transcribrothers/provedor-tts-narracao-runtime",
+    response_model=RespostaConfigPublicaTranscribrothers,
+)
+async def apagar_preferencia_runtime_provedor_tts_narracao_volta_ao_litellm_transcribrothers(
+    request: Request,
+    session_factory: SessionFactoryDep,
+) -> RespostaConfigPublicaTranscribrothers:
+    async with session_factory() as session:
+        await apagar_override_provedor_tts_narracao_runtime_sqlite_transcribrothers(session)
+    return await _montar_resposta_config_publica_transcribrothers(request)
+
+
+@app.get("/api/config/transcribrothers/vozes-tts-elevenlabs")
+async def listar_vozes_tts_elevenlabs_para_interface_transcribrothers(
+    request: Request,
+) -> dict[str, object]:
+    cfg = obter_cfg(request)
+    try:
+        vozes = await listar_vozes_elevenlabs_via_get_v1_voices_transcribrothers(configuracao=cfg)
+    except FalhaClienteElevenlabsTranscribrothers as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"vozes": vozes}
+
+
+@app.patch(
     "/api/config/transcribrothers/gitlab-wiki-pastas-runtime",
     response_model=RespostaConfigPublicaTranscribrothers,
 )
@@ -2383,11 +2522,17 @@ async def validar_pasta_indice_wiki_gitlab_existe_api_transcribrothers(
 
 
 _DESTINOS_APOS_TRANSCRICAO_UPLOAD_VALIDOS_TRANSCRIBROTHERS = frozenset(
-    {"gerar_tutorial", "reproducao_bug", "notas_proposta_funcionalidade", "so_transcricao"},
+    {
+        "gerar_tutorial",
+        "tutorial_passo_a_passo_software",
+        "reproducao_bug",
+        "notas_proposta_funcionalidade",
+        "so_transcricao",
+    },
 )
 
 _DESTINOS_UPLOAD_SOMENTE_VIDEO_TRANSCRIBROTHERS = frozenset(
-    {"gerar_tutorial", "reproducao_bug", "notas_proposta_funcionalidade"},
+    {"gerar_tutorial", "tutorial_passo_a_passo_software", "reproducao_bug", "notas_proposta_funcionalidade"},
 )
 
 
@@ -3844,14 +3989,13 @@ def _mesclar_contexto_fab_pedido_em_steps_json_transcribrothers(
         normalizar_textos_contexto_fab_pedido_transcribrothers,
     )
 
+    eh_projeto_em_branco = job_steps_indicam_projeto_em_branco_transcribrothers(steps)
     tem_pedido = bool(caminhos_assets_png_contexto_fab) or bool(textos_contexto_fab)
-    if tem_pedido and exigir_projeto_em_branco and not job_steps_indicam_projeto_em_branco_transcribrothers(steps):
+    if tem_pedido and exigir_projeto_em_branco and not eh_projeto_em_branco:
         raise HTTPException(
             status_code=400,
             detail="Anexos de contexto no FAB só estão disponíveis em projeto em branco.",
         )
-    if not job_steps_indicam_projeto_em_branco_transcribrothers(steps):
-        return dict(steps)
 
     out = dict(steps)
     caminhos = normalizar_caminhos_assets_png_contexto_fab_pedido_transcribrothers(
@@ -3862,10 +4006,11 @@ def _mesclar_contexto_fab_pedido_em_steps_json_transcribrothers(
         out["regeneracao_fab_contexto_caminhos_assets_png"] = caminhos
     else:
         out.pop("regeneracao_fab_contexto_caminhos_assets_png", None)
-    if textos:
-        out["regeneracao_fab_contexto_textos"] = textos
-    else:
-        out.pop("regeneracao_fab_contexto_textos", None)
+    if eh_projeto_em_branco:
+        if textos:
+            out["regeneracao_fab_contexto_textos"] = textos
+        else:
+            out.pop("regeneracao_fab_contexto_textos", None)
     return out
 
 
@@ -3937,6 +4082,57 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
     body: CorpoRegenerarSecaoMarkdownTutorialTranscribrothers,
 ) -> RespostaJobTranscribrothers:
     cfg = obter_cfg(request)
+    propostas_lote = [
+        item
+        for item in (body.propostas or [])
+        if isinstance(item, dict) and (item.get("nome") or "").strip() == "edicao_parcial"
+    ]
+    if propostas_lote:
+        async with session_factory() as session:
+            row = await session.get(JobPipelineTranscribrothers, job_id)
+            if row is None:
+                raise HTTPException(status_code=404, detail="Job não encontrado.")
+            _validar_job_pode_regenerar_markdown_secao_transcribrothers(row)
+            md = (row.result_markdown or "").strip()
+            if not md:
+                raise HTTPException(status_code=400, detail="Tutorial vazio: não há Markdown para editar.")
+            steps = dict(row.steps_json or {})
+            _levantar_se_preview_markdown_pendente_no_job_transcribrothers(steps)
+            from transcribrothers_backend.modulo_aplicar_lote_edicoes_parciais_chat_agente_documento_transcribrothers import (
+                aplicar_lote_edicoes_parciais_markdown_chat_agente_transcribrothers,
+                montar_preview_blob_lote_edicoes_parciais_chat_agente_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_constante_chave_steps_json_preview_regeneracao_tutorial_markdown_documento_inteiro_transcribrothers import (
+                CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_TUTORIAL_MARKDOWN_DOCUMENTO_INTEIRO_TRANSCRIBROTHERS,
+            )
+
+            try:
+                resultado_lote = aplicar_lote_edicoes_parciais_markdown_chat_agente_transcribrothers(
+                    markdown=md,
+                    propostas=propostas_lote,
+                )
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            if not resultado_lote.get("quantidade_aplicada"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Nenhuma edição parcial do lote pôde ser aplicada no Markdown.",
+                )
+            preview_blob = montar_preview_blob_lote_edicoes_parciais_chat_agente_transcribrothers(
+                markdown_antes=md,
+                resultado_lote=resultado_lote,
+            )
+            steps.pop(CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_SECAO_MARKDOWN_TRANSCRIBROTHERS, None)
+            steps.pop(
+                CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_TUTORIAL_MARKDOWN_DOCUMENTO_INTEIRO_TRANSCRIBROTHERS,
+                None,
+            )
+            steps[CHAVE_STEPS_JSON_PREVIEW_REGENERACAO_SECAO_MARKDOWN_TRANSCRIBROTHERS] = preview_blob
+            steps["pipeline_fase"] = "regeneracao_secao_markdown_preview_pronta"
+            row.steps_json = steps
+            row.error_message = None
+            await session.commit()
+            return _job_para_resposta(row)
     if not tem_credencial_gateway_litellm_para_tutorial_markdown_no_proxy(cfg):
         raise HTTPException(
             status_code=503,
@@ -3944,8 +4140,13 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
         )
     modo_escopo = body.modo_escopo_edicao
     trecho = (body.trecho_ancora or "").strip() or None
-    interpretar_auto = bool(body.interpretar_escopo_automaticamente) and not trecho
-    if not interpretar_auto:
+    edicao_cirurgica = bool(body.edicao_cirurgica_chat_agente)
+    interpretar_auto = (
+        False
+        if edicao_cirurgica
+        else bool(body.interpretar_escopo_automaticamente) and not trecho
+    )
+    if not interpretar_auto and not edicao_cirurgica:
         if modo_escopo == "secao_inteira":
             if not body.titulo_secao_heading and body.indice_secao is None:
                 raise HTTPException(
@@ -3963,7 +4164,7 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
             raise HTTPException(status_code=404, detail="Job não encontrado.")
         _validar_job_pode_regenerar_markdown_secao_transcribrothers(row)
         md = (row.result_markdown or "").strip()
-        if not interpretar_auto:
+        if not interpretar_auto and not edicao_cirurgica:
             try:
                 from transcribrothers_backend.modulo_util_escopo_trecho_edicao_secao_markdown_tutorial_transcribrothers import (
                     preparar_fatia_escopo_edicao_secao_markdown_tutorial_transcribrothers,
@@ -3991,7 +4192,7 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
             steps,
             caminhos_assets_png_contexto_fab=body.caminhos_assets_png_contexto_fab,
             textos_contexto_fab=body.textos_contexto_fab,
-            exigir_projeto_em_branco=True,
+            exigir_projeto_em_branco=not edicao_cirurgica,
         )
         steps["pipeline_fase"] = "regenerando_secao_markdown_litellm_agendado"
         row.status = StatusJobTranscribrothers.generating_tutorial.value
@@ -4010,6 +4211,7 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
         modo_escopo_edicao=modo_escopo,
         trecho_ancora=trecho,
         interpretar_escopo_automaticamente=interpretar_auto,
+        edicao_cirurgica_chat_agente=edicao_cirurgica,
     )
 
     async with session_factory() as session:
@@ -5230,11 +5432,18 @@ async def baixar_video_com_narracao_tts_do_job_transcribrothers(
     job_id: str,
     session_factory: SessionFactoryDep,
     data_dir: DataDirDep,
+    nome_arquivo: str | None = Query(default=None, max_length=200),
 ) -> FileResponse:
     async with session_factory() as session:
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
+        titulo_persistido = str(
+            (row.steps_json or {}).get(
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TITULO_ARQUIVO_TRANSCRIBROTHERS
+            )
+            or ""
+        ).strip()
     work = _diretorio_trabalho_job(data_dir, job_id)
     caminho = work / NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS
     if not caminho.is_file():
@@ -5245,7 +5454,12 @@ async def baixar_video_com_narracao_tts_do_job_transcribrothers(
     return FileResponse(
         str(caminho),
         media_type="video/mp4",
-        filename=NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
+        filename=resolver_nome_arquivo_download_video_narrado_content_disposition_transcribrothers(
+            nome_arquivo_query=nome_arquivo,
+            titulo_persistido=titulo_persistido,
+            legendado=False,
+            fallback=NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS,
+        ),
     )
 
 
@@ -5743,6 +5957,7 @@ async def baixar_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribr
     job_id: str,
     session_factory: SessionFactoryDep,
     data_dir: DataDirDep,
+    nome_arquivo: str | None = Query(default=None, max_length=200),
 ) -> FileResponse:
     """
     Serve o MP4 com legendas queimadas se o cache estiver pronto.
@@ -5752,6 +5967,12 @@ async def baixar_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribr
         row = await session.get(JobPipelineTranscribrothers, job_id)
         if row is None:
             raise HTTPException(status_code=404, detail="Job não encontrado.")
+        titulo_persistido = str(
+            (row.steps_json or {}).get(
+                CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TITULO_ARQUIVO_TRANSCRIBROTHERS
+            )
+            or ""
+        ).strip()
     work = _diretorio_trabalho_job(data_dir, job_id)
     assets = _diretorio_assets_png_exportados_markdown_do_job(data_dir, job_id)
     caminho_video = work / NOME_ARQUIVO_VIDEO_COM_NARRACAO_TTS_MP4_TRANSCRIBROTHERS
@@ -5782,7 +6003,12 @@ async def baixar_video_com_narracao_tts_com_legendas_queimadas_do_job_transcribr
     return FileResponse(
         str(caminho),
         media_type="video/mp4",
-        filename=NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS,
+        filename=resolver_nome_arquivo_download_video_narrado_content_disposition_transcribrothers(
+            nome_arquivo_query=nome_arquivo,
+            titulo_persistido=titulo_persistido,
+            legendado=True,
+            fallback=NOME_ARQUIVO_VIDEO_NARRADO_COM_LEGENDAS_QUEIMADAS_MP4_TRANSCRIBROTHERS,
+        ),
     )
 
 
@@ -6048,6 +6274,11 @@ async def gerar_video_com_edicoes_do_modal_narrado_job_transcribrothers(
         if body.ritmo_tts is not None and str(body.ritmo_tts).strip():
             steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_RITMO_TTS_TRANSCRIBROTHERS] = (
                 normalizar_ritmo_tts_narracao_transcribrothers(body.ritmo_tts)
+            )
+        titulo_arquivo = str(body.titulo_arquivo or "").strip()
+        if titulo_arquivo:
+            steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_TITULO_ARQUIVO_TRANSCRIBROTHERS] = (
+                titulo_arquivo
             )
         row.status = StatusJobTranscribrothers.generating_tutorial.value
         row.error_message = None
@@ -6679,6 +6910,614 @@ async def baixar_pacote_zip_com_tutorial_markdown_e_assets_png(
     buf.seek(0)
     headers = {"Content-Disposition": f'attachment; filename="transcribrothers-{job_id}.zip"'}
     return StreamingResponse(buf, media_type="application/zip", headers=headers)
+
+
+class CorpoChatAskDocumentoJobTranscribrothers(BaseModel):
+    mensagem: str
+    instante_anexo_segundos: float | None = None
+    litellm_model: str | None = None
+
+
+class CorpoChatAgenteDocumentoJobTranscribrothers(BaseModel):
+    mensagem: str
+    instante_anexo_segundos: float | None = None
+    litellm_model: str | None = None
+    forcar_ferramenta: str | None = None
+
+
+class RespostaChatAgenteDocumentoJobTranscribrothers(BaseModel):
+    texto: str
+    citacoes: list[dict[str, Any]]
+    imagens: list[dict[str, Any]]
+    proposta_ferramenta: dict[str, Any] | None
+    propostas_ferramenta: list[dict[str, Any]] = []
+    executar_proposta: bool = False
+    historico: list[dict[str, Any]]
+
+
+class CorpoResolverFrameChatAskDocumentoJobTranscribrothers(BaseModel):
+    instante_segundos: float
+
+
+class RespostaResolverFrameChatAskDocumentoJobTranscribrothers(BaseModel):
+    caminho_relativo: str
+    url: str
+    instante_segundos: float
+    origem: str
+
+
+class RespostaChatAskDocumentoJobTranscribrothers(BaseModel):
+    texto: str
+    citacoes: list[dict[str, Any]]
+    imagens: list[dict[str, Any]]
+    historico: list[dict[str, Any]]
+
+
+class RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers(BaseModel):
+    historico: list[dict[str, Any]]
+
+
+class CorpoAnexarHistoricoChatAskAgenteDocumentoJobTranscribrothers(BaseModel):
+    papel: str
+    modo: str
+    texto: str
+    estado: str | None = None
+    tipo_pipeline: str | None = None
+
+
+@app.get(
+    "/api/jobs/{job_id}/chat-historico",
+    response_model=RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+)
+async def obter_historico_chat_ask_agente_documento_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers:
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        carregar_historico_chat_ask_agente_do_work_transcribrothers,
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    itens = carregar_historico_chat_ask_agente_do_work_transcribrothers(work)
+    return RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers(
+        historico=[item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in itens]
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/chat-historico",
+    response_model=RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+)
+async def anexar_historico_chat_ask_agente_documento_job_transcribrothers(
+    job_id: str,
+    body: CorpoAnexarHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers:
+    from datetime import datetime, timezone
+
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+        anexar_item_historico_chat_ask_agente_no_work_transcribrothers,
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    itens = anexar_item_historico_chat_ask_agente_no_work_transcribrothers(
+        work,
+        ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers(
+            papel=body.papel,
+            modo=body.modo,
+            texto=body.texto,
+            criado_em=datetime.now(timezone.utc).isoformat(),
+            citacoes=[],
+            imagens=[],
+            estado=body.estado,
+            tipo_pipeline=body.tipo_pipeline,
+        ),
+    )
+    return RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers(
+        historico=[item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in itens]
+    )
+
+
+@app.delete(
+    "/api/jobs/{job_id}/chat-historico",
+    response_model=RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers,
+)
+async def limpar_historico_chat_ask_agente_documento_job_transcribrothers(
+    job_id: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers:
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        gravar_historico_chat_ask_agente_no_work_transcribrothers,
+    )
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    gravar_historico_chat_ask_agente_no_work_transcribrothers(work, [])
+    return RespostaHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico=[])
+
+
+@app.post(
+    "/api/jobs/{job_id}/chat-ask-resolver-frame",
+    response_model=RespostaResolverFrameChatAskDocumentoJobTranscribrothers,
+)
+async def resolver_frame_chat_ask_documento_job_transcribrothers(
+    job_id: str,
+    body: CorpoResolverFrameChatAskDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaResolverFrameChatAskDocumentoJobTranscribrothers:
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_ask_job_transcribrothers import (
+        ChatAskResolverFrameCapturaFalhouError,
+        ChatAskResolverFrameSemVideoError,
+        extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers,
+        mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers,
+        resolver_frame_chat_ask_instante_job_transcribrothers,
+    )
+
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        markdown = row.result_markdown or ""
+        steps = dict(row.steps_json or {})
+
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        payload, steps_atualizados = await resolver_frame_chat_ask_instante_job_transcribrothers(
+            diretorio_trabalho_job=work,
+            markdown=markdown,
+            steps_json=steps,
+            instante_segundos=body.instante_segundos,
+        )
+    except ChatAskResolverFrameSemVideoError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChatAskResolverFrameCapturaFalhouError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    if steps_atualizados is not None:
+        registros_novos = extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers(
+            steps,
+            steps_atualizados,
+        )
+        if registros_novos:
+            async with session_factory() as session:
+                row = await session.get(JobPipelineTranscribrothers, job_id)
+                if row is not None:
+                    row.steps_json = mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers(
+                        steps_json_recente=dict(row.steps_json or {}),
+                        registros_novos=registros_novos,
+                    )
+                    flag_modified(row, "steps_json")
+                    await session.commit()
+
+    return RespostaResolverFrameChatAskDocumentoJobTranscribrothers(**payload)
+
+
+@app.post(
+    "/api/jobs/{job_id}/chat-ask",
+    response_model=RespostaChatAskDocumentoJobTranscribrothers,
+)
+async def enviar_mensagem_chat_ask_documento_job_transcribrothers(
+    job_id: str,
+    body: CorpoChatAskDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaChatAskDocumentoJobTranscribrothers:
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_ask_job_transcribrothers import (
+        ChatAskSemFonteError,
+        extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers,
+        mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers,
+        orquestrar_turno_chat_ask_job_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
+        resolver_api_key_e_api_base_para_chamada_litellm,
+        resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm,
+    )
+
+    cfg = obter_configuracao()
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        markdown = row.result_markdown or ""
+        steps = dict(row.steps_json or {})
+        modelo_gravado = steps.get("litellm_model")
+        modelo_do_corpo = (body.litellm_model or "").strip()
+        modelo_solicitado = (
+            modelo_do_corpo
+            or (
+                modelo_gravado.strip()
+                if isinstance(modelo_gravado, str) and modelo_gravado.strip()
+                else None
+            )
+        )
+
+    modelo = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, modelo_solicitado)
+    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(cfg)
+    try:
+        httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        texto, citacoes, imagens, historico, steps_atualizados = (
+            await orquestrar_turno_chat_ask_job_transcribrothers(
+                diretorio_trabalho_job=work,
+                markdown=markdown,
+                steps_json=steps,
+                mensagem=body.mensagem,
+                modelo=modelo,
+                api_key=api_key,
+                api_base=api_base,
+                httpx_verify=httpx_verify,
+                resolver_imagens=True,
+                instante_anexo_segundos=body.instante_anexo_segundos,
+            )
+        )
+    except ChatAskSemFonteError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if steps_atualizados is not None:
+        registros_novos = extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers(
+            steps,
+            steps_atualizados,
+        )
+        if registros_novos:
+            async with session_factory() as session:
+                row = await session.get(JobPipelineTranscribrothers, job_id)
+                if row is not None:
+                    row.steps_json = mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers(
+                        steps_json_recente=dict(row.steps_json or {}),
+                        registros_novos=registros_novos,
+                    )
+                    flag_modified(row, "steps_json")
+                    await session.commit()
+    return RespostaChatAskDocumentoJobTranscribrothers(
+        texto=texto,
+        citacoes=citacoes,
+        imagens=imagens,
+        historico=[item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in historico],
+    )
+
+
+@app.post(
+    "/api/jobs/{job_id}/chat-agente",
+    response_model=RespostaChatAgenteDocumentoJobTranscribrothers,
+)
+async def enviar_mensagem_chat_agente_documento_job_transcribrothers(
+    job_id: str,
+    body: CorpoChatAgenteDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaChatAgenteDocumentoJobTranscribrothers:
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_agente_job_transcribrothers import (
+        orquestrar_turno_chat_agente_job_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_ask_job_transcribrothers import (
+        ChatAskSemFonteError,
+        extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers,
+        mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
+        resolver_api_key_e_api_base_para_chamada_litellm,
+        resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm,
+    )
+
+    cfg = obter_configuracao()
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        markdown = row.result_markdown or ""
+        steps = dict(row.steps_json or {})
+        modelo_gravado = steps.get("litellm_model")
+        modelo_do_corpo = (body.litellm_model or "").strip()
+        modelo_solicitado = (
+            modelo_do_corpo
+            or (
+                modelo_gravado.strip()
+                if isinstance(modelo_gravado, str) and modelo_gravado.strip()
+                else None
+            )
+        )
+
+    modelo = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, modelo_solicitado)
+    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(cfg)
+    try:
+        httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    try:
+        (
+            texto,
+            citacoes,
+            imagens,
+            proposta,
+            propostas,
+            historico,
+            steps_atualizados,
+            executar_proposta,
+        ) = (
+            await orquestrar_turno_chat_agente_job_transcribrothers(
+                diretorio_trabalho_job=work,
+                markdown=markdown,
+                steps_json=steps,
+                mensagem=body.mensagem,
+                modelo=modelo,
+                api_key=api_key,
+                api_base=api_base,
+                httpx_verify=httpx_verify,
+                instante_anexo_segundos=body.instante_anexo_segundos,
+                forcar_ferramenta=body.forcar_ferramenta,
+            )
+        )
+    except ChatAskSemFonteError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if steps_atualizados is not None:
+        registros_novos = extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers(
+            steps,
+            steps_atualizados,
+        )
+        if registros_novos:
+            async with session_factory() as session:
+                row = await session.get(JobPipelineTranscribrothers, job_id)
+                if row is not None:
+                    row.steps_json = mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers(
+                        steps_json_recente=dict(row.steps_json or {}),
+                        registros_novos=registros_novos,
+                    )
+                    flag_modified(row, "steps_json")
+                    await session.commit()
+    return RespostaChatAgenteDocumentoJobTranscribrothers(
+        texto=texto,
+        citacoes=citacoes,
+        imagens=imagens,
+        proposta_ferramenta=proposta,
+        propostas_ferramenta=propostas,
+        executar_proposta=executar_proposta,
+        historico=[item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in historico],
+    )
+
+
+def _cabecalhos_sse_chat_ask_agente_transcribrothers() -> dict[str, str]:
+    return {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+
+
+@app.post("/api/jobs/{job_id}/chat-ask-stream")
+async def enviar_mensagem_chat_ask_documento_job_em_stream_transcribrothers(
+    job_id: str,
+    body: CorpoChatAskDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> StreamingResponse:
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_ask_job_transcribrothers import (
+        extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers,
+        mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers,
+        orquestrar_turno_chat_ask_job_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
+        resolver_api_key_e_api_base_para_chamada_litellm,
+        resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm,
+    )
+    from transcribrothers_backend.modulo_sse_turno_chat_ask_agente_documento_transcribrothers import (
+        iterar_linhas_sse_turno_chat_ask_agente_transcribrothers,
+    )
+
+    cfg = obter_configuracao()
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        markdown = row.result_markdown or ""
+        steps = dict(row.steps_json or {})
+        modelo_gravado = steps.get("litellm_model")
+        modelo_do_corpo = (body.litellm_model or "").strip()
+        modelo_solicitado = (
+            modelo_do_corpo
+            or (
+                modelo_gravado.strip()
+                if isinstance(modelo_gravado, str) and modelo_gravado.strip()
+                else None
+            )
+        )
+
+    modelo = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, modelo_solicitado)
+    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(cfg)
+    try:
+        httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    work = _diretorio_trabalho_job(data_dir, job_id)
+
+    async def _rodar(emitir):
+        texto, citacoes, imagens, historico, steps_atualizados = (
+            await orquestrar_turno_chat_ask_job_transcribrothers(
+                diretorio_trabalho_job=work,
+                markdown=markdown,
+                steps_json=steps,
+                mensagem=body.mensagem,
+                modelo=modelo,
+                api_key=api_key,
+                api_base=api_base,
+                httpx_verify=httpx_verify,
+                resolver_imagens=True,
+                instante_anexo_segundos=body.instante_anexo_segundos,
+                emitir_delta_texto=emitir,
+            )
+        )
+        if steps_atualizados is not None:
+            registros_novos = extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers(
+                steps,
+                steps_atualizados,
+            )
+            if registros_novos:
+                async with session_factory() as session:
+                    row_atual = await session.get(JobPipelineTranscribrothers, job_id)
+                    if row_atual is not None:
+                        row_atual.steps_json = mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers(
+                            steps_json_recente=dict(row_atual.steps_json or {}),
+                            registros_novos=registros_novos,
+                        )
+                        flag_modified(row_atual, "steps_json")
+                        await session.commit()
+        return {
+            "texto": texto,
+            "citacoes": citacoes,
+            "imagens": imagens,
+            "historico": [
+                item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in historico
+            ],
+        }
+
+    return StreamingResponse(
+        iterar_linhas_sse_turno_chat_ask_agente_transcribrothers(_rodar),
+        media_type="text/event-stream",
+        headers=_cabecalhos_sse_chat_ask_agente_transcribrothers(),
+    )
+
+
+@app.post("/api/jobs/{job_id}/chat-agente-stream")
+async def enviar_mensagem_chat_agente_documento_job_em_stream_transcribrothers(
+    job_id: str,
+    body: CorpoChatAgenteDocumentoJobTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> StreamingResponse:
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_agente_job_transcribrothers import (
+        orquestrar_turno_chat_agente_job_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_orquestrar_turno_chat_ask_job_transcribrothers import (
+        extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers,
+        mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_persistencia_historico_chat_ask_agente_documento_job_transcribrothers import (
+        item_historico_chat_ask_agente_para_dict_transcribrothers,
+    )
+    from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
+        resolver_api_key_e_api_base_para_chamada_litellm,
+        resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm,
+    )
+    from transcribrothers_backend.modulo_sse_turno_chat_ask_agente_documento_transcribrothers import (
+        iterar_linhas_sse_turno_chat_ask_agente_transcribrothers,
+    )
+
+    cfg = obter_configuracao()
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        markdown = row.result_markdown or ""
+        steps = dict(row.steps_json or {})
+        modelo_gravado = steps.get("litellm_model")
+        modelo_do_corpo = (body.litellm_model or "").strip()
+        modelo_solicitado = (
+            modelo_do_corpo
+            or (
+                modelo_gravado.strip()
+                if isinstance(modelo_gravado, str) and modelo_gravado.strip()
+                else None
+            )
+        )
+
+    modelo = _resolver_modelo_litellm_para_job_ou_erro_http_400(cfg, modelo_solicitado)
+    api_key, api_base = resolver_api_key_e_api_base_para_chamada_litellm(cfg)
+    try:
+        httpx_verify = resolver_parametro_httpx_verify_ssl_para_chamadas_ao_proxy_litellm(cfg)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    work = _diretorio_trabalho_job(data_dir, job_id)
+
+    async def _rodar(emitir):
+        (
+            texto,
+            citacoes,
+            imagens,
+            proposta,
+            propostas,
+            historico,
+            steps_atualizados,
+            executar_proposta,
+        ) = await orquestrar_turno_chat_agente_job_transcribrothers(
+            diretorio_trabalho_job=work,
+            markdown=markdown,
+            steps_json=steps,
+            mensagem=body.mensagem,
+            modelo=modelo,
+            api_key=api_key,
+            api_base=api_base,
+            httpx_verify=httpx_verify,
+            instante_anexo_segundos=body.instante_anexo_segundos,
+            forcar_ferramenta=body.forcar_ferramenta,
+            emitir_delta_texto=emitir,
+        )
+        if steps_atualizados is not None:
+            registros_novos = extrair_registros_frames_manuais_acrescentados_na_captura_chat_ask_transcribrothers(
+                steps,
+                steps_atualizados,
+            )
+            if registros_novos:
+                async with session_factory() as session:
+                    row_atual = await session.get(JobPipelineTranscribrothers, job_id)
+                    if row_atual is not None:
+                        row_atual.steps_json = mesclar_somente_frames_manuais_novos_no_steps_json_recente_transcribrothers(
+                            steps_json_recente=dict(row_atual.steps_json or {}),
+                            registros_novos=registros_novos,
+                        )
+                        flag_modified(row_atual, "steps_json")
+                        await session.commit()
+        return {
+            "texto": texto,
+            "citacoes": citacoes,
+            "imagens": imagens,
+            "proposta_ferramenta": proposta,
+            "propostas_ferramenta": propostas,
+            "executar_proposta": executar_proposta,
+            "historico": [
+                item_historico_chat_ask_agente_para_dict_transcribrothers(i) for i in historico
+            ],
+        }
+
+    return StreamingResponse(
+        iterar_linhas_sse_turno_chat_ask_agente_transcribrothers(_rodar),
+        media_type="text/event-stream",
+        headers=_cabecalhos_sse_chat_ask_agente_transcribrothers(),
+    )
 
 
 @app.get("/api/health")

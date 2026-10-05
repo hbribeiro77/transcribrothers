@@ -11,6 +11,8 @@ export type RespostaGerarNarracaoTtsMarkdownJobApiTranscribrothers = {
 export function modeloLitellmPareceTtsPeloSlugTranscribrothers(modelo: string): boolean {
   const s = (modelo || "").trim().toLowerCase();
   if (!s) return false;
+  if (s === "eleven_v4") return true;
+  if (s.startsWith("eleven_")) return false;
   return s.includes("-tts") || s.endsWith("/tts") || s.includes("/tts-");
 }
 
@@ -48,6 +50,9 @@ export function rotuloCurtoModeloTtsParaUiTranscribrothers(modelo: string): stri
   }
   if (/2\.5-flash.*tts/i.test(base) || /flash-preview-tts/i.test(base)) {
     return `${base} (Flash)`;
+  }
+  if (s.toLowerCase() === "eleven_v4") {
+    return "eleven_v4 (ElevenLabs)";
   }
   return base;
 }

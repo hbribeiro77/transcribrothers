@@ -27,6 +27,19 @@ export function IconeFerramentaAnotacaoImagemTutorialTranscribrothers({
           />
         </SvgIconeFerramentaAnotacaoTranscribrothers>
       );
+    case "recortar":
+      return (
+        <SvgIconeFerramentaAnotacaoTranscribrothers>
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 3v15h15M3 6h15v15"
+          />
+        </SvgIconeFerramentaAnotacaoTranscribrothers>
+      );
     case "destaque":
       return (
         <SvgIconeFerramentaAnotacaoTranscribrothers>
@@ -122,6 +135,21 @@ export function IconeExcluirSelecaoAnotacaoImagemTutorialTranscribrothers() {
   );
 }
 
+export function IconeCopiarImagemEditadaAnotacaoTutorialTranscribrothers() {
+  return (
+    <svg className="tb-icone-ferramenta-anotacao-imagem" viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 8V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-3M5 8h9a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2z"
+      />
+    </svg>
+  );
+}
+
 export function IconeAjustarAreaVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers() {
   return (
     <svg className="tb-icone-ferramenta-anotacao-imagem" viewBox="0 0 24 24" width="18" height="18" aria-hidden>
@@ -142,6 +170,7 @@ export function obterRotuloAcessivelFerramentaAnotacaoImagemTutorialTranscribrot
 ): string {
   const rotulos: Record<FerramentaAnotacaoImagemTutorialTranscribrothers, string> = {
     selecionar: "Selecionar",
+    recortar: "Recortar",
     destaque: "Destaque",
     retangulo: "Retângulo",
     elipse: "Elipse",
