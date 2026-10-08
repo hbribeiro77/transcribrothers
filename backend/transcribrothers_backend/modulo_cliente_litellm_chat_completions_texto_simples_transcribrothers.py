@@ -7,6 +7,9 @@ import httpx
 from transcribrothers_backend.modulo_cliente_litellm_geracao_tutorial_markdown import (
     extrair_texto_resposta_message_openai_compat_transcribrothers,
 )
+from transcribrothers_backend.modulo_resolver_texto_chat_litellm_quando_content_vazio_com_tool_calls_transcribrothers import (
+    resolver_texto_chat_litellm_content_ou_tool_calls_transcribrothers,
+)
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1,
 )
@@ -28,6 +31,8 @@ async def litellm_chat_completions_texto_simples_transcribrothers(
     mensagens: list[dict[str, str]],
     temperature: float = 0.25,
     usar_response_format_json_object: bool = False,
+    tools: list[dict[str, Any]] | None = None,
+    saida_tool_calls: list[dict[str, Any]] | None = None,
     httpx_timeout_connect_segundos: float = 120.0,
     httpx_timeout_read_segundos: float = 7200.0,
     steps_para_log_decisoes_ia: dict[str, Any] | None = None,
@@ -55,6 +60,8 @@ async def litellm_chat_completions_texto_simples_transcribrothers(
         "messages": mensagens,
         "temperature": float(temperature),
     }
+    if tools:
+        corpo["tools"] = tools
     headers = {
         "Authorization": f"Bearer {chave}",
         "Content-Type": "application/json",
@@ -104,14 +111,19 @@ async def litellm_chat_completions_texto_simples_transcribrothers(
         body = http.json()
         try:
             choice = body["choices"][0]["message"]
+            if saida_tool_calls is not None:
+                saida_tool_calls.clear()
+                nativas = choice.get("tool_calls") if isinstance(choice, dict) else None
+                if isinstance(nativas, list):
+                    saida_tool_calls.extend(item for item in nativas if isinstance(item, dict))
             conteudo = extrair_texto_resposta_message_openai_compat_transcribrothers(choice)
         except (KeyError, IndexError, TypeError) as exc:
             _registrar_log(sucesso=False, resumo="Resposta inesperada do gateway", detalhe=repr(body)[:2000])
             raise RuntimeError(f"Resposta inesperada do gateway no chat: {body!r}") from exc
-        if not isinstance(conteudo, str) or not conteudo.strip():
-            _registrar_log(sucesso=False, resumo="Conteúdo vazio devolvido pelo modelo")
-            raise RuntimeError("O modelo devolveu conteúdo vazio no chat.")
-        texto = conteudo.strip()
+        texto = resolver_texto_chat_litellm_content_ou_tool_calls_transcribrothers(
+            conteudo if isinstance(conteudo, str) else "",
+            saida_tool_calls,
+        )
         _registrar_log(
             sucesso=True,
             resumo=resumir_texto_resposta_ia_para_log_decisoes_pipeline_transcribrothers(texto),

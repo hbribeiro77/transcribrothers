@@ -392,6 +392,12 @@ from transcribrothers_backend.modulo_captura_frame_manual_video_tutorial_job_tra
     mesclar_registro_frame_manual_capturado_no_steps_json_transcribrothers,
     proximo_indice_nome_arquivo_frame_manual_video_tutorial_transcribrothers,
 )
+from transcribrothers_backend.modulo_previsualizar_e_promover_frames_navegacao_video_tutorial_transcribrothers import (
+    capturar_frames_previsualizacao_navegacao_video_tutorial_transcribrothers,
+    descartar_arquivos_previsualizacao_navegacao_frame_tutorial_transcribrothers,
+    diretorio_previsualizacao_frames_navegacao_tutorial_transcribrothers,
+    promover_frame_previsualizacao_para_assets_tutorial_transcribrothers,
+)
 from transcribrothers_backend.modulo_salvar_imagem_anexo_contexto_fab_para_assets_markdown_tutorial_job_transcribrothers import (
     salvar_imagem_anexo_contexto_fab_para_assets_markdown_tutorial_job_transcribrothers,
 )
@@ -4087,7 +4093,13 @@ async def pedir_regeneracao_markdown_de_uma_secao_tutorial_transcribrothers(
         for item in (body.propostas or [])
         if isinstance(item, dict) and (item.get("nome") or "").strip() == "edicao_parcial"
     ]
-    if propostas_lote:
+    from transcribrothers_backend.modulo_aplicar_lote_edicoes_parciais_chat_agente_documento_transcribrothers import (
+        lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers,
+    )
+
+    if propostas_lote and not lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers(
+        propostas_lote
+    ):
         async with session_factory() as session:
             row = await session.get(JobPipelineTranscribrothers, job_id)
             if row is None:
@@ -4756,6 +4768,182 @@ async def capturar_frame_manual_do_video_para_assets_e_snippet_markdown(
             timestamp_segundos_efetivo=t_efetivo,
             job=_job_para_resposta(row),
         )
+
+
+class CorpoPrevisualizarFramesNavegacaoVideoTutorialTranscribrothers(BaseModel):
+    timestamps_segundos: list[float] = Field(..., min_length=1, max_length=12)
+
+
+class ItemPrevisualizacaoFrameNavegacaoVideoTutorialTranscribrothers(BaseModel):
+    timestamp_segundos_solicitado: float
+    timestamp_segundos_efetivo: float
+    nome_arquivo: str
+    url_preview: str
+
+
+class RespostaPrevisualizarFramesNavegacaoVideoTutorialTranscribrothers(BaseModel):
+    itens: list[ItemPrevisualizacaoFrameNavegacaoVideoTutorialTranscribrothers]
+
+
+class CorpoPromoverFramePrevisualizacaoVideoTutorialTranscribrothers(BaseModel):
+    nome_arquivo_preview: str = Field(..., min_length=1, max_length=240)
+    timestamp_segundos: float = Field(..., ge=0, le=86400 * 48)
+
+
+class RespostaPromoverFramePrevisualizacaoVideoTutorialTranscribrothers(BaseModel):
+    nome_arquivo: str
+    caminho_relativo: str
+    timestamp_segundos: float
+    job: RespostaJobTranscribrothers
+
+
+class CorpoDescartarPrevisualizacaoFramesNavegacaoVideoTutorialTranscribrothers(BaseModel):
+    nomes_para_apagar: list[str] = Field(default_factory=list)
+    nomes_protegidos: list[str] = Field(default_factory=list)
+
+
+def _url_previsualizacao_frame_navegacao_tutorial_transcribrothers(job_id: str, nome_arquivo: str) -> str:
+    return f"/api/jobs/{job_id}/previsualizar-frames-video-tutorial/{nome_arquivo}"
+
+
+@app.post("/api/jobs/{job_id}/previsualizar-frames-video-tutorial")
+async def previsualizar_frames_navegacao_video_tutorial_sem_gravar_assets(
+    job_id: str,
+    corpo: CorpoPrevisualizarFramesNavegacaoVideoTutorialTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaPrevisualizarFramesNavegacaoVideoTutorialTranscribrothers:
+    """Extrai PNGs só para olhar na modal; não copia para assets nem altera o Markdown."""
+    cfg = obter_configuracao()
+    largura = (
+        int(cfg.tutorial_frame_max_width_px) if cfg.tutorial_frame_max_width_px > 0 else None
+    )
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        video = _localizar_arquivo_video_entrada_no_diretorio_job(work)
+        if video is None or not video.is_file():
+            raise HTTPException(
+                status_code=409,
+                detail="Vídeo do job ainda não está disponível para captura de frame.",
+            )
+        try:
+            itens_brutos = await capturar_frames_previsualizacao_navegacao_video_tutorial_transcribrothers(
+                caminho_video=video,
+                diretorio_trabalho_job=work,
+                timestamps_segundos=list(corpo.timestamps_segundos),
+                largura_maxima_saida_pixeis=largura,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha ao pré-visualizar frames do vídeo: {exc}",
+            ) from exc
+    itens = [
+        ItemPrevisualizacaoFrameNavegacaoVideoTutorialTranscribrothers(
+            timestamp_segundos_solicitado=float(item["timestamp_segundos_solicitado"]),
+            timestamp_segundos_efetivo=float(item["timestamp_segundos_efetivo"]),
+            nome_arquivo=str(item["nome_arquivo"]),
+            url_preview=_url_previsualizacao_frame_navegacao_tutorial_transcribrothers(
+                job_id, str(item["nome_arquivo"])
+            ),
+        )
+        for item in itens_brutos
+    ]
+    return RespostaPrevisualizarFramesNavegacaoVideoTutorialTranscribrothers(itens=itens)
+
+
+@app.get("/api/jobs/{job_id}/previsualizar-frames-video-tutorial/{nome_arquivo}")
+async def servir_png_previsualizacao_frame_navegacao_video_tutorial(
+    job_id: str,
+    nome_arquivo: str,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> FileResponse:
+    if not _ASSET_NAME_OK.match(nome_arquivo) or ".." in nome_arquivo or "/" in nome_arquivo:
+        raise HTTPException(status_code=400, detail="Nome de arquivo inválido.")
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+    caminho = diretorio_previsualizacao_frames_navegacao_tutorial_transcribrothers(
+        _diretorio_trabalho_job(data_dir, job_id)
+    ) / nome_arquivo
+    if not caminho.is_file():
+        raise HTTPException(status_code=404, detail="Prévia não encontrada.")
+    return FileResponse(str(caminho), media_type="image/png")
+
+
+@app.post("/api/jobs/{job_id}/promover-frame-previsualizacao-para-assets-video-tutorial")
+async def promover_frame_previsualizacao_navegacao_para_assets_do_job(
+    job_id: str,
+    corpo: CorpoPromoverFramePrevisualizacaoVideoTutorialTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> RespostaPromoverFramePrevisualizacaoVideoTutorialTranscribrothers:
+    """Copia a prévia escolhida para assets. Não apaga a PNG que já está no documento."""
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        indice = proximo_indice_nome_arquivo_frame_manual_video_tutorial_transcribrothers(row.steps_json)
+        try:
+            nome_arquivo, caminho_rel = promover_frame_previsualizacao_para_assets_tutorial_transcribrothers(
+                diretorio_trabalho_job=work,
+                nome_arquivo_preview=corpo.nome_arquivo_preview,
+                indice_nome_arquivo_asset=indice,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha ao promover a prévia para assets: {exc}",
+            ) from exc
+        row.steps_json = mesclar_registro_frame_manual_capturado_no_steps_json_transcribrothers(
+            dict(row.steps_json or {}),
+            timestamp_segundos_solicitado=corpo.timestamp_segundos,
+            timestamp_segundos_efetivo=corpo.timestamp_segundos,
+            nome_arquivo=nome_arquivo,
+            caminho_relativo=caminho_rel,
+            origem="promover_previsualizacao_navegacao_frame",
+        )
+        await session.commit()
+        await session.refresh(row)
+        return RespostaPromoverFramePrevisualizacaoVideoTutorialTranscribrothers(
+            nome_arquivo=nome_arquivo,
+            caminho_relativo=caminho_rel,
+            timestamp_segundos=corpo.timestamp_segundos,
+            job=_job_para_resposta(row),
+        )
+
+
+@app.delete("/api/jobs/{job_id}/previsualizar-frames-video-tutorial")
+async def descartar_previsualizacao_frames_navegacao_video_tutorial(
+    job_id: str,
+    corpo: CorpoDescartarPrevisualizacaoFramesNavegacaoVideoTutorialTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, bool]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        work = _diretorio_trabalho_job(data_dir, job_id)
+        nomes = list(corpo.nomes_para_apagar)
+        if not nomes:
+            preview_dir = diretorio_previsualizacao_frames_navegacao_tutorial_transcribrothers(work)
+            if preview_dir.is_dir():
+                nomes = [p.name for p in preview_dir.glob("*.png")]
+        descartar_arquivos_previsualizacao_navegacao_frame_tutorial_transcribrothers(
+            diretorio_trabalho_job=work,
+            nomes_para_apagar=nomes,
+            nomes_protegidos=list(corpo.nomes_protegidos),
+        )
+    return {"ok": True}
 
 
 class RespostaColarImagemClipboardMarkdownTutorialTranscribrothers(BaseModel):

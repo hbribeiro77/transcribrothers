@@ -14,8 +14,15 @@ from transcribrothers_backend.modulo_cliente_litellm_chat_completions_texto_simp
 from transcribrothers_backend.modulo_coletar_texto_chat_litellm_com_deltas_visiveis_transcribrothers import (
     coletar_texto_chat_litellm_com_deltas_visiveis_transcribrothers,
 )
+from transcribrothers_backend.modulo_acumular_tool_calls_delta_sse_chat_completions_openai_transcribrothers import (
+    acumular_tool_calls_delta_sse_chat_completions_openai_transcribrothers,
+    extrair_delta_tool_calls_de_linha_sse_chat_completions_transcribrothers,
+)
 from transcribrothers_backend.modulo_resolver_credenciais_e_modelo_litellm_transcribrothers import (
     normalizar_endpoint_litellm_para_base_url_cliente_http_openai_v1,
+)
+from transcribrothers_backend.modulo_resolver_texto_chat_litellm_quando_content_vazio_com_tool_calls_transcribrothers import (
+    resolver_texto_chat_litellm_content_ou_tool_calls_transcribrothers,
 )
 from transcribrothers_backend.modulo_speech_to_text_litellm_multimodal_audio_json_segmentos import (
     _http_indica_rejeicao_response_format_json_object,
@@ -41,6 +48,18 @@ def extrair_delta_content_de_linha_sse_chat_completions_transcribrothers(linha: 
         return ""
 
 
+def _consumir_linha_sse_content_e_tool_calls_transcribrothers(
+    linha: str,
+    acumulador_tool_calls: dict[int, dict[str, Any]] | None,
+) -> str:
+    if acumulador_tool_calls is not None:
+        acumular_tool_calls_delta_sse_chat_completions_openai_transcribrothers(
+            acumulador_tool_calls,
+            extrair_delta_tool_calls_de_linha_sse_chat_completions_transcribrothers(linha),
+        )
+    return extrair_delta_content_de_linha_sse_chat_completions_transcribrothers(linha)
+
+
 async def litellm_chat_completions_texto_simples_em_stream_transcribrothers(
     *,
     modelo: str,
@@ -52,6 +71,8 @@ async def litellm_chat_completions_texto_simples_em_stream_transcribrothers(
     usar_response_format_json_object: bool = False,
     httpx_timeout_connect_segundos: float = 120.0,
     httpx_timeout_read_segundos: float = 7200.0,
+    tools: list[dict[str, Any]] | None = None,
+    acumulador_tool_calls: dict[int, dict[str, Any]] | None = None,
 ) -> AsyncIterator[str]:
     chave = (api_key or "").strip()
     if not chave:
@@ -72,6 +93,8 @@ async def litellm_chat_completions_texto_simples_em_stream_transcribrothers(
     }
     if usar_response_format_json_object:
         corpo["response_format"] = {"type": "json_object"}
+    if tools:
+        corpo["tools"] = tools
     headers = {
         "Authorization": f"Bearer {chave}",
         "Content-Type": "application/json",
@@ -107,8 +130,9 @@ async def litellm_chat_completions_texto_simples_em_stream_transcribrothers(
                                 f"URL: {url_chat}. Trecho: {trecho_retry}"
                             )
                         async for linha in http_retry.aiter_lines():
-                            pedaco = extrair_delta_content_de_linha_sse_chat_completions_transcribrothers(
-                                linha
+                            pedaco = _consumir_linha_sse_content_e_tool_calls_transcribrothers(
+                                linha,
+                                acumulador_tool_calls,
                             )
                             if pedaco:
                                 yield pedaco
@@ -120,7 +144,10 @@ async def litellm_chat_completions_texto_simples_em_stream_transcribrothers(
                     f"URL: {url_chat}. Trecho: {trecho}"
                 )
             async for linha in http.aiter_lines():
-                pedaco = extrair_delta_content_de_linha_sse_chat_completions_transcribrothers(linha)
+                pedaco = _consumir_linha_sse_content_e_tool_calls_transcribrothers(
+                    linha,
+                    acumulador_tool_calls,
+                )
                 if pedaco:
                     yield pedaco
 
@@ -134,7 +161,15 @@ async def obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
     mensagens: list[dict[str, str]],
     temperature: float,
     emitir_delta_texto: Callable[[str], Awaitable[None]] | None,
+    tools: list[dict[str, Any]] | None = None,
+    saida_tool_calls: list[dict[str, Any]] | None = None,
 ) -> str:
+    def _despejar_tool_calls(acumulado: dict[int, dict[str, Any]]) -> None:
+        if saida_tool_calls is None:
+            return
+        saida_tool_calls.clear()
+        saida_tool_calls.extend(acumulado[indice] for indice in sorted(acumulado))
+
     if emitir_delta_texto is None:
         return await litellm_chat_completions_texto_simples_transcribrothers(
             modelo=modelo,
@@ -144,7 +179,10 @@ async def obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
             mensagens=mensagens,
             temperature=temperature,
             usar_response_format_json_object=True,
+            tools=tools,
+            saida_tool_calls=saida_tool_calls,
         )
+    acumulador: dict[int, dict[str, Any]] = {}
     try:
         bruto = await coletar_texto_chat_litellm_com_deltas_visiveis_transcribrothers(
             litellm_chat_completions_texto_simples_em_stream_transcribrothers(
@@ -155,11 +193,26 @@ async def obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
                 mensagens=mensagens,
                 temperature=temperature,
                 usar_response_format_json_object=True,
+                tools=tools,
+                acumulador_tool_calls=acumulador,
             ),
             emitir_delta_texto=emitir_delta_texto,
         )
+        _despejar_tool_calls(acumulador)
+        nativas = [acumulador[indice] for indice in sorted(acumulador)]
         if (bruto or "").strip():
             return bruto
+        if nativas:
+            resolvido = resolver_texto_chat_litellm_content_ou_tool_calls_transcribrothers("", nativas)
+            if emitir_delta_texto is not None:
+                from transcribrothers_backend.modulo_extrair_texto_visivel_de_json_parcial_resposta_chat_llm_transcribrothers import (
+                    extrair_texto_visivel_de_json_parcial_resposta_chat_llm_transcribrothers,
+                )
+
+                visivel = extrair_texto_visivel_de_json_parcial_resposta_chat_llm_transcribrothers(resolvido)
+                if visivel:
+                    await emitir_delta_texto(visivel)
+            return resolvido
     except Exception:
         pass
     return await litellm_chat_completions_texto_simples_transcribrothers(
@@ -170,4 +223,6 @@ async def obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
         mensagens=mensagens,
         temperature=temperature,
         usar_response_format_json_object=True,
+        tools=tools,
+        saida_tool_calls=saida_tool_calls,
     )

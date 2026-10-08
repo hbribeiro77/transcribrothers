@@ -25,3 +25,19 @@ def test_prompt_agente_pede_atalho_de_tempo_no_item_correspondente() -> None:
     prompt = montar_prompt_sistema_chat_agente_ferramentas_documento_job_transcribrothers()
     assert "[12:40](?t=" in prompt
     assert "junto do item" in prompt.lower() or "no item" in prompt.lower()
+
+
+def test_prompt_agente_exige_estado_e_tools_neste_turno() -> None:
+    prompt = montar_prompt_sistema_chat_agente_ferramentas_documento_job_transcribrothers()
+    assert '"estado"' in prompt
+    assert "rascunho" in prompt
+    assert "aplicando" in prompt
+    assert "neste turno" in prompt.lower()
+    assert "seção por seção" in prompt.lower()
+
+
+def test_prompt_agente_manda_sem_video_para_documento_sem_depender_do_video() -> None:
+    prompt = montar_prompt_sistema_chat_agente_ferramentas_documento_job_transcribrothers()
+    assert "sem_video" in prompt
+    assert "reescrever_secao" in prompt
+    assert "timestamp" in prompt.lower() or "[mm:ss]" in prompt

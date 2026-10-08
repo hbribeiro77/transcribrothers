@@ -129,6 +129,10 @@ import { ComponenteImagemMarkdownTutorialClicavelAbrirModalAnotacaoTranscribroth
 import { ComponenteDialogoConfirmacaoAcaoDestrutivaOverlayTranscribrothers } from "./componente_dialogo_confirmacao_acao_destrutiva_overlay_transcribrothers.tsx";
 import { removerReferenciaImagemAssetDoMarkdownTutorialTranscribrothers } from "./modulo_util_remover_referencia_imagem_asset_markdown_tutorial_transcribrothers.ts";
 import { resolverNomeArquivoPngOriginalAPartirDeReferenciaAssetsTranscribrothers } from "./modulo_util_resolver_nome_arquivo_png_original_a_partir_referencia_assets_transcribrothers.ts";
+import {
+  instanteSegundosDaImagemAssetNoMarkdownTutorialTranscribrothers,
+  substituirReferenciaImagemAssetELinkTemporalNoMarkdownTutorialTranscribrothers,
+} from "./modulo_util_substituir_referencia_imagem_asset_e_link_temporal_markdown_tutorial_transcribrothers.ts";
 import { ComponenteParagrafoMarkdownReactDesembrulharQuandoFilhoUnicoEImagemTranscribrothers } from "./componente_paragrafo_markdown_react_desembrulhar_quando_filho_unico_e_imagem_transcribrothers.tsx";
 import { mesclarComponentsReactMarkdownComAncorasLinhaFonteDocumentoTranscribrothers } from "./modulo_util_mesclar_components_react_markdown_com_data_linha_inicio_ast_transcribrothers.tsx";
 import { listarAncorasBlocoMarkdownTutorialEmOrdemDocumentoTranscribrothers } from "./modulo_util_bloco_ancora_linha_markdown_sincronizacao_preview_editor_transcribrothers.ts";
@@ -142,8 +146,8 @@ import { resolverNomeArquivoAssetPngParaExibicaoNoTutorialTranscribrothers } fro
 import {
   capturarFrameManualVideoTutorialJobApiTranscribrothers,
   copiarTextoParaAreaTransferenciaNavegadorTranscribrothers,
-  inserirTextoNaPosicaoCursorTextareaMarkdownTranscribrothers,
 } from "./modulo_api_captura_frame_manual_video_tutorial_inserir_markdown_transcribrothers.ts";
+import { resolverAcaoDepoisDeCopiarSnippetInserirImagemDaModalAnotacaoTranscribrothers } from "./modulo_util_resolver_acao_depois_de_copiar_snippet_inserir_imagem_anotacao_abrir_editor_markdown_transcribrothers.ts";
 import { colarImagemClipboardMarkdownTutorialJobApiTranscribrothers } from "./modulo_api_colar_imagem_clipboard_markdown_tutorial_assets_job_transcribrothers.ts";
 import {
   elementoAtivoEstaEmCampoDigitavelParaColarTextoTranscribrothers,
@@ -212,7 +216,9 @@ import {
   TEXTO_MENSAGEM_AGENTE_DESCARTOU_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS,
   chatAskAgenteDeveMostrarSpinnerPreparandoPreviaTranscribrothers,
   composerChatAskAgenteDeveFicarTravadoPorPreviaDocumentoTranscribrothers,
+  preparandoPreviaDocumentoChatAgenteDeveDestravarPorEstouroDeTempoTranscribrothers,
 } from "./modulo_util_feedback_previa_documento_no_chat_ask_agente_transcribrothers.ts";
+import { mesclarHistoricoServidorPreservandoMensagensLocaisEmVooChatAskAgenteTranscribrothers } from "./modulo_util_mesclar_historico_servidor_preservando_mensagens_locais_em_voo_chat_ask_agente_transcribrothers.ts";
 import {
   anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers,
   buscarHistoricoChatAskAgenteDocumentoJobApiTranscribrothers,
@@ -246,8 +252,10 @@ import {
   caminhosRelativosDeImagensHistoricoChatAskTranscribrothers,
   mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers,
   mesclarCaminhosImagensPropostaChatAgenteDocumentoTranscribrothers,
+  modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers,
   resolverPropostasEdicaoParcialParaAplicarChatAgenteTranscribrothers,
   turnoAgenteGerandoDevePersistirEstadoFalhouSemPreviaTranscribrothers,
+  type ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers,
   type PropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
 } from "./modulo_tipos_item_historico_chat_ask_agente_documento_job_transcribrothers.ts";
 import {
@@ -1137,6 +1145,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const [confirmacaoLimparChatAskAberta, setConfirmacaoLimparChatAskAberta] = useState(false);
   const [processandoLimparChatAskDocumento, setProcessandoLimparChatAskDocumento] = useState(false);
   const epochCargaHistoricoChatAskAgenteRef = useRef(0);
+  const epochEnvioMensagemChatAskAgenteRef = useRef(0);
   const enviandoMensagemChatAskDocumentoRef = useRef(false);
   const aplicarPropostaFerramentaChatAgenteRef = useRef<
     | ((
@@ -1502,7 +1511,11 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   );
 
   const aoAlternarVersaoExibicaoImagemTutorial = useCallback(
-    async (nomeArquivoOriginal: string, versao: "original" | "anotado") => {
+    async (
+      nomeArquivoOriginal: string,
+      versao: "original" | "anotado",
+      opcoes?: { silencioso?: boolean },
+    ) => {
       if (!job?.id) return;
       setProcessandoAnotacaoImagemTutorial(true);
       setErro(null);
@@ -1513,11 +1526,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           versao,
         );
         setJob(j);
-        pushToast(versao === "anotado" ? "Exibindo versão anotada." : "Exibindo captura original.", "success");
+        if (!opcoes?.silencioso) {
+          pushToast(versao === "anotado" ? "Exibindo versão anotada." : "Exibindo captura original.", "success");
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setErro(msg);
         pushToast(msg, "error");
+        throw e;
       } finally {
         setProcessandoAnotacaoImagemTutorial(false);
       }
@@ -1553,7 +1569,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   );
 
   const aoSincronizarMarkdownComImagemAnotada = useCallback(
-    async (nomeArquivoOriginal: string) => {
+    async (nomeArquivoOriginal: string, opcoes?: { silencioso?: boolean }) => {
       if (!job?.id) return;
       setProcessandoAnotacaoImagemTutorial(true);
       setErro(null);
@@ -1563,11 +1579,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           nomeArquivoOriginal,
         );
         setJob(j);
-        pushToast("Markdown atualizado para referenciar a imagem anotada.", "success");
+        if (!opcoes?.silencioso) {
+          pushToast("Markdown atualizado para referenciar a imagem anotada.", "success");
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setErro(msg);
         pushToast(msg, "error");
+        throw e;
       } finally {
         setProcessandoAnotacaoImagemTutorial(false);
       }
@@ -2554,6 +2573,45 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     pushToast,
   ]);
 
+  const aoUsarFrameCapturadoNoDocumentoMarkdownTranscribrothers = useCallback(
+    async (args: {
+      nomeArquivoAnterior: string;
+      nomeArquivoNovo: string;
+      instanteSegundos: number;
+    }) => {
+      if (!job?.id) return;
+      const markdownFonte = modoEdicaoMarkdownTutorialAtivo
+        ? markdownTutorialRascunhoEdicao
+        : (job.result_markdown ?? "");
+      const novoMarkdown = substituirReferenciaImagemAssetELinkTemporalNoMarkdownTutorialTranscribrothers({
+        markdown: markdownFonte,
+        nomeArquivoAnterior: resolverNomeArquivoPngOriginalAPartirDeReferenciaAssetsTranscribrothers(
+          args.nomeArquivoAnterior,
+        ),
+        nomeArquivoNovo: args.nomeArquivoNovo,
+        instanteSegundos: args.instanteSegundos,
+      });
+      if (novoMarkdown === markdownFonte) {
+        pushToast("Não foi possível localizar esta imagem no Markdown para trocar o frame.", "info");
+        return;
+      }
+      if (modoEdicaoMarkdownTutorialAtivo) {
+        setMarkdownTutorialRascunhoEdicao(novoMarkdown);
+      } else {
+        const j2 = await patchResultMarkdownJobTranscribrothers(job.id, novoMarkdown);
+        setJob(j2);
+      }
+      setNomeArquivoImagemAnotacaoModalAberto(args.nomeArquivoNovo);
+      pushToast("O documento passou a usar este frame.", "success");
+    },
+    [
+      job,
+      modoEdicaoMarkdownTutorialAtivo,
+      markdownTutorialRascunhoEdicao,
+      pushToast,
+    ],
+  );
+
   const markdownComponents = useMemo(() => {
     return {
       p: ComponenteParagrafoMarkdownReactDesembrulharQuandoFilhoUnicoEImagemTranscribrothers,
@@ -3080,52 +3138,35 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       }
       const snippet = montarSnippetMarkdownImagemAssetTutorialTranscribrothers(nomeArquivoParaSnippet);
       const snippetUsaVersaoAnotada = nomeArquivoParaSnippet.toLowerCase().includes(".anotado.png");
+      const acao = resolverAcaoDepoisDeCopiarSnippetInserirImagemDaModalAnotacaoTranscribrothers({
+        snippetUsaVersaoAnotada,
+      });
       try {
         await copiarTextoParaAreaTransferenciaNavegadorTranscribrothers(snippet);
       } catch {
         pushToast("Não foi possível copiar para a área de transferência.", "error");
         return;
       }
-      setNomeArquivoImagemAnotacaoModalAberto(null);
-
-      if (modoEdicaoMarkdownTutorialAtivo && textareaMarkdownEdicaoTutorialRef.current) {
-        const { novoValor, novaPosicaoCursor } = inserirTextoNaPosicaoCursorTextareaMarkdownTranscribrothers(
-          textareaMarkdownEdicaoTutorialRef.current,
-          snippet,
-          markdownTutorialRascunhoEdicao,
-        );
-        setMarkdownTutorialRascunhoEdicao(novoValor);
-        requestAnimationFrame(() => {
-          const ta = textareaMarkdownEdicaoTutorialRef.current;
-          if (!ta) return;
-          ta.focus();
-          ta.setSelectionRange(novaPosicaoCursor, novaPosicaoCursor);
-        });
-        pushToast(
-          snippetUsaVersaoAnotada
-            ? "Imagem editada inserida no cursor. A captura original foi preservada nos assets."
-            : "Referência da imagem copiada e inserida no cursor do editor.",
-          "success",
-        );
-        return;
+      if (acao.deveFecharModalAnotacao) {
+        setNomeArquivoImagemAnotacaoModalAberto(null);
       }
-
-      setInsercaoMarkdownImagemAssetPendente({
-        snippetMarkdown: snippet,
-        nomeArquivoOriginal: nomeArquivoParaSnippet,
-      });
-      pushToast(
-        snippetUsaVersaoAnotada
-          ? "Imagem editada pronta. Clique na linha do tutorial para inserir. A captura original foi preservada nos assets."
-          : "Referência copiada. Passe o mouse no tutorial e clique na linha tracejada para inserir a imagem.",
-        "success",
-      );
+      cancelarModoInserirImagemAssetNoTutorialTranscribrothers();
+      if (acao.deveAbrirEditorMarkdownFocandoTextareaEsquerdo) {
+        if (!modoEdicaoMarkdownTutorialAtivo) {
+          setMarkdownTutorialRascunhoEdicao(job.result_markdown ?? "");
+          setModoEdicaoMarkdownTutorialAtivo(true);
+        }
+        window.setTimeout(() => {
+          textareaMarkdownEdicaoTutorialRef.current?.focus();
+        }, 0);
+      }
+      pushToast(acao.mensagemToastSucesso, "success");
     },
     [
+      cancelarModoInserirImagemAssetNoTutorialTranscribrothers,
       historicoVersaoTutorialSelecionadaId,
-      job?.id,
+      job,
       jobPermiteEdicaoManualMarkdownTutorial,
-      markdownTutorialRascunhoEdicao,
       modoEdicaoMarkdownTutorialAtivo,
       pushToast,
     ],
@@ -3489,6 +3530,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     setPreparandoPreviaDocumentoChatAgente(false);
     enviandoMensagemChatAskDocumentoRef.current = false;
     epochCargaHistoricoChatAskAgenteRef.current += 1;
+    epochEnvioMensagemChatAskAgenteRef.current += 1;
     setAnexosContextoFabProjetoEmBranco([]);
     setModalTextoAnexoContextoFabAberta(false);
     setMenuMaisConteudoFabAberto(false);
@@ -3694,6 +3736,19 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     !paginaVideoNarradoAberta &&
     !modoEdicaoMarkdownTutorialAtivo;
 
+  const aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers = useCallback(
+    (historico: ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers[]) => {
+      setMensagensChatAskAgenteDocumento((prev) =>
+        mesclarHistoricoServidorPreservandoMensagensLocaisEmVooChatAskAgenteTranscribrothers({
+          historicoServidor:
+            mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
+          mensagensLocais: prev,
+        }),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!painelRegeneracaoFabAberto || !chatAskAgenteDocumentoJobVisivel || !jobId) return;
     const epochNoInicio = epochCargaHistoricoChatAskAgenteRef.current;
@@ -3701,9 +3756,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     void buscarHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId)
       .then((itens) => {
         if (cancelado || epochNoInicio !== epochCargaHistoricoChatAskAgenteRef.current) return;
-        setMensagensChatAskAgenteDocumento(
-          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(itens),
-        );
+        aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(itens);
       })
       .catch((e) => {
         if (cancelado || epochNoInicio !== epochCargaHistoricoChatAskAgenteRef.current) return;
@@ -3712,7 +3765,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     return () => {
       cancelado = true;
     };
-  }, [painelRegeneracaoFabAberto, chatAskAgenteDocumentoJobVisivel, jobId, pushToast]);
+  }, [painelRegeneracaoFabAberto, chatAskAgenteDocumentoJobVisivel, jobId, pushToast, aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers]);
 
   const persistirTurnosUsuarioEAgenteAposPedidoRegeneracaoTranscribrothers = useCallback(
     async (textoInstrucoes: string, tipoPipeline: string) => {
@@ -3734,15 +3787,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           tipo_pipeline: tipoPipeline,
         });
         if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
-        setMensagensChatAskAgenteDocumento(
-          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
-        );
+        aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(historico);
       } catch (e) {
         if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
         pushToast(e instanceof Error ? e.message : String(e), "error");
       }
     },
-    [jobId, pushToast],
+    [jobId, pushToast, aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers],
   );
 
   const registrarDecisaoPreviaNoChatAskAgenteDocumentoTranscribrothers = useCallback(
@@ -3760,15 +3811,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           tipo_pipeline: null,
         });
         if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
-        setMensagensChatAskAgenteDocumento(
-          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
-        );
+        aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(historico);
       } catch (e) {
         if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
         pushToast(e instanceof Error ? e.message : String(e), "error");
       }
     },
-    [jobId, pushToast],
+    [jobId, pushToast, aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers],
   );
 
   useEffect(() => {
@@ -3786,12 +3835,31 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
 
   useEffect(() => {
     if (!preparandoPreviaDocumentoChatAgente) return;
+    const jobAindaGerandoMarkdown = job?.status === "generating_tutorial";
     const id = window.setTimeout(() => {
+      if (
+        !preparandoPreviaDocumentoChatAgenteDeveDestravarPorEstouroDeTempoTranscribrothers({
+          preparandoPrevia: true,
+          temObjetoPreview: Boolean(
+            previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro,
+          ),
+          decorridoMs: MS_TETO_ESPERA_PREVIA_DOCUMENTO_CHAT_AGENTE_TRANSCRIBROTHERS,
+          jobAindaGerandoMarkdown,
+        })
+      ) {
+        return;
+      }
       setPreparandoPreviaDocumentoChatAgente(false);
       pushToast("A prévia demorou demais. Pode tentar de novo no chat.", "error");
     }, MS_TETO_ESPERA_PREVIA_DOCUMENTO_CHAT_AGENTE_TRANSCRIBROTHERS);
     return () => window.clearTimeout(id);
-  }, [preparandoPreviaDocumentoChatAgente, pushToast]);
+  }, [
+    preparandoPreviaDocumentoChatAgente,
+    job?.status,
+    previewRegeneracaoSecaoMarkdown,
+    previewRegeneracaoTutorialMarkdownDocumentoInteiro,
+    pushToast,
+  ]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -3813,7 +3881,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     if (persistindoEstadoPreviewProntaChatAgenteRef.current) return;
     persistindoEstadoPreviewProntaChatAgenteRef.current = true;
     chavePreviewProntaPersistidaChatAgenteRef.current = chave;
-    const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
     void anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
       papel: "agente",
       modo: "agente",
@@ -3822,14 +3889,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       tipo_pipeline: ultimoAgente.tipo_pipeline ?? null,
     })
       .then((historico) => {
-        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
-        setMensagensChatAskAgenteDocumento(
-          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
-        );
+        aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(historico);
       })
       .catch((e) => {
         chavePreviewProntaPersistidaChatAgenteRef.current = null;
-        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
         pushToast(e instanceof Error ? e.message : String(e), "error");
       })
       .finally(() => {
@@ -3841,6 +3904,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     previewRegeneracaoTutorialMarkdownDocumentoInteiro,
     mensagensChatAskAgenteDocumento,
     pushToast,
+    aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers,
   ]);
 
   useEffect(() => {
@@ -3866,7 +3930,6 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     if (persistindoEstadoFalhouChatAgenteRef.current) return;
     persistindoEstadoFalhouChatAgenteRef.current = true;
     chaveFalhouPersistidaChatAgenteRef.current = chave;
-    const epoch = (epochCargaHistoricoChatAskAgenteRef.current += 1);
     void anexarItemHistoricoChatAskAgenteDocumentoJobApiTranscribrothers(jobId, {
       papel: "agente",
       modo: "agente",
@@ -3875,14 +3938,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       tipo_pipeline: ultimoAgente.tipo_pipeline ?? null,
     })
       .then((historico) => {
-        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
-        setMensagensChatAskAgenteDocumento(
-          mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(historico),
-        );
+        aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(historico);
       })
       .catch((e) => {
         chaveFalhouPersistidaChatAgenteRef.current = null;
-        if (epochCargaHistoricoChatAskAgenteRef.current !== epoch) return;
         pushToast(e instanceof Error ? e.message : String(e), "error");
       })
       .finally(() => {
@@ -3895,6 +3954,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     previewRegeneracaoTutorialMarkdownDocumentoInteiro,
     mensagensChatAskAgenteDocumento,
     pushToast,
+    aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers,
   ]);
 
   const regeneracaoTutorialEmAndamento =
@@ -3903,15 +3963,20 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   const temObjetoPreviewDocumentoChatAgente = Boolean(
     previewRegeneracaoSecaoMarkdown || previewRegeneracaoTutorialMarkdownDocumentoInteiro,
   );
+  const jobGerandoMarkdownChatAgente =
+    !temObjetoPreviewDocumentoChatAgente &&
+    (regeneracaoTutorialEmAndamento || regeneracaoSecaoEmAndamento || job?.status === "generating_tutorial");
   const mostrarSpinnerPreparandoPreviaChatAgente =
     chatAskAgenteDeveMostrarSpinnerPreparandoPreviaTranscribrothers({
       preparandoPrevia: preparandoPreviaDocumentoChatAgente,
       temObjetoPreview: temObjetoPreviewDocumentoChatAgente,
+      jobGerandoMarkdown: jobGerandoMarkdownChatAgente,
     });
   const composerTravadoPorPreviaChatAgente =
     composerChatAskAgenteDeveFicarTravadoPorPreviaDocumentoTranscribrothers({
       enviandoMensagem: enviandoMensagemChatAskDocumento,
       preparandoPrevia: preparandoPreviaDocumentoChatAgente,
+      jobGerandoMarkdown: jobGerandoMarkdownChatAgente,
     });
 
   const jobEmExecucao = Boolean(job && !jobTerminal);
@@ -4200,6 +4265,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       tituloSecaoHeading?: string;
       interpretarEscopoAutomaticamente?: boolean;
       edicaoCirurgicaChatAgente?: boolean;
+      modoEscopoEdicao?: "secao_inteira" | "trecho_local";
       caminhosAssetsPngContextoFab?: string[];
       propostas?: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[];
       abrirModalProgresso?: boolean;
@@ -4208,22 +4274,25 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const inst = (opcoes?.instrucoesTexto ?? instrucoesRegeneracaoSecaoMarkdown).trim();
     const trecho = trechoAncoraEdicaoSecaoMarkdownForm.trim();
     const cirurgica = opcoes?.edicaoCirurgicaChatAgente === true;
-    const manual = cirurgica
+    const tituloHeading =
+      (opcoes?.tituloSecaoHeading ?? tituloSecaoSelecionadaParaEdicao).trim();
+    const forcarSecaoInteiraChat =
+      opcoes?.modoEscopoEdicao === "secao_inteira" && Boolean(tituloHeading);
+    const manual = cirurgica || forcarSecaoInteiraChat
       ? false
       : opcoes?.interpretarEscopoAutomaticamente === true
         ? false
         : escopoEdicaoSecaoManualAtivoForm;
-    const tituloHeading =
-      (opcoes?.tituloSecaoHeading ?? tituloSecaoSelecionadaParaEdicao).trim();
+    const modoEscopoPedido = opcoes?.modoEscopoEdicao ?? modoEscopoEdicaoSecaoMarkdownForm;
     if (!inst) {
       pushToast("Descreva o que você quer melhorar.", "error");
       return;
     }
-    if (!cirurgica && manual && modoEscopoEdicaoSecaoMarkdownForm !== "secao_inteira" && !trecho) {
+    if (!cirurgica && !forcarSecaoInteiraChat && manual && modoEscopoPedido !== "secao_inteira" && !trecho) {
       pushToast("Cole o trecho do tutorial que define o escopo.", "error");
       return;
     }
-    if (!cirurgica && manual && modoEscopoEdicaoSecaoMarkdownForm === "secao_inteira" && !tituloHeading) {
+    if (!cirurgica && !forcarSecaoInteiraChat && manual && modoEscopoPedido === "secao_inteira" && !tituloHeading) {
       pushToast("Escolha a seção «##» para reescrever por inteiro.", "error");
       return;
     }
@@ -4234,9 +4303,9 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         tituloSecaoHeading: tituloHeading || undefined,
         instrucoesRevisor: inst,
         litellmModel: modeloChatAskAgente.trim() || undefined,
-        modoEscopoEdicao: modoEscopoEdicaoSecaoMarkdownForm,
-        trechoAncora: cirurgica ? undefined : manual ? trecho || undefined : undefined,
-        interpretarEscopoAutomaticamente: cirurgica ? false : !manual,
+        modoEscopoEdicao: modoEscopoPedido,
+        trechoAncora: cirurgica || forcarSecaoInteiraChat ? undefined : manual ? trecho || undefined : undefined,
+        interpretarEscopoAutomaticamente: cirurgica || forcarSecaoInteiraChat ? false : !manual,
         edicaoCirurgicaChatAgente: cirurgica,
         propostas: opcoes?.propostas,
         caminhosAssetsPngContextoFab: mesclarCaminhosImagensPropostaChatAgenteDocumentoTranscribrothers(
@@ -4323,7 +4392,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const mensagem = instrucoesRegeneracaoTutorialMarkdown.trim();
     if (!mensagem) return;
     const instanteAnexo = frameAnexoComposerChatAsk?.instante_segundos ?? null;
-    const epochDesteEnvio = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    const epochDesteEnvio = (epochEnvioMensagemChatAskAgenteRef.current += 1);
+    epochCargaHistoricoChatAskAgenteRef.current += 1;
     enviandoMensagemChatAskDocumentoRef.current = true;
     setEnviandoMensagemChatAskDocumento(true);
     setFrameAnexoComposerChatAsk(null);
@@ -4341,18 +4411,16 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         instanteAnexo,
         modeloChatAskAgente.trim() || null,
         (texto) => {
-          if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+          if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
           setMensagensChatAskAgenteDocumento((prev) =>
             prev.map((item) => (item.id === idStream ? { ...item, texto } : item)),
           );
         },
       );
-      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
-      setMensagensChatAskAgenteDocumento(
-        mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(resposta.historico),
-      );
+      if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
+      aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(resposta.historico);
     } catch (e) {
-      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
       const msg = e instanceof Error ? e.message : String(e);
       pushToast(msg, "error");
       setMensagensChatAskAgenteDocumento((prev) => [
@@ -4360,7 +4428,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         { id: `ask-erro-local-${epochDesteEnvio}`, papel: "assistente", texto: msg, ehErro: true },
       ]);
     } finally {
-      if (epochCargaHistoricoChatAskAgenteRef.current === epochDesteEnvio) {
+      if (epochEnvioMensagemChatAskAgenteRef.current === epochDesteEnvio) {
         enviandoMensagemChatAskDocumentoRef.current = false;
         setEnviandoMensagemChatAskDocumento(false);
       }
@@ -4371,6 +4439,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     frameAnexoComposerChatAsk,
     modeloChatAskAgente,
     pushToast,
+    aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers,
   ]);
 
   const enviarMensagemChatAgenteDocumentoDoPainelTranscribrothers = useCallback(async () => {
@@ -4378,7 +4447,8 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     const mensagem = instrucoesRegeneracaoTutorialMarkdown.trim();
     if (!mensagem) return;
     const instanteAnexo = frameAnexoComposerChatAsk?.instante_segundos ?? null;
-    const epochDesteEnvio = (epochCargaHistoricoChatAskAgenteRef.current += 1);
+    const epochDesteEnvio = (epochEnvioMensagemChatAskAgenteRef.current += 1);
+    epochCargaHistoricoChatAskAgenteRef.current += 1;
     enviandoMensagemChatAskDocumentoRef.current = true;
     setEnviandoMensagemChatAskDocumento(true);
     setFrameAnexoComposerChatAsk(null);
@@ -4397,16 +4467,14 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         modeloChatAskAgente.trim() || null,
         null,
         (texto) => {
-          if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+          if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
           setMensagensChatAskAgenteDocumento((prev) =>
             prev.map((item) => (item.id === idStream ? { ...item, texto } : item)),
           );
         },
       );
-      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
-      setMensagensChatAskAgenteDocumento(
-        mensagensPainelAPartirDoHistoricoChatAskAgenteDocumentoJobTranscribrothers(resposta.historico),
-      );
+      if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
+      aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers(resposta.historico);
       if (resposta.executar_proposta && resposta.proposta_ferramenta) {
         setPreparandoPreviaDocumentoChatAgente(true);
         aplicarPropostaFerramentaChatAgenteRef.current?.(
@@ -4416,7 +4484,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         );
       }
     } catch (e) {
-      if (epochCargaHistoricoChatAskAgenteRef.current !== epochDesteEnvio) return;
+      if (epochEnvioMensagemChatAskAgenteRef.current !== epochDesteEnvio) return;
       const msg = e instanceof Error ? e.message : String(e);
       pushToast(msg, "error");
       setMensagensChatAskAgenteDocumento((prev) => [
@@ -4424,7 +4492,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         { id: `agente-erro-local-${epochDesteEnvio}`, papel: "assistente", texto: msg, ehErro: true },
       ]);
     } finally {
-      if (epochCargaHistoricoChatAskAgenteRef.current === epochDesteEnvio) {
+      if (epochEnvioMensagemChatAskAgenteRef.current === epochDesteEnvio) {
         enviandoMensagemChatAskDocumentoRef.current = false;
         setEnviandoMensagemChatAskDocumento(false);
       }
@@ -4435,6 +4503,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
     frameAnexoComposerChatAsk,
     modeloChatAskAgente,
     pushToast,
+    aplicarHistoricoChatAskAgentePreservandoTurnoLocalEmVooTranscribrothers,
   ]);
 
   const aplicarPropostaFerramentaChatAgenteDocumentoTranscribrothers = useCallback(
@@ -4459,6 +4528,35 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
       );
       const instrucoes = (proposta.instrucoes || "").trim() || "Pedido combinado no chat.";
       if (lote.length > 0) {
+        const modoLote = modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers(lote);
+        if (modoLote === "reescrever_documento") {
+          const pedido = lote
+            .map((item) => {
+              const heading = (item.titulo_secao_heading || "").trim();
+              const texto = (item.instrucoes || "").trim() || instrucoes;
+              return heading ? `## ${heading}\n${texto}` : texto;
+            })
+            .join("\n\n");
+          void solicitarRegeneracaoTutorialMarkdownComTextoInstrucoesTranscribrothers(
+            pedido,
+            { abrirModalProgresso: false },
+            pedido,
+          );
+          return;
+        }
+        if (modoLote === "reescrever_secao") {
+          const unica = lote[0];
+          void solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers({
+            instrucoesTexto: (unica?.instrucoes || "").trim() || instrucoes,
+            textoHistoricoUsuario: instrucoes,
+            tituloSecaoHeading: unica?.titulo_secao_heading || undefined,
+            interpretarEscopoAutomaticamente: false,
+            edicaoCirurgicaChatAgente: false,
+            modoEscopoEdicao: "secao_inteira",
+            abrirModalProgresso: false,
+          });
+          return;
+        }
         void solicitarRegeneracaoSecaoMarkdownTutorialTranscribrothers({
           instrucoesTexto: instrucoes,
           textoHistoricoUsuario: instrucoes,
@@ -8513,20 +8611,34 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
           aoFechar={() => setNomeArquivoImagemAnotacaoModalAberto(null)}
           aoSalvarComSucesso={(j, origem) => {
             setJob(j);
-            if (origem !== "inserir_documento") {
+            if (origem !== "inserir_documento" && origem !== "usar_no_tutorial") {
               pushToast("Versão anotada salva. A original foi preservada.", "success");
             }
           }}
-          aoAlternarVersaoExibicaoNoTutorial={async (nome, versao) => {
-            await aoAlternarVersaoExibicaoImagemTutorial(nome, versao);
+          aoAlternarVersaoExibicaoNoTutorial={async (nome, versao, opcoes) => {
+            await aoAlternarVersaoExibicaoImagemTutorial(nome, versao, opcoes);
           }}
           aoRemoverAnotacaoSalva={async (nome) => {
             await aoRemoverAnotacaoImagemTutorial(nome);
           }}
-          aoSincronizarMarkdownComVersaoAnotada={async (nome) => {
-            await aoSincronizarMarkdownComImagemAnotada(nome);
+          aoSincronizarMarkdownComVersaoAnotada={async (nome, opcoes) => {
+            await aoSincronizarMarkdownComImagemAnotada(nome, opcoes);
           }}
           aoSolicitarInserirImagemNoDocumentoMarkdown={iniciarInserirImagemAssetNoDocumentoMarkdownTranscribrothers}
+          temVideoEntrada={jobTemVideoEntradaParaMuxNarracao}
+          instanteSegundosInicial={instanteSegundosDaImagemAssetNoMarkdownTutorialTranscribrothers(
+            modoEdicaoMarkdownTutorialAtivo
+              ? markdownTutorialRascunhoEdicao
+              : (job.result_markdown ?? ""),
+            resolverNomeArquivoPngOriginalAPartirDeReferenciaAssetsTranscribrothers(
+              nomeArquivoImagemAnotacaoModalAberto,
+            ),
+          )}
+          duracaoVideoSegundos={lerDuracaoVideoSegundosStepsJsonJobTranscribrothers(job.steps_json)}
+          aoAtualizarJobAposCapturaFramePreview={(j) => {
+            setJob(j);
+          }}
+          aoUsarFrameCapturadoNoDocumentoMarkdown={aoUsarFrameCapturadoNoDocumentoMarkdownTranscribrothers}
         />
       ) : null}
       </div>

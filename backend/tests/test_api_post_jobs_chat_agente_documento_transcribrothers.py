@@ -157,6 +157,69 @@ def test_chat_agente_forcar_injeta_proposta_se_modelo_omitir() -> None:
             _limpar_job_chat_agente_transcribrothers(sf, data_dir, jid)
 
 
+def test_chat_agente_repete_modelo_quando_marca_aplicando_sem_ferramenta() -> None:
+    jid = novo_id_job()
+    with TestClient(app) as client:
+        sf = app.state.session_factory
+        data_dir: Path = app.state.data_dir
+        try:
+            asyncio.run(_inserir_job_chat_agente_transcribrothers(sf, jid, markdown="# Doc\n\ntexto"))
+            litellm = AsyncMock(
+                side_effect=[
+                    '{"texto":"Aplicando agora.","estado":"aplicando","ferramentas":[]}',
+                    (
+                        '{"texto":"Apliquei na seção 1.","estado":"aplicando","ferramentas":['
+                        '{"nome":"edicao_parcial","titulo_secao_heading":"Doc",'
+                        '"instrucoes":"Tire os timestamps."}]}'
+                    ),
+                ]
+            )
+            with patch(
+                "transcribrothers_backend.modulo_orquestrar_turno_chat_agente_job_transcribrothers.obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers",
+                new=litellm,
+            ):
+                r = client.post(
+                    f"/api/jobs/{jid}/chat-agente",
+                    json={"mensagem": "pode fazer isso?"},
+                )
+            assert r.status_code == 200, r.text
+            assert litellm.await_count == 2
+            body = r.json()
+            assert body["executar_proposta"] is True
+            assert body["proposta_ferramenta"]["nome"] == "edicao_parcial"
+            assert body["proposta_ferramenta"]["titulo_secao_heading"] == "Doc"
+        finally:
+            _limpar_job_chat_agente_transcribrothers(sf, data_dir, jid)
+
+
+def test_chat_agente_nao_inventa_proposta_so_porque_a_mensagem_tem_adicionar() -> None:
+    jid = novo_id_job()
+    with TestClient(app) as client:
+        sf = app.state.session_factory
+        data_dir: Path = app.state.data_dir
+        try:
+            asyncio.run(_inserir_job_chat_agente_transcribrothers(sf, jid, markdown="# Doc\n\ntexto"))
+            with patch(
+                "transcribrothers_backend.modulo_orquestrar_turno_chat_agente_job_transcribrothers.obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers",
+                new=AsyncMock(
+                    return_value=(
+                        '{"texto":"Posso incluir o filtro na seção 1.","estado":"rascunho",'
+                        '"ferramentas":[]}'
+                    )
+                ),
+            ):
+                r = client.post(
+                    f"/api/jobs/{jid}/chat-agente",
+                    json={"mensagem": "adicionar o filtro de triagem"},
+                )
+            assert r.status_code == 200, r.text
+            body = r.json()
+            assert body["proposta_ferramenta"] is None
+            assert body["executar_proposta"] is False
+        finally:
+            _limpar_job_chat_agente_transcribrothers(sf, data_dir, jid)
+
+
 async def _inserir_job_chat_agente_transcribrothers(
     session_factory,
     job_id: str,

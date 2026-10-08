@@ -26,6 +26,8 @@
 
 .tb-anotacao-modal-cabecalho,
 .tb-anotacao-modal-ferramentas,
+.tb-anotacao-modal-navegacao-frame,
+.tb-anotacao-trilha-passos-navegacao-frame,
 .tb-anotacao-modal-gestao-versoes,
 .tb-anotacao-modal-rodape,
 .tb-anotacao-erro {
@@ -34,13 +36,13 @@
 
 .tb-anotacao-modal-cabecalho {
   position: relative;
-  padding: 14px 48px 8px 16px;
+  padding: 8px 40px 8px 12px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .tb-anotacao-modal-cabecalho h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #0f172a;
 }
 
@@ -67,8 +69,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 12px;
-  padding: 10px 16px;
+  gap: 6px 10px;
+  padding: 6px 12px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
 }
@@ -92,8 +94,10 @@
 
 .tb-anotacao-ferramentas-acoes-direita .tb-anotacao-modal-btn-inserir-documento,
 .tb-anotacao-ferramentas-acoes-direita .tb-anotacao-modal-btn-copiar-imagem {
-  min-height: 36px;
-  font-size: 0.8125rem;
+  min-height: 28px;
+  min-width: 28px;
+  font-size: 0.75rem;
+  padding: 0;
 }
 
 .tb-anotacao-ferramentas-grupo-icone {
@@ -111,11 +115,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #475569;
   cursor: pointer;
@@ -153,16 +157,24 @@
 }
 
 .tb-anotacao-seletor-cor-grupo {
+  position: relative;
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-left: 4px;
+  gap: 4px;
+  margin-left: 0;
 }
 
 .tb-anotacao-seletor-cor-rotulo {
-  font-size: 0.85rem;
-  color: #334155;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .tb-anotacao-paleta-cores {
@@ -202,20 +214,66 @@
   background: transparent;
 }
 
+.tb-anotacao-modal-navegacao-frame {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow-x: hidden;
+}
+
+.tb-anotacao-modal-navegacao-frame-seta {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tb-anotacao-modal-navegacao-frame-seta:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.tb-anotacao-modal-navegacao-frame-seta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tb-anotacao-modal-navegacao-frame-instante {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.tb-anotacao-modal-navegacao-frame-instante-detalhe {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.tb-anotacao-modal-navegacao-frame-hint {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
 .tb-anotacao-modal-gestao-versoes {
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
 }
 
 .tb-anotacao-modal-gestao-versoes-titulo {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  display: none;
 }
 
 .tb-anotacao-modal-gestao-versoes-acoes {
@@ -368,7 +426,7 @@
   overflow: auto;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 12px;
+  padding: 8px;
   /* Bloco + inline-block: scroll acessa a borda esquerda (flex + center corta overflow). */
   display: block;
   background: #f1f5f9;
@@ -435,13 +493,142 @@
   font-size: 0.85rem;
 }
 
+.tb-anotacao-trilha-passos-navegacao-frame {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px 2px;
+  min-height: 24px;
+}
+
+.tb-anotacao-trilha-traco {
+  width: 16px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #7dd3fc;
+  cursor: pointer;
+}
+
+.tb-anotacao-trilha-traco:hover:not(:disabled) {
+  background: #38bdf8;
+}
+
+.tb-anotacao-trilha-traco--atual {
+  height: 10px;
+  background: #eab308;
+}
+
+.tb-anotacao-trilha-traco--atual:hover:not(:disabled) {
+  background: #ca8a04;
+}
+
+.tb-anotacao-trilha-traco--documento {
+  height: 8px;
+  box-shadow: 0 -3px 0 0 #9f1239;
+}
+
+.tb-anotacao-trilha-traco--atual.tb-anotacao-trilha-traco--documento {
+  height: 10px;
+  background: #eab308;
+  box-shadow: 0 0 0 2px #9f1239;
+}
+
+.tb-anotacao-trilha-pino-documento {
+  border: 0;
+  background: transparent;
+  color: #9f1239;
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.tb-anotacao-rodape-versao-casa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.tb-anotacao-toggle-original-anotada {
+  display: inline-flex;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tb-anotacao-toggle-original-anotada button {
+  border: 0;
+  background: #fff;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.tb-anotacao-toggle-original-anotada button[aria-pressed="true"] {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.tb-anotacao-menu-versao-casa {
+  position: relative;
+}
+
+.tb-anotacao-menu-versao-casa summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  color: #64748b;
+}
+
+.tb-anotacao-menu-versao-casa summary::-webkit-details-marker {
+  display: none;
+}
+
+.tb-anotacao-menu-versao-casa-painel {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  padding: 4px;
+  min-width: 11rem;
+  z-index: 3;
+}
+
+.tb-anotacao-menu-versao-casa-painel button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tb-anotacao-menu-versao-casa-painel button:hover {
+  background: #f1f5f9;
+}
+
 .tb-anotacao-modal-rodape {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   border-top: 1px solid #e2e8f0;
   background: #fff;
 }
@@ -479,7 +666,7 @@
 
 .tb-anotacao-modal-rodape .tb-linkbtn,
 .tb-anotacao-modal-rodape .tb-primary {
-  min-height: 36px;
+  min-height: 32px;
   font-size: 0.8125rem;
 }
 

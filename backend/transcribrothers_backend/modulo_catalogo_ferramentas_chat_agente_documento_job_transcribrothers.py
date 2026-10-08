@@ -122,13 +122,50 @@ def parsear_flag_executar_resposta_modelo_chat_agente_transcribrothers(
     return None
 
 
+def parsear_estado_resposta_modelo_chat_agente_transcribrothers(
+    texto_bruto: str,
+) -> str | None:
+    try:
+        raw_json = extrair_primeiro_objeto_json_de_texto_llm_transcribrothers(texto_bruto)
+        data = json.loads(raw_json)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    bruto = data.get("estado")
+    if not isinstance(bruto, str):
+        return None
+    estado = bruto.strip().casefold()
+    if estado in {"aplicando", "rascunho"}:
+        return estado
+    return None
+
+
+def resposta_agente_precisa_retry_por_aplicar_sem_ferramentas_transcribrothers(
+    *,
+    estado: str | None,
+    quantidade_ferramentas: int,
+    flag_executar: bool | None,
+) -> bool:
+    if quantidade_ferramentas > 0:
+        return False
+    if estado == "rascunho":
+        return False
+    return True
+
+
 def decidir_executar_proposta_resposta_modelo_chat_agente_transcribrothers(
     *,
     flag_executar: bool | None,
     quantidade_propostas: int,
+    estado: str | None = None,
 ) -> bool:
     if quantidade_propostas <= 0:
         return False
+    if estado == "rascunho":
+        return False
+    if estado == "aplicando":
+        return True
     if flag_executar is False:
         return False
     return True
@@ -145,6 +182,57 @@ def parsear_ferramentas_de_texto_resposta_modelo_chat_agente_transcribrothers(
     if not isinstance(data, dict):
         return []
     return parsear_ferramentas_resposta_modelo_chat_agente_transcribrothers(data.get("ferramentas"))
+
+
+def parsear_ferramentas_de_tool_calls_openai_chat_agente_transcribrothers(
+    tool_calls: object,
+) -> list[dict[str, Any]]:
+    if not isinstance(tool_calls, list):
+        return []
+    saida: list[dict[str, Any]] = []
+    for item in tool_calls:
+        if not isinstance(item, dict):
+            continue
+        funcao = item.get("function")
+        if not isinstance(funcao, dict):
+            continue
+        nome = _texto_ou_nulo(funcao.get("name")) or _texto_ou_nulo(item.get("name"))
+        if nome not in NOMES_FERRAMENTAS_PROPOSTA_CHAT_AGENTE_TRANSCRIBROTHERS:
+            continue
+        argumentos_raw = funcao.get("arguments")
+        argumentos: dict[str, Any] = {}
+        if isinstance(argumentos_raw, str) and argumentos_raw.strip():
+            try:
+                lido = json.loads(argumentos_raw)
+            except json.JSONDecodeError:
+                lido = None
+            if isinstance(lido, dict):
+                argumentos = lido
+        elif isinstance(argumentos_raw, dict):
+            argumentos = argumentos_raw
+        saida.append(
+            {
+                "nome": nome,
+                "titulo_secao_heading": _texto_ou_nulo(argumentos.get("titulo_secao_heading")),
+                "instrucoes": _texto_ou_nulo(argumentos.get("instrucoes")),
+                "caminhos_imagens": normalizar_caminhos_imagens_proposta_ferramenta_chat_agente_transcribrothers(
+                    argumentos.get("caminhos_imagens")
+                ),
+                "reescrever_secao": argumentos.get("reescrever_secao") is True,
+            }
+        )
+    return saida
+
+
+def mesclar_ferramentas_json_e_tool_calls_openai_chat_agente_transcribrothers(
+    *,
+    ferramentas_json: list[dict[str, Any]] | None,
+    ferramentas_tool_calls: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    json_tools = [item for item in (ferramentas_json or []) if isinstance(item, dict)]
+    if json_tools:
+        return json_tools
+    return [item for item in (ferramentas_tool_calls or []) if isinstance(item, dict)]
 
 
 def parsear_ferramentas_resposta_modelo_chat_agente_transcribrothers(
@@ -167,6 +255,7 @@ def parsear_ferramentas_resposta_modelo_chat_agente_transcribrothers(
                 "caminhos_imagens": normalizar_caminhos_imagens_proposta_ferramenta_chat_agente_transcribrothers(
                     item.get("caminhos_imagens")
                 ),
+                "reescrever_secao": item.get("reescrever_secao") is True,
             }
         )
     return saida
@@ -197,6 +286,7 @@ def escolher_propostas_ferramenta_chat_agente_transcribrothers(
                 "caminhos_imagens": normalizar_caminhos_imagens_proposta_ferramenta_chat_agente_transcribrothers(
                     item.get("caminhos_imagens")
                 ),
+                "reescrever_secao": item.get("reescrever_secao") is True,
             }
         )
     if not saida and forcar:
@@ -206,6 +296,7 @@ def escolher_propostas_ferramenta_chat_agente_transcribrothers(
                 "titulo_secao_heading": None,
                 "instrucoes": (mensagem_usuario or "").strip() or None,
                 "caminhos_imagens": [],
+                "reescrever_secao": False,
             }
         )
     return saida

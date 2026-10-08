@@ -174,3 +174,44 @@ def test_escolher_propostas_devolve_todas_as_edicoes_parciais() -> None:
     assert len(propostas) == 2
     assert propostas[0]["titulo_secao_heading"] == "Contexto e problema"
     assert propostas[1]["titulo_secao_heading"] == "Dúvidas em aberto"
+
+
+def test_lote_que_remove_timestamp_e_pede_legenda_deve_reescrever_secao() -> None:
+    from transcribrothers_backend.modulo_aplicar_lote_edicoes_parciais_chat_agente_documento_transcribrothers import (
+        lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers,
+    )
+
+    assert lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers(
+        [
+            {
+                "nome": "edicao_parcial",
+                "titulo_secao_heading": "1. Visão Geral e Triagem Manual",
+                "instrucoes": (
+                    "Remover os links de tempo '[00:47](?t=47)' do texto corrido. "
+                    "Adicionar uma legenda curta abaixo de cada imagem."
+                ),
+            }
+        ]
+    )
+    assert not lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers(
+        [
+            {
+                "nome": "edicao_parcial",
+                "titulo_secao_heading": "Contexto e problema",
+                "instrucoes": (
+                    "Adicionar ao final da lista: "
+                    "'**Filtros de Triagem:** o defensor filtra por etiqueta.'"
+                ),
+            }
+        ]
+    )
+    assert lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers(
+        [
+            {
+                "nome": "edicao_parcial",
+                "reescrever_secao": True,
+                "titulo_secao_heading": "Introdução",
+                "instrucoes": "Deixe a intro mais curta.",
+            }
+        ]
+    )

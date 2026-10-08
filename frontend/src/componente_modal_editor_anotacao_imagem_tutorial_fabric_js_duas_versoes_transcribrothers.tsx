@@ -23,6 +23,7 @@ import {
   IconeCopiarImagemEditadaAnotacaoTutorialTranscribrothers,
   IconeExcluirSelecaoAnotacaoImagemTutorialTranscribrothers,
   IconeFerramentaAnotacaoImagemTutorialTranscribrothers,
+  IconeInserirImagemNoDocumentoAnotacaoTutorialTranscribrothers,
   obterRotuloAcessivelFerramentaAnotacaoImagemTutorialTranscribrothers,
 } from "./componente_icones_ferramentas_anotacao_imagem_tutorial_transcribrothers.tsx";
 import {
@@ -41,6 +42,36 @@ import type {
   ModoZoomVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers,
 } from "./tipos_ferramenta_anotacao_imagem_tutorial_transcribrothers.ts";
 import { resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers } from "./modulo_util_resolver_nome_arquivo_e_persistencia_anotacao_para_inserir_no_documento_tutorial_transcribrothers.ts";
+import {
+  ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_MODAL_ANOTACAO_TRANSCRIBROTHERS,
+  ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_PROCESSANDO_MODAL_ANOTACAO_TRANSCRIBROTHERS,
+  resolverAcaoCommitUsarNoTutorialModalAnotacaoTranscribrothers,
+} from "./modulo_util_resolver_acao_commit_usar_no_tutorial_modal_anotacao_screenshot_transcribrothers.ts";
+import {
+  descartarPrevisualizacaoFramesNavegacaoVideoTutorialJobApiTranscribrothers,
+  previsualizarFramesNavegacaoVideoTutorialJobApiTranscribrothers,
+  promoverFramePrevisualizacaoParaAssetsVideoTutorialJobApiTranscribrothers,
+} from "./modulo_api_previsualizar_promover_e_descartar_frames_navegacao_video_tutorial_transcribrothers.ts";
+import { instanteAposPassoNavegacaoFrameVideoTutorialTranscribrothers } from "./modulo_util_passo_navegacao_instante_frame_video_tutorial_transcribrothers.ts";
+import {
+  chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers,
+  devePedirConfirmacaoAnotacaoAoNavegarSetaFrameTutorialTranscribrothers,
+  devePedirConfirmacaoAnotacaoAoUsarEsteFrameTutorialTranscribrothers,
+  instanteEhSlotDocumentoFrameNavegacaoTutorialTranscribrothers,
+  montarInstantesPrefetchJanelaNavegacaoFrameTutorialTranscribrothers,
+  nomesArquivoPreviewParaDescartarNavegacaoFrameTutorialTranscribrothers,
+  resolverNomeArquivoCandidatoPreviewFrameVisivelParaCommitTutorialTranscribrothers,
+  type ItemCachePreviewFrameNavegacaoTutorialTranscribrothers,
+} from "./modulo_util_cache_previsualizacao_frames_video_navegacao_modal_anotacao_tutorial_transcribrothers.ts";
+import {
+  montarTrilhaPassosNavegacaoFrameAncoradaNoDocumentoTutorialTranscribrothers,
+  rotuloAcessivelTracoTrilhaNavegacaoFrameTutorialTranscribrothers,
+} from "./modulo_util_trilha_passos_navegacao_frame_video_ancorada_no_documento_tutorial_transcribrothers.ts";
+import {
+  formatarSegundosParaRotuloMmSsMarkdownTutorialTranscribrothers,
+  navegacaoFrameVideoDeveAparecerNaModalAnotacaoTutorialTranscribrothers,
+  usarEsteFrameNoDocumentoDeveFicarHabilitadoTranscribrothers,
+} from "./modulo_util_substituir_referencia_imagem_asset_e_link_temporal_markdown_tutorial_transcribrothers.ts";
 import "./estilos_css_modal_editor_anotacao_imagem_tutorial_fabric_js_transcribrothers.css";
 
 type ArrastoFormaAnotacaoTranscribrothers =
@@ -69,15 +100,28 @@ type PropsModalEditorAnotacaoImagemTutorialTranscribrothers = {
   nomeArquivoOriginal: string;
   registroAnotacao?: RegistroAnotacaoImagemTutorialApiTranscribrothers;
   aoFechar: () => void;
-  aoSalvarComSucesso: (job: JobStatus, origem?: "salvar_manual" | "inserir_documento") => void;
+  aoSalvarComSucesso: (job: JobStatus, origem?: "salvar_manual" | "inserir_documento" | "usar_no_tutorial") => void;
   aoAlternarVersaoExibicaoNoTutorial?: (
     nomeArquivoOriginal: string,
     versao: "original" | "anotado",
+    opcoes?: { silencioso?: boolean },
   ) => void | Promise<void>;
   aoRemoverAnotacaoSalva?: (nomeArquivoOriginal: string) => void | Promise<void>;
-  aoSincronizarMarkdownComVersaoAnotada?: (nomeArquivoOriginal: string) => void | Promise<void>;
+  aoSincronizarMarkdownComVersaoAnotada?: (
+    nomeArquivoOriginal: string,
+    opcoes?: { silencioso?: boolean },
+  ) => void | Promise<void>;
   processandoGestaoVersoes?: boolean;
   aoSolicitarInserirImagemNoDocumentoMarkdown?: (nomeArquivoParaSnippet: string) => void | Promise<void>;
+  temVideoEntrada?: boolean;
+  instanteSegundosInicial?: number | null;
+  duracaoVideoSegundos?: number;
+  aoAtualizarJobAposCapturaFramePreview?: (job: JobStatus) => void;
+  aoUsarFrameCapturadoNoDocumentoMarkdown?: (args: {
+    nomeArquivoAnterior: string;
+    nomeArquivoNovo: string;
+    instanteSegundos: number;
+  }) => void | Promise<void>;
 };
 
 function marcarObjetoComoDestaqueSemitransparenteTranscribrothers(obj: fabric.Object): void {
@@ -236,6 +280,11 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   aoSincronizarMarkdownComVersaoAnotada,
   processandoGestaoVersoes = false,
   aoSolicitarInserirImagemNoDocumentoMarkdown,
+  temVideoEntrada = false,
+  instanteSegundosInicial = null,
+  duracaoVideoSegundos = 0,
+  aoAtualizarJobAposCapturaFramePreview,
+  aoUsarFrameCapturadoNoDocumentoMarkdown,
 }: PropsModalEditorAnotacaoImagemTutorialTranscribrothers) {
   const { pedirConfirmacao, elementoDialogoConfirmacao } =
     usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers();
@@ -254,6 +303,10 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   const ferramentaRef = useRef<FerramentaAnotacaoImagemTutorialTranscribrothers>("selecionar");
   const geracaoCarregamentoImagemFundoCanvasRef = useRef(0);
   const recorteAplicadoNestaSessaoCanvasRef = useRef(false);
+  const cachePreviewsNavegacaoRef = useRef<
+    Record<string, ItemCachePreviewFrameNavegacaoTutorialTranscribrothers>
+  >({});
+  const timestampsPreviewInflightRef = useRef<Set<string>>(new Set());
 
   const [ferramenta, setFerramenta] = useState<FerramentaAnotacaoImagemTutorialTranscribrothers>("selecionar");
   const [corAnotacao, setCorAnotacao] = useState(COR_PADRAO_FERRAMENTAS_ANOTACAO_IMAGEM_TUTORIAL_TRANSCRIBROTHERS);
@@ -268,10 +321,27 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     );
   const [modoZoomVisualizacaoCanvas, setModoZoomVisualizacaoCanvas] =
     useState<ModoZoomVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers>("ajustarArea");
+  const [cachePreviewsNavegacao, setCachePreviewsNavegacao] = useState<
+    Record<string, ItemCachePreviewFrameNavegacaoTutorialTranscribrothers>
+  >({});
+  const [instanteExibidoSegundos, setInstanteExibidoSegundos] = useState<number | null>(
+    typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null,
+  );
+  const [capturandoFrameNavegacao, setCapturandoFrameNavegacao] = useState(false);
+  const [aplicandoFrameNoDocumento, setAplicandoFrameNoDocumento] = useState(false);
+
+  useEffect(() => {
+    cachePreviewsNavegacaoRef.current = cachePreviewsNavegacao;
+  }, [cachePreviewsNavegacao]);
 
   useEffect(() => {
     setVersaoImagemExibidaNoModal(
       resolverVersaoImagemInicialNoEditorAnotacaoModalTranscribrothers(registroAnotacao),
+    );
+    setCachePreviewsNavegacao({});
+    cachePreviewsNavegacaoRef.current = {};
+    setInstanteExibidoSegundos(
+      typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null,
     );
   }, [nomeArquivoOriginal]);
 
@@ -280,6 +350,18 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
       setVersaoImagemExibidaNoModal("original");
     }
   }, [registroAnotacao?.tem_arquivo_anotado]);
+
+  const instanteFrameExibidoSegundos =
+    instanteExibidoSegundos ??
+    (typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null);
+  const noSlotDocumentoNavegacao = instanteEhSlotDocumentoFrameNavegacaoTutorialTranscribrothers(
+    instanteFrameExibidoSegundos ?? Number.NaN,
+    typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null,
+  );
+
+  const nomeArquivoAnotadoDocumento =
+    registroAnotacao?.nome_arquivo_anotado ??
+    derivarNomeArquivoPngAnotadoLocalTranscribrothers(nomeArquivoOriginal);
 
   const nomeArquivoBaseCanvasEdicao = useMemo(() => {
     if (versaoImagemExibidaNoModal === "anotado" && registroAnotacao?.tem_arquivo_anotado) {
@@ -296,10 +378,57 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     registroAnotacao?.nome_arquivo_anotado,
   ]);
 
+  const urlImagemCanvasNavegacao = useMemo(() => {
+    if (!noSlotDocumentoNavegacao && instanteFrameExibidoSegundos != null) {
+      const preview =
+        cachePreviewsNavegacao[
+          chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(instanteFrameExibidoSegundos)
+        ];
+      if (preview?.urlPreview) return preview.urlPreview;
+      return null;
+    }
+    return urlAssetPngJobParaNomeArquivoTranscribrothers(jobId, nomeArquivoBaseCanvasEdicao);
+  }, [
+    noSlotDocumentoNavegacao,
+    instanteFrameExibidoSegundos,
+    cachePreviewsNavegacao,
+    jobId,
+    nomeArquivoBaseCanvasEdicao,
+  ]);
+
   const exibindoAnotadaNoModal = versaoImagemExibidaNoModal === "anotado";
 
   const processandoAlgumaAcao =
-    salvando || inserindoNoDocumento || processandoGestaoVersoes || processandoGestaoLocal;
+    salvando ||
+    inserindoNoDocumento ||
+    processandoGestaoVersoes ||
+    processandoGestaoLocal ||
+    capturandoFrameNavegacao ||
+    aplicandoFrameNoDocumento;
+
+  const mostrarNavegacaoFrame = navegacaoFrameVideoDeveAparecerNaModalAnotacaoTutorialTranscribrothers({
+    temVideoEntrada,
+    instanteSegundos: instanteFrameExibidoSegundos,
+  });
+  const nomeArquivoCandidatoFrame =
+    resolverNomeArquivoCandidatoPreviewFrameVisivelParaCommitTutorialTranscribrothers({
+      noSlotDocumento: noSlotDocumentoNavegacao,
+      instanteExibidoSegundos: instanteFrameExibidoSegundos,
+      instanteDocumentoSegundos:
+        typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null,
+      cachePreviewsPorChave: cachePreviewsNavegacao,
+    });
+  const podeUsarEsteFrame = usarEsteFrameNoDocumentoDeveFicarHabilitadoTranscribrothers({
+    nomeArquivoNoDocumento: nomeArquivoOriginal,
+    nomeArquivoCandidato: nomeArquivoCandidatoFrame,
+    capturando: capturandoFrameNavegacao || aplicandoFrameNoDocumento,
+  });
+  const candidatoFramePendente = Boolean(nomeArquivoCandidatoFrame) && !noSlotDocumentoNavegacao;
+  const aguardandoPreviewAtual =
+    !noSlotDocumentoNavegacao && urlImagemCanvasNavegacao == null;
+  const mostrandoOverlayCanvas = carregando || capturandoFrameNavegacao || aguardandoPreviewAtual;
+  const acoesDocumentoDesabilitadasEnquantoCandidato =
+    processandoAlgumaAcao || carregando || candidatoFramePendente;
 
   useEffect(() => {
     corAnotacaoRef.current = corAnotacao;
@@ -413,9 +542,9 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   );
 
   const carregarImagemFundoNoCanvasAnotacaoTranscribrothers = useCallback(
-    (nomeArquivo: string) => {
+    (urlImagem: string) => {
       const canvas = fabricRef.current;
-      if (!canvas) return;
+      if (!canvas || !urlImagem) return;
 
       const geracao = ++geracaoCarregamentoImagemFundoCanvasRef.current;
       setCarregando(true);
@@ -423,9 +552,8 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
       arrastoFormaRef.current = null;
       recorteAplicadoNestaSessaoCanvasRef.current = false;
 
-      const url =
-        urlAssetPngJobParaNomeArquivoTranscribrothers(jobId, nomeArquivo) +
-        `?t=${geracao}-${encodeURIComponent(nomeArquivo)}`;
+      const separador = urlImagem.includes("?") ? "&" : "?";
+      const url = `${urlImagem}${separador}t=${geracao}`;
 
       fabric.Image.fromURL(
         url,
@@ -466,8 +594,312 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
         { crossOrigin: "anonymous" },
       );
     },
-    [jobId, aplicarModoCanvas, sincronizarZoomVisualizacaoCanvasAnotacaoTranscribrothers],
+    [aplicarModoCanvas, sincronizarZoomVisualizacaoCanvasAnotacaoTranscribrothers],
   );
+
+  const canvasTemAnotacoesAlemDoFundoTranscribrothers = useCallback((): boolean => {
+    const canvas = fabricRef.current;
+    if (!canvas) return false;
+    return canvas.getObjects().some((obj) => obj !== imagemFundoRef.current);
+  }, []);
+
+  const nomesProtegidosDocumentoNavegacaoFrame = useMemo(() => {
+    const nomes = [nomeArquivoOriginal];
+    if (registroAnotacao?.tem_arquivo_anotado) nomes.push(nomeArquivoAnotadoDocumento);
+    return nomes;
+  }, [
+    nomeArquivoOriginal,
+    registroAnotacao?.tem_arquivo_anotado,
+    nomeArquivoAnotadoDocumento,
+  ]);
+
+  const mesclarItensPreviewNoCacheNavegacaoTranscribrothers = useCallback(
+    (
+      itens: {
+        timestamp_segundos_efetivo: number;
+        timestamp_segundos_solicitado?: number;
+        nome_arquivo: string;
+        url_preview: string;
+      }[],
+    ) => {
+      const aplicarNoCache = (
+        prev: Record<string, ItemCachePreviewFrameNavegacaoTutorialTranscribrothers>,
+      ) => {
+        const next = { ...prev };
+        for (const item of itens) {
+          const entrada: ItemCachePreviewFrameNavegacaoTutorialTranscribrothers = {
+            instanteSegundos: item.timestamp_segundos_efetivo,
+            nomeArquivoPreview: item.nome_arquivo,
+            urlPreview: item.url_preview,
+          };
+          next[chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(item.timestamp_segundos_efetivo)] =
+            entrada;
+          if (typeof item.timestamp_segundos_solicitado === "number") {
+            next[
+              chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(item.timestamp_segundos_solicitado)
+            ] = entrada;
+          }
+        }
+        return next;
+      };
+      cachePreviewsNavegacaoRef.current = aplicarNoCache(cachePreviewsNavegacaoRef.current);
+      setCachePreviewsNavegacao((prev) => aplicarNoCache(prev));
+    },
+    [],
+  );
+
+  const buscarPreviewsNavegacaoFaltandoTranscribrothers = useCallback(
+    async (timestamps: number[]) => {
+      const instanteDocumento =
+        typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null;
+      const faltando = timestamps.filter((t) => {
+        if (instanteEhSlotDocumentoFrameNavegacaoTutorialTranscribrothers(t, instanteDocumento)) {
+          return false;
+        }
+        const chave = chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(t);
+        if (cachePreviewsNavegacaoRef.current[chave]) return false;
+        if (timestampsPreviewInflightRef.current.has(chave)) return false;
+        return true;
+      });
+      if (faltando.length === 0) return;
+      const lote = faltando.slice(0, 12);
+      for (const t of lote) {
+        timestampsPreviewInflightRef.current.add(
+          chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(t),
+        );
+      }
+      try {
+        const itens = await previsualizarFramesNavegacaoVideoTutorialJobApiTranscribrothers(
+          jobId,
+          lote,
+        );
+        mesclarItensPreviewNoCacheNavegacaoTranscribrothers(itens);
+      } finally {
+        for (const t of lote) {
+          timestampsPreviewInflightRef.current.delete(
+            chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(t),
+          );
+        }
+      }
+    },
+    [jobId, instanteSegundosInicial, mesclarItensPreviewNoCacheNavegacaoTranscribrothers],
+  );
+
+  const prefetchJanelaNavegacaoFrameTranscribrothers = useCallback(
+    async (centroSegundos: number) => {
+      const lista = montarInstantesPrefetchJanelaNavegacaoFrameTutorialTranscribrothers({
+        centroSegundos,
+        instanteDocumentoSegundos:
+          typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null,
+        duracaoVideoSegundos,
+      });
+      try {
+        await buscarPreviewsNavegacaoFaltandoTranscribrothers(lista);
+      } catch {
+        /* a prévia extra não bloqueia o frame já visível */
+      }
+    },
+    [instanteSegundosInicial, duracaoVideoSegundos, buscarPreviewsNavegacaoFaltandoTranscribrothers],
+  );
+
+  const irParaInstanteSegundosNavegacaoFrameTranscribrothers = useCallback(
+    async (proximo: number) => {
+      if (!mostrarNavegacaoFrame || instanteFrameExibidoSegundos == null) return;
+      if (Math.abs(proximo - instanteFrameExibidoSegundos) < 0.0005) return;
+      if (
+        devePedirConfirmacaoAnotacaoAoNavegarSetaFrameTutorialTranscribrothers({
+          temMarcacoesNaoSalvasNoCanvas: canvasTemAnotacoesAlemDoFundoTranscribrothers(),
+          temArquivoAnotadoSalvoNoDocumento: Boolean(registroAnotacao?.tem_arquivo_anotado),
+          exibindoVersaoAnotada: exibindoAnotadaNoModal,
+        })
+      ) {
+        const ok = await pedirConfirmacao({
+          titulo: "Descartar marcações não salvas?",
+          mensagem:
+            "Há rabiscos nesta tela que ainda não foram salvos. Trocar o instante descarta só o que está no canvas agora; a versão anotada do documento permanece.",
+          rotuloConfirmar: "Continuar",
+          varianteConfirmar: "destrutiva",
+        });
+        if (!ok) return;
+      }
+      const instanteDocumento =
+        typeof instanteSegundosInicial === "number" ? instanteSegundosInicial : null;
+      const voltandoAoDocumento = instanteEhSlotDocumentoFrameNavegacaoTutorialTranscribrothers(
+        proximo,
+        instanteDocumento,
+      );
+      setErro(null);
+      if (voltandoAoDocumento) {
+        setInstanteExibidoSegundos(proximo);
+        setVersaoImagemExibidaNoModal(
+          resolverVersaoImagemInicialNoEditorAnotacaoModalTranscribrothers(registroAnotacao),
+        );
+        void prefetchJanelaNavegacaoFrameTranscribrothers(proximo);
+        return;
+      }
+      const chaveProximo = chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(proximo);
+      const jaTem = cachePreviewsNavegacaoRef.current[chaveProximo];
+      if (jaTem) {
+        setInstanteExibidoSegundos(proximo);
+        setVersaoImagemExibidaNoModal("original");
+        void prefetchJanelaNavegacaoFrameTranscribrothers(proximo);
+        return;
+      }
+      setCapturandoFrameNavegacao(true);
+      try {
+        await buscarPreviewsNavegacaoFaltandoTranscribrothers([proximo]);
+        setInstanteExibidoSegundos(proximo);
+        setVersaoImagemExibidaNoModal("original");
+        void prefetchJanelaNavegacaoFrameTranscribrothers(proximo);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErro(msg);
+        pushToast(msg, "error");
+      } finally {
+        setCapturandoFrameNavegacao(false);
+      }
+    },
+    [
+      mostrarNavegacaoFrame,
+      instanteFrameExibidoSegundos,
+      canvasTemAnotacoesAlemDoFundoTranscribrothers,
+      registroAnotacao,
+      exibindoAnotadaNoModal,
+      pedirConfirmacao,
+      instanteSegundosInicial,
+      prefetchJanelaNavegacaoFrameTranscribrothers,
+      buscarPreviewsNavegacaoFaltandoTranscribrothers,
+      pushToast,
+    ],
+  );
+
+  const navegarFrameVideoNaModalAnotacaoTranscribrothers = useCallback(
+    async (direcao: -1 | 1) => {
+      if (instanteFrameExibidoSegundos == null) return;
+      const proximo = instanteAposPassoNavegacaoFrameVideoTutorialTranscribrothers({
+        instanteAtual: instanteFrameExibidoSegundos,
+        direcao,
+        duracaoVideoSegundos,
+      });
+      await irParaInstanteSegundosNavegacaoFrameTranscribrothers(proximo);
+    },
+    [instanteFrameExibidoSegundos, duracaoVideoSegundos, irParaInstanteSegundosNavegacaoFrameTranscribrothers],
+  );
+
+  const trilhaPassosNavegacaoFrame = useMemo(() => {
+    if (
+      !mostrarNavegacaoFrame ||
+      instanteFrameExibidoSegundos == null ||
+      typeof instanteSegundosInicial !== "number"
+    ) {
+      return null;
+    }
+    return montarTrilhaPassosNavegacaoFrameAncoradaNoDocumentoTutorialTranscribrothers({
+      instanteAtualSegundos: instanteFrameExibidoSegundos,
+      instanteDocumentoSegundos: instanteSegundosInicial,
+      duracaoVideoSegundos,
+    });
+  }, [mostrarNavegacaoFrame, instanteFrameExibidoSegundos, instanteSegundosInicial, duracaoVideoSegundos]);
+
+  const persistirCanvasComoPngAnotadoTranscribrothers = useCallback(
+    async (nomeArquivoDestino: string = nomeArquivoOriginal): Promise<JobStatus> => {
+      const canvas = fabricRef.current;
+      if (!canvas) {
+        throw new Error("Canvas de anotação indisponível.");
+      }
+      const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
+      const blob = await converterDataUrlPngParaBlobTranscribrothers(dataUrl);
+      return gravarPngAnotadoScreenshotTutorialJobApiTranscribrothers(jobId, nomeArquivoDestino, blob);
+    },
+    [jobId, nomeArquivoOriginal],
+  );
+
+  const usarEsteFrameNoDocumentoPelaModalAnotacaoTranscribrothers = useCallback(async (args?: {
+    persistirAnotacaoDoCanvas?: boolean;
+  }) => {
+    if (
+      !podeUsarEsteFrame ||
+      !nomeArquivoCandidatoFrame ||
+      instanteFrameExibidoSegundos == null ||
+      noSlotDocumentoNavegacao
+    ) {
+      return;
+    }
+    if (
+      devePedirConfirmacaoAnotacaoAoUsarEsteFrameTutorialTranscribrothers({
+        temArquivoAnotadoSalvoNoDocumento: Boolean(registroAnotacao?.tem_arquivo_anotado),
+        saindoDoSlotDocumento: true,
+      })
+    ) {
+      const ok = await pedirConfirmacao({
+        titulo: "Trocar o frame no documento?",
+        mensagem:
+          "O tutorial passa a usar este instante. A versão anotada da imagem anterior permanece nos assets, mas sai do documento.",
+        rotuloConfirmar: ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_MODAL_ANOTACAO_TRANSCRIBROTHERS,
+        varianteConfirmar: "destrutiva",
+      });
+      if (!ok) return;
+    }
+    setAplicandoFrameNoDocumento(true);
+    setErro(null);
+    try {
+      const promovido = await promoverFramePrevisualizacaoParaAssetsVideoTutorialJobApiTranscribrothers(
+        jobId,
+        nomeArquivoCandidatoFrame,
+        instanteFrameExibidoSegundos,
+      );
+      aoAtualizarJobAposCapturaFramePreview?.(promovido.job);
+      if (args?.persistirAnotacaoDoCanvas) {
+        const jobAnotado = await persistirCanvasComoPngAnotadoTranscribrothers(promovido.nome_arquivo);
+        aoSalvarComSucesso(jobAnotado, "usar_no_tutorial");
+        recorteAplicadoNestaSessaoCanvasRef.current = false;
+      }
+      const nomesDescartar = nomesArquivoPreviewParaDescartarNavegacaoFrameTutorialTranscribrothers({
+        nomesPreviewEmCache: Object.values(cachePreviewsNavegacaoRef.current).map(
+          (item) => item.nomeArquivoPreview,
+        ),
+        nomesProtegidosDocumento: nomesProtegidosDocumentoNavegacaoFrame,
+        nomePreviewPromovido: nomeArquivoCandidatoFrame,
+      });
+      if (nomesDescartar.length > 0) {
+        await descartarPrevisualizacaoFramesNavegacaoVideoTutorialJobApiTranscribrothers(
+          jobId,
+          nomesDescartar,
+          nomesProtegidosDocumentoNavegacaoFrame,
+        );
+      }
+      await aoUsarFrameCapturadoNoDocumentoMarkdown?.({
+        nomeArquivoAnterior: nomeArquivoOriginal,
+        nomeArquivoNovo: promovido.nome_arquivo,
+        instanteSegundos: instanteFrameExibidoSegundos,
+      });
+      if (args?.persistirAnotacaoDoCanvas) {
+        await aoSincronizarMarkdownComVersaoAnotada?.(promovido.nome_arquivo, { silencioso: true });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErro(msg);
+      pushToast(msg, "error");
+    } finally {
+      setAplicandoFrameNoDocumento(false);
+    }
+  }, [
+    podeUsarEsteFrame,
+    nomeArquivoCandidatoFrame,
+    instanteFrameExibidoSegundos,
+    noSlotDocumentoNavegacao,
+    registroAnotacao?.tem_arquivo_anotado,
+    pedirConfirmacao,
+    jobId,
+    aoAtualizarJobAposCapturaFramePreview,
+    nomesProtegidosDocumentoNavegacaoFrame,
+    aoUsarFrameCapturadoNoDocumentoMarkdown,
+    nomeArquivoOriginal,
+    pushToast,
+    persistirCanvasComoPngAnotadoTranscribrothers,
+    aoSalvarComSucesso,
+    aoSincronizarMarkdownComVersaoAnotada,
+  ]);
 
   useEffect(() => {
     sincronizarZoomVisualizacaoCanvasAnotacaoTranscribrothers();
@@ -512,8 +944,9 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
   }, [jobId, nomeArquivoOriginal]);
 
   useEffect(() => {
-    carregarImagemFundoNoCanvasAnotacaoTranscribrothers(nomeArquivoBaseCanvasEdicao);
-  }, [nomeArquivoBaseCanvasEdicao, carregarImagemFundoNoCanvasAnotacaoTranscribrothers]);
+    if (!urlImagemCanvasNavegacao) return;
+    carregarImagemFundoNoCanvasAnotacaoTranscribrothers(urlImagemCanvasNavegacao);
+  }, [urlImagemCanvasNavegacao, carregarImagemFundoNoCanvasAnotacaoTranscribrothers]);
 
   useEffect(() => {
     const canvas = fabricRef.current;
@@ -846,29 +1279,70 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     canvas.requestRenderAll();
   }, []);
 
-  const persistirCanvasComoPngAnotadoTranscribrothers = useCallback(async (): Promise<JobStatus> => {
-    const canvas = fabricRef.current;
-    if (!canvas) {
-      throw new Error("Canvas de anotação indisponível.");
+  const fecharModalDescartandoPreviewsNavegacaoTranscribrothers = useCallback(() => {
+    const nomes = Object.values(cachePreviewsNavegacaoRef.current).map(
+      (item) => item.nomeArquivoPreview,
+    );
+    if (nomes.length > 0) {
+      void descartarPrevisualizacaoFramesNavegacaoVideoTutorialJobApiTranscribrothers(
+        jobId,
+        nomes,
+        nomesProtegidosDocumentoNavegacaoFrame,
+      ).catch(() => undefined);
     }
-    const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
-    const blob = await converterDataUrlPngParaBlobTranscribrothers(dataUrl);
-    return gravarPngAnotadoScreenshotTutorialJobApiTranscribrothers(jobId, nomeArquivoOriginal, blob);
-  }, [jobId, nomeArquivoOriginal]);
+    aoFechar();
+  }, [aoFechar, jobId, nomesProtegidosDocumentoNavegacaoFrame]);
 
-  const salvar = useCallback(async () => {
+  const usarNoTutorialOQueEstaNaTelaTranscribrothers = useCallback(async () => {
+    const canvas = fabricRef.current;
+    const decisao = resolverAcaoCommitUsarNoTutorialModalAnotacaoTranscribrothers({
+      noSlotDocumento: noSlotDocumentoNavegacao,
+      versaoExibidaNoEditor: versaoImagemExibidaNoModal,
+      recorteFoiAplicado: recorteAplicadoNestaSessaoCanvasRef.current,
+      totalObjetosCanvas: canvas?.getObjects().length ?? 1,
+    });
+    if (decisao.tipo === "promover_previsualizacao_frame") {
+      await usarEsteFrameNoDocumentoPelaModalAnotacaoTranscribrothers({
+        persistirAnotacaoDoCanvas: decisao.precisaPersistirAnotacao,
+      });
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {
-      const job = await persistirCanvasComoPngAnotadoTranscribrothers();
-      aoSalvarComSucesso(job, "salvar_manual");
-      aoFechar();
+      if (decisao.precisaPersistirAnotacao) {
+        const job = await persistirCanvasComoPngAnotadoTranscribrothers();
+        aoSalvarComSucesso(job, "usar_no_tutorial");
+        recorteAplicadoNestaSessaoCanvasRef.current = false;
+      }
+      if (decisao.versaoParaTutorial === "anotado") {
+        if (aoSincronizarMarkdownComVersaoAnotada) {
+          await aoSincronizarMarkdownComVersaoAnotada(nomeArquivoOriginal, { silencioso: true });
+        } else if (aoAlternarVersaoExibicaoNoTutorial) {
+          await aoAlternarVersaoExibicaoNoTutorial(nomeArquivoOriginal, "anotado", { silencioso: true });
+        }
+      } else if (decisao.versaoParaTutorial === "original" && aoAlternarVersaoExibicaoNoTutorial) {
+        await aoAlternarVersaoExibicaoNoTutorial(nomeArquivoOriginal, "original", { silencioso: true });
+      }
+      pushToast("Tutorial atualizado.", "success");
+      fecharModalDescartandoPreviewsNavegacaoTranscribrothers();
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
     } finally {
       setSalvando(false);
     }
-  }, [aoFechar, aoSalvarComSucesso, persistirCanvasComoPngAnotadoTranscribrothers]);
+  }, [
+    noSlotDocumentoNavegacao,
+    versaoImagemExibidaNoModal,
+    usarEsteFrameNoDocumentoPelaModalAnotacaoTranscribrothers,
+    persistirCanvasComoPngAnotadoTranscribrothers,
+    aoSalvarComSucesso,
+    aoSincronizarMarkdownComVersaoAnotada,
+    aoAlternarVersaoExibicaoNoTutorial,
+    nomeArquivoOriginal,
+    pushToast,
+    fecharModalDescartandoPreviewsNavegacaoTranscribrothers,
+  ]);
 
   const inserirImagemCanvasNoDocumentoMarkdownTranscribrothers = useCallback(async () => {
     if (!aoSolicitarInserirImagemNoDocumentoMarkdown) return;
@@ -935,24 +1409,14 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     [],
   );
 
-  const alternarVersaoImagemExibidaNoModalETutorial = useCallback(
-    async (versao: VersaoImagemExibidaNoEditorAnotacaoModalTranscribrothers) => {
+  const alternarVersaoImagemExibidaSoNoEditor = useCallback(
+    (versao: VersaoImagemExibidaNoEditorAnotacaoModalTranscribrothers) => {
       if (versao === "anotado" && !registroAnotacao?.tem_arquivo_anotado) {
         return;
       }
       setVersaoImagemExibidaNoModal(versao);
-      if (aoAlternarVersaoExibicaoNoTutorial) {
-        await executarAcaoGestaoVersao(() =>
-          aoAlternarVersaoExibicaoNoTutorial(nomeArquivoOriginal, versao),
-        );
-      }
     },
-    [
-      aoAlternarVersaoExibicaoNoTutorial,
-      executarAcaoGestaoVersao,
-      nomeArquivoOriginal,
-      registroAnotacao?.tem_arquivo_anotado,
-    ],
+    [registroAnotacao?.tem_arquivo_anotado],
   );
 
   const ferramentasBarra: FerramentaAnotacaoImagemTutorialTranscribrothers[] = [
@@ -968,19 +1432,17 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
 
   return (
     <>
-    <div role="dialog" aria-modal="true" className="tb-anotacao-modal-overlay" onClick={aoFechar}>
+    <div role="dialog" aria-modal="true" className="tb-anotacao-modal-overlay" onClick={fecharModalDescartandoPreviewsNavegacaoTranscribrothers}>
       <div
         className="tb-anotacao-modal-painel"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         role="document"
       >
         <header className="tb-anotacao-modal-cabecalho">
-          <h2>Editar screenshot</h2>
-          <p className="tb-anotacao-modal-sub">
-            A captura original é preservada; a versão editada é salva em paralelo (
-            <code>.anotado.png</code>). Recorte, destaque e formas: arraste para definir a área.
-          </p>
-          <button type="button" className="tb-anotacao-modal-fechar" onClick={aoFechar} aria-label="Fechar">
+          <h2 title="A captura original é preservada; a versão editada é salva em paralelo (.anotado.png).">
+            Editar screenshot
+          </h2>
+          <button type="button" className="tb-anotacao-modal-fechar" onClick={fecharModalDescartandoPreviewsNavegacaoTranscribrothers} aria-label="Fechar">
             ×
           </button>
         </header>
@@ -1022,28 +1484,61 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
               corAtual={corAnotacao}
               aoSelecionarCor={aoAlterarCorAnotacao}
             />
+            {mostrarNavegacaoFrame && instanteFrameExibidoSegundos != null ? (
+              <div className="tb-anotacao-modal-navegacao-frame" role="group" aria-label="Trocar frame do vídeo">
+                <button
+                  type="button"
+                  className="tb-anotacao-modal-navegacao-frame-seta"
+                  aria-label="Frame anterior"
+                  title="Frame anterior (0,4 s)"
+                  disabled={processandoAlgumaAcao || carregando}
+                  onClick={() => void navegarFrameVideoNaModalAnotacaoTranscribrothers(-1)}
+                >
+                  ‹
+                </button>
+                <span
+                  className="tb-anotacao-modal-navegacao-frame-instante"
+                  title={`${instanteFrameExibidoSegundos.toFixed(1)} s`}
+                >
+                  {formatarSegundosParaRotuloMmSsMarkdownTutorialTranscribrothers(instanteFrameExibidoSegundos)}
+                </span>
+                <button
+                  type="button"
+                  className="tb-anotacao-modal-navegacao-frame-seta"
+                  aria-label="Próximo frame"
+                  title="Próximo frame (0,4 s)"
+                  disabled={processandoAlgumaAcao || carregando}
+                  onClick={() => void navegarFrameVideoNaModalAnotacaoTranscribrothers(1)}
+                >
+                  ›
+                </button>
+                <span className="tb-anotacao-modal-navegacao-frame-hint">
+                  {noSlotDocumentoNavegacao ? "No tutorial" : "Prévia"}
+                </span>
+              </div>
+            ) : null}
           </div>
           <div className="tb-anotacao-ferramentas-direita tb-anotacao-ferramentas-acoes-direita">
             <button
               type="button"
-              className="tb-linkbtn tb-anotacao-modal-btn-copiar-imagem"
-              disabled={processandoAlgumaAcao || carregando}
+              className="tb-anotacao-ferramenta-icone tb-anotacao-modal-btn-copiar-imagem"
+              disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
               title="Copiar a imagem editada para a área de transferência"
               aria-label="Copiar imagem editada"
               onClick={() => void copiarImagemEditadaParaAreaTransferenciaTranscribrothers()}
             >
               <IconeCopiarImagemEditadaAnotacaoTutorialTranscribrothers />
-              Copiar imagem editada
             </button>
             {aoSolicitarInserirImagemNoDocumentoMarkdown ? (
               <button
                 type="button"
-                className="tb-linkbtn tb-anotacao-modal-btn-inserir-documento"
-                disabled={processandoAlgumaAcao || carregando}
-                title="Grava a edição (se houver) e escolhe onde inserir no tutorial a imagem anotada"
+                className="tb-anotacao-ferramenta-icone tb-anotacao-modal-btn-inserir-documento"
+                disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
+                title="Grava a edição (se houver), copia a referência e abre o Markdown para você colar no ponto certo"
+                aria-label={inserindoNoDocumento ? "Inserindo no documento" : "Inserir no documento"}
                 onClick={() => void inserirImagemCanvasNoDocumentoMarkdownTranscribrothers()}
               >
-                {inserindoNoDocumento ? "Inserindo…" : "Inserir no documento"}
+                <IconeInserirImagemNoDocumentoAnotacaoTutorialTranscribrothers />
               </button>
             ) : null}
             <button
@@ -1079,109 +1574,161 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
           <div ref={fabricMountRef} className="tb-anotacao-canvas-fabric-mount" />
           <div
             className={
-              carregando
+              mostrandoOverlayCanvas
                 ? "tb-anotacao-canvas-carregando-overlay tb-anotacao-canvas-carregando-overlay--visivel"
                 : "tb-anotacao-canvas-carregando-overlay"
             }
-            aria-hidden={!carregando}
+            aria-hidden={!mostrandoOverlayCanvas}
             aria-live="polite"
           >
             <p className="tb-anotacao-carregando">
-              Carregando {exibindoAnotadaNoModal ? "versão anotada" : "captura original"}…
+              {capturandoFrameNavegacao || aguardandoPreviewAtual
+                ? "Buscando frame do vídeo…"
+                : `Carregando ${exibindoAnotadaNoModal ? "versão anotada" : "captura original"}…`}
             </p>
           </div>
         </div>
 
-        <div className="tb-anotacao-modal-gestao-versoes">
-          <span className="tb-anotacao-modal-gestao-versoes-titulo">
-            Visualização no editor e no preview do tutorial
-          </span>
-          <div className="tb-anotacao-modal-gestao-versoes-acoes">
-            <span className="tb-badge-versao-imagem-tutorial">
-              {exibindoAnotadaNoModal ? "Anotada no editor" : "Original no editor"}
-            </span>
-            {registroAnotacao?.tem_arquivo_anotado ? (
-              <>
+        {trilhaPassosNavegacaoFrame ? (
+          <div
+            className="tb-anotacao-trilha-passos-navegacao-frame"
+            role="group"
+            aria-label="Passos em torno do frame do tutorial"
+          >
+            {trilhaPassosNavegacaoFrame.documentoForaDaJanelaNaPonta === "esquerda" ? (
+              <button
+                type="button"
+                className="tb-anotacao-trilha-pino-documento"
+                title="O frame do tutorial está à esquerda desta janela"
+                aria-label="Ir para o frame do tutorial"
+                disabled={processandoAlgumaAcao || carregando}
+                onClick={() =>
+                  void irParaInstanteSegundosNavegacaoFrameTranscribrothers(
+                    instanteSegundosInicial as number,
+                  )
+                }
+              >
+                ◀
+              </button>
+            ) : null}
+            {trilhaPassosNavegacaoFrame.tracos.map((traco, indiceTraco) => {
+              const classes = ["tb-anotacao-trilha-traco"];
+              if (traco.ehAtual) classes.push("tb-anotacao-trilha-traco--atual");
+              if (traco.ehDocumento) classes.push("tb-anotacao-trilha-traco--documento");
+              return (
                 <button
+                  key={`${indiceTraco}-${chaveInstanteCacheFrameNavegacaoTutorialTranscribrothers(traco.instanteSegundos)}`}
                   type="button"
-                  className="tb-linkbtn"
-                  disabled={processandoAlgumaAcao || !exibindoAnotadaNoModal}
-                  onClick={() => void alternarVersaoImagemExibidaNoModalETutorial("original")}
-                >
-                  Ver original
-                </button>
-                <button
-                  type="button"
-                  className="tb-linkbtn"
-                  disabled={processandoAlgumaAcao || exibindoAnotadaNoModal}
-                  onClick={() => void alternarVersaoImagemExibidaNoModalETutorial("anotado")}
-                >
-                  Ver anotada
-                </button>
-                {aoRemoverAnotacaoSalva ? (
-                  <button
-                    type="button"
-                    className="tb-linkbtn"
-                    disabled={processandoAlgumaAcao}
-                    onClick={() => {
-                      void (async () => {
-                        const ok = await pedirConfirmacao({
-                          titulo: "Remover anotação?",
-                          mensagem:
-                            "Remover a versão anotada desta imagem? A captura original será mantida.",
-                          rotuloConfirmar: "Remover",
-                          varianteConfirmar: "destrutiva",
-                        });
-                        if (!ok) return;
-                        void executarAcaoGestaoVersao(() =>
-                          aoRemoverAnotacaoSalva(nomeArquivoOriginal),
-                        );
-                      })();
-                    }}
-                  >
-                    Remover anotação
-                  </button>
-                ) : null}
-                {aoSincronizarMarkdownComVersaoAnotada ? (
-                  <button
-                    type="button"
-                    className="tb-linkbtn"
-                    disabled={processandoAlgumaAcao}
-                    onClick={() =>
-                      void executarAcaoGestaoVersao(() =>
-                        aoSincronizarMarkdownComVersaoAnotada(nomeArquivoOriginal),
-                      )
-                    }
-                  >
-                    Usar anotada no .md
-                  </button>
-                ) : null}
-              </>
-            ) : (
-              <span className="tb-anotacao-modal-gestao-versoes-hint">
-                Ainda não há versão anotada salva para esta imagem.
-              </span>
-            )}
+                  className={classes.join(" ")}
+                  aria-current={traco.ehAtual ? "true" : undefined}
+                  aria-label={rotuloAcessivelTracoTrilhaNavegacaoFrameTutorialTranscribrothers(traco)}
+                  title={rotuloAcessivelTracoTrilhaNavegacaoFrameTutorialTranscribrothers(traco)}
+                  disabled={processandoAlgumaAcao || carregando}
+                  onClick={() => void irParaInstanteSegundosNavegacaoFrameTranscribrothers(traco.instanteSegundos)}
+                />
+              );
+            })}
+            {trilhaPassosNavegacaoFrame.documentoForaDaJanelaNaPonta === "direita" ? (
+              <button
+                type="button"
+                className="tb-anotacao-trilha-pino-documento"
+                title="O frame do tutorial está à direita desta janela"
+                aria-label="Ir para o frame do tutorial"
+                disabled={processandoAlgumaAcao || carregando}
+                onClick={() =>
+                  void irParaInstanteSegundosNavegacaoFrameTranscribrothers(
+                    instanteSegundosInicial as number,
+                  )
+                }
+              >
+                ▶
+              </button>
+            ) : null}
           </div>
-        </div>
+        ) : null}
 
         <footer className="tb-anotacao-modal-rodape">
+          {noSlotDocumentoNavegacao && registroAnotacao?.tem_arquivo_anotado ? (
+            <div className="tb-anotacao-rodape-versao-casa">
+              <div className="tb-anotacao-toggle-original-anotada" role="group" aria-label="Versão no editor">
+                <button
+                  type="button"
+                  aria-pressed={!exibindoAnotadaNoModal}
+                  disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
+                  onClick={() => alternarVersaoImagemExibidaSoNoEditor("original")}
+                >
+                  Original
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={exibindoAnotadaNoModal}
+                  disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
+                  onClick={() => alternarVersaoImagemExibidaSoNoEditor("anotado")}
+                >
+                  Anotada
+                </button>
+              </div>
+              {aoRemoverAnotacaoSalva ? (
+                <details className="tb-anotacao-menu-versao-casa">
+                  <summary title="Mais ações da versão anotada" aria-label="Mais ações da versão anotada">
+                    ⋯
+                  </summary>
+                  <div className="tb-anotacao-menu-versao-casa-painel">
+                    {aoRemoverAnotacaoSalva ? (
+                      <button
+                        type="button"
+                        disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
+                        onClick={() => {
+                          void (async () => {
+                            const ok = await pedirConfirmacao({
+                              titulo: "Remover anotação?",
+                              mensagem:
+                                "Remover a versão anotada desta imagem? A captura original será mantida.",
+                              rotuloConfirmar: "Remover",
+                              varianteConfirmar: "destrutiva",
+                            });
+                            if (!ok) return;
+                            void executarAcaoGestaoVersao(() =>
+                              aoRemoverAnotacaoSalva(nomeArquivoOriginal),
+                            );
+                          })();
+                        }}
+                      >
+                        Remover anotação
+                      </button>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
           <div className="tb-anotacao-modal-rodape-acoes-principais">
             <button
               type="button"
               className="tb-linkbtn"
               disabled={processandoAlgumaAcao}
-              onClick={aoFechar}
+              onClick={fecharModalDescartandoPreviewsNavegacaoTranscribrothers}
             >
               Cancelar
             </button>
             <button
               type="button"
               className="tb-primary"
-              onClick={() => void salvar()}
-              disabled={processandoAlgumaAcao || carregando}
+              onClick={() => void usarNoTutorialOQueEstaNaTelaTranscribrothers()}
+              disabled={
+                processandoAlgumaAcao ||
+                carregando ||
+                (!noSlotDocumentoNavegacao && !podeUsarEsteFrame)
+              }
+              title={
+                noSlotDocumentoNavegacao
+                  ? "O tutorial passa a usar a versão que está na tela"
+                  : "Prévia — ainda não está no documento. Grava este instante no tutorial."
+              }
             >
-              {salvando ? "Salvando…" : "Salvar versão anotada"}
+              {salvando || aplicandoFrameNoDocumento
+                ? ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_PROCESSANDO_MODAL_ANOTACAO_TRANSCRIBROTHERS
+                : ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_MODAL_ANOTACAO_TRANSCRIBROTHERS}
             </button>
           </div>
         </footer>

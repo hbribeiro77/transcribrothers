@@ -19,6 +19,7 @@ export type PropostaFerramentaChatAgenteDocumentoJobTranscribrothers = {
   titulo_secao_heading: string | null;
   instrucoes: string | null;
   caminhos_imagens: string[];
+  reescrever_secao?: boolean;
 };
 
 export type ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers = {
@@ -65,18 +66,25 @@ export type MensagemPainelHistoricoChatAskAgenteDocumentoJobTranscribrothers = {
   executar_proposta: boolean;
 };
 
-/** O turno agente em geração sai da lista quando um turno posterior, com o mesmo texto, já está em preview_pronta ou falhou. */
+/** Some a fala do agente (gerando ou a cópia da prévia) quando um turno posterior, no mesmo pedido, já está em preview_pronta ou falhou. */
 export function itensHistoricoChatAskAgenteOcultandoGerandoSubstituidoPorPreviewProntaTranscribrothers(
   itens: ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers[],
 ): ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers[] {
   return itens.filter((item, indice) => {
-    if (item.papel !== "agente" || item.estado !== "gerando") return true;
-    return !itens.slice(indice + 1).some(
-      (outro) =>
-        outro.papel === "agente" &&
+    if (item.papel !== "agente") return true;
+    if (item.estado === "preview_pronta" || item.estado === "falhou") return true;
+    for (let i = indice + 1; i < itens.length; i++) {
+      const outro = itens[i];
+      if (outro.papel === "usuario") return true;
+      if (outro.papel !== "agente") continue;
+      if (
         (outro.estado === "preview_pronta" || outro.estado === "falhou") &&
-        outro.texto === item.texto,
-    );
+        outro.texto === item.texto
+      ) {
+        return false;
+      }
+    }
+    return true;
   });
 }
 
@@ -176,6 +184,7 @@ export function normalizarPropostaFerramentaChatAgenteDocumentoJobTranscribrothe
         ? o.caminhos_imagens.filter((item): item is string => typeof item === "string")
         : [],
     ),
+    reescrever_secao: o.reescrever_secao === true,
   };
 }
 
@@ -248,6 +257,40 @@ export function resolverPropostasEdicaoParcialParaAplicarChatAgenteTranscribroth
   if (lote.length > 0) return lote;
   if (proposta?.nome === "edicao_parcial") return [proposta];
   return [];
+}
+
+export function instrucaoEdicaoParcialPedeReescreverSecaoNaoCirurgicoTranscribrothers(
+  proposta: Pick<
+    PropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
+    "instrucoes" | "reescrever_secao"
+  > | null | undefined,
+): boolean {
+  if (!proposta) return false;
+  if (proposta.reescrever_secao === true) return true;
+  const instrucoes = proposta.instrucoes || "";
+  const baixo = instrucoes.toLowerCase();
+  const tiraTempo =
+    instrucoes.includes("?t=") || baixo.includes("timestamp") || baixo.includes("[mm:ss]");
+  const remove =
+    baixo.includes("remover") ||
+    baixo.includes("tirar") ||
+    baixo.includes("tire ") ||
+    baixo.includes("neutralizar");
+  if (tiraTempo && remove) return true;
+  return baixo.includes("legenda") && baixo.includes("imagem");
+}
+
+export function loteEdicoesParciaisDeveReescreverSecoesNaoCirurgicoTranscribrothers(
+  lote: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[],
+): boolean {
+  return lote.some((item) => instrucaoEdicaoParcialPedeReescreverSecaoNaoCirurgicoTranscribrothers(item));
+}
+
+export function modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers(
+  lote: PropostaFerramentaChatAgenteDocumentoJobTranscribrothers[],
+): "cirurgico" | "reescrever_secao" | "reescrever_documento" {
+  if (!loteEdicoesParciaisDeveReescreverSecoesNaoCirurgicoTranscribrothers(lote)) return "cirurgico";
+  return lote.length >= 2 ? "reescrever_documento" : "reescrever_secao";
 }
 
 /** Chip da bolha: tempo da transcrição ou heading do Markdown. */

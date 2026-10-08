@@ -16,12 +16,23 @@ from transcribrothers_backend.modulo_catalogo_ferramentas_chat_agente_documento_
     escolher_propostas_ferramenta_chat_agente_transcribrothers,
     limpar_texto_visivel_se_vier_json_embutido_chat_agente_transcribrothers,
     extrair_caminhos_relativos_de_imagens_historico_chat_agente_transcribrothers,
+    mesclar_ferramentas_json_e_tool_calls_openai_chat_agente_transcribrothers,
+    parsear_estado_resposta_modelo_chat_agente_transcribrothers,
     parsear_ferramentas_de_texto_resposta_modelo_chat_agente_transcribrothers,
+    parsear_ferramentas_de_tool_calls_openai_chat_agente_transcribrothers,
     parsear_flag_executar_resposta_modelo_chat_agente_transcribrothers,
 )
 from transcribrothers_backend.modulo_detectar_confirmacao_e_instantes_pedido_chat_agente_transcribrothers import (
     extrair_instantes_segundos_mencionados_no_texto_chat_agente_transcribrothers,
-    sintetizar_proposta_edicao_parcial_do_texto_agente_transcribrothers,
+)
+from transcribrothers_backend.modulo_incluir_plano_ask_no_contexto_turno_chat_agente_transcribrothers import (
+    texto_plano_ask_para_contexto_agente_transcribrothers,
+)
+from transcribrothers_backend.modulo_retry_resposta_chat_agente_aplicando_sem_ferramentas_transcribrothers import (
+    obter_bruto_chat_agente_repetindo_se_aplicando_sem_ferramentas_transcribrothers,
+)
+from transcribrothers_backend.modulo_schema_tools_openai_chat_agente_documento_job_transcribrothers import (
+    schema_tools_openai_chat_agente_documento_job_transcribrothers,
 )
 from transcribrothers_backend.modulo_cliente_litellm_chat_completions_texto_simples_em_stream_transcribrothers import (
     obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers,
@@ -236,6 +247,14 @@ async def orquestrar_turno_chat_agente_job_transcribrothers(
         mensagem=mensagem_para_prompt,
         contexto=contexto,
     )
+    plano_ask = texto_plano_ask_para_contexto_agente_transcribrothers(historico_anterior)
+    if plano_ask:
+        conteudo_usuario = (
+            f"{conteudo_usuario}\n\n"
+            "Plano do Ask (ainda sem tools; converta em ferramentas neste turno "
+            "se o usuário pediu para aplicar):\n"
+            f"{plano_ask}"
+        )
     anexar_item_historico_chat_ask_agente_no_work_transcribrothers(
         diretorio_trabalho_job,
         _novo_item_historico_agente_transcribrothers(
@@ -245,35 +264,45 @@ async def orquestrar_turno_chat_agente_job_transcribrothers(
             imagens=imagens_turno_usuario,
         ),
     )
-    bruto = await obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
-        modelo=modelo,
-        api_key=api_key,
-        api_base=api_base,
-        httpx_verify=httpx_verify,
-        mensagens=_mensagens_litellm_chat_agente_transcribrothers(
-            historico_anterior=historico_anterior,
-            conteudo_usuario=conteudo_usuario,
-            forcar_ferramenta=forcar_ferramenta,
-        ),
-        temperature=0.2,
-        emitir_delta_texto=emitir_delta_texto,
+    mensagens_modelo = _mensagens_litellm_chat_agente_transcribrothers(
+        historico_anterior=historico_anterior,
+        conteudo_usuario=conteudo_usuario,
+        forcar_ferramenta=forcar_ferramenta,
+    )
+
+    async def _chamar_modelo_agente(*, mensagens: list[dict[str, str]]) -> tuple[str, list[dict]]:
+        nativas: list[dict] = []
+        bruto_chamada = await obter_texto_bruto_chat_litellm_preferindo_stream_transcribrothers(
+            modelo=modelo,
+            api_key=api_key,
+            api_base=api_base,
+            httpx_verify=httpx_verify,
+            mensagens=mensagens,
+            temperature=0.2,
+            emitir_delta_texto=emitir_delta_texto,
+            tools=schema_tools_openai_chat_agente_documento_job_transcribrothers(),
+            saida_tool_calls=nativas,
+        )
+        return bruto_chamada, nativas
+
+    bruto, tool_calls = await obter_bruto_chat_agente_repetindo_se_aplicando_sem_ferramentas_transcribrothers(
+        chamar_modelo=_chamar_modelo_agente,
+        mensagens=mensagens_modelo,
     )
     resposta = parsear_resposta_json_chat_ask_litellm_transcribrothers(bruto)
     citacoes = [_citacao_para_dict_transcribrothers(c) for c in resposta.citacoes]
-    ferramentas = parsear_ferramentas_de_texto_resposta_modelo_chat_agente_transcribrothers(bruto)
+    ferramentas = mesclar_ferramentas_json_e_tool_calls_openai_chat_agente_transcribrothers(
+        ferramentas_json=parsear_ferramentas_de_texto_resposta_modelo_chat_agente_transcribrothers(bruto),
+        ferramentas_tool_calls=parsear_ferramentas_de_tool_calls_openai_chat_agente_transcribrothers(
+            tool_calls
+        ),
+    )
     propostas = escolher_propostas_ferramenta_chat_agente_transcribrothers(
         ferramentas=ferramentas,
         forcar_ferramenta=forcar_ferramenta,
         mensagem_usuario=mensagem,
     )
     proposta = propostas[0] if propostas else None
-    if proposta is None and any(
-        chave in mensagem.lower()
-        for chave in ("frame", "bolar", "encaixar", "adicionar", "incluir", "rascunho")
-    ):
-        proposta = sintetizar_proposta_edicao_parcial_do_texto_agente_transcribrothers(resposta.texto)
-        if proposta is not None:
-            propostas = [proposta]
     instantes = list(resposta.instantes_imagem_segundos)
     if not instantes:
         instantes = extrair_instantes_segundos_mencionados_no_texto_chat_agente_transcribrothers(
@@ -315,6 +344,7 @@ async def orquestrar_turno_chat_agente_job_transcribrothers(
     executar_proposta = decidir_executar_proposta_resposta_modelo_chat_agente_transcribrothers(
         flag_executar=parsear_flag_executar_resposta_modelo_chat_agente_transcribrothers(bruto),
         quantidade_propostas=len(propostas),
+        estado=parsear_estado_resposta_modelo_chat_agente_transcribrothers(bruto),
     )
     historico = anexar_item_historico_chat_ask_agente_no_work_transcribrothers(
         diretorio_trabalho_job,

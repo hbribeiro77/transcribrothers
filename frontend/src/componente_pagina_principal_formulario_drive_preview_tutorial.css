@@ -4876,6 +4876,7 @@ button.tb-pipeline-status-step {
 .tb-chat-ask-agente-mensagens {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   margin: 0 0 12px;
   display: flex;
@@ -4888,10 +4889,16 @@ button.tb-pipeline-status-step {
   border-radius: 10px;
   font-size: 0.88rem;
   line-height: 1.45;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 .tb-chat-ask-agente-mensagem-texto {
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .tb-chat-ask-agente-mensagem-texto--markdown {
   white-space: normal;
@@ -4915,9 +4922,12 @@ button.tb-pipeline-status-step {
   background: #e2e8f0;
   padding: 0 4px;
   border-radius: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .tb-chat-ask-agente-mensagem-texto--markdown pre {
   overflow-x: auto;
+  max-width: 100%;
   margin: 0.45em 0;
   padding: 8px 10px;
   border-radius: 8px;
@@ -4927,9 +4937,16 @@ button.tb-pipeline-status-step {
   padding: 0;
   background: transparent;
 }
+.tb-chat-ask-agente-mensagem-texto--markdown table {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  display: block;
+  overflow-x: auto;
+}
 .tb-chat-ask-agente-mensagem-texto--markdown a {
   color: inherit;
   text-decoration: underline;
+  overflow-wrap: anywhere;
 }
 .tb-chat-ask-agente-mensagem-texto--markdown strong {
   font-weight: 700;

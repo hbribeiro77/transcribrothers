@@ -18,7 +18,10 @@ import { rotuloBotaoPropostaFerramentaChatAgenteTranscribrothers } from "./modul
 import { rotuloExibicaoAnexoTextoContextoFabUiTranscribrothers } from "./modulo_util_anexo_texto_contexto_fab_projeto_em_branco_transcribrothers.ts";
 import { classesPainelGavetaChatAskAgenteDocumentoTranscribrothers } from "./modulo_util_classes_gaveta_chat_ask_agente_empurra_grid_transcribrothers.ts";
 import { ComponenteTextoMarkdownBolhaChatAskAgenteDocumentoTranscribrothers } from "./componente_texto_markdown_bolha_chat_ask_agente_documento_transcribrothers.tsx";
-import { TEXTO_STATUS_PREPARANDO_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS } from "./modulo_util_feedback_previa_documento_no_chat_ask_agente_transcribrothers.ts";
+import {
+  TEXTO_STATUS_PREPARANDO_PREVIA_DOCUMENTO_CHAT_TRANSCRIBROTHERS,
+  textoIndicadorProcessandoTurnoChatAskAgenteTranscribrothers,
+} from "./modulo_util_feedback_previa_documento_no_chat_ask_agente_transcribrothers.ts";
 
 function IconeMaisComposerChatAskAgenteTranscribrothers() {
   return (
@@ -204,6 +207,12 @@ export function ComponentePainelChatAskAgenteDocumentoJobTranscribrothers({
     (acumulado, item, indice) => (item.papel === "agente" ? indice : acumulado),
     -1,
   );
+  const textoProcessandoTurno = textoIndicadorProcessandoTurnoChatAskAgenteTranscribrothers({
+    enviandoMensagem: enviandoMensagemAsk,
+    bolhaEscrevendoJaTemTexto: mensagens.some(
+      (mensagem) => mensagem.estado === "escrevendo" && (mensagem.texto || "").trim().length > 0,
+    ),
+  });
   const placeholder =
     modo === "ask" ? "Pergunte sobre o documento…" : placeholderCampo;
   const classesPainel = classesPainelGavetaChatAskAgenteDocumentoTranscribrothers({
@@ -367,12 +376,9 @@ export function ComponentePainelChatAskAgenteDocumentoJobTranscribrothers({
             );
           })
         )}
-        {enviandoMensagemAsk &&
-        !mensagens.some(
-          (mensagem) => mensagem.estado === "escrevendo" && (mensagem.texto || "").trim().length > 0,
-        ) ? (
+        {textoProcessandoTurno ? (
           <p className="tb-chat-ask-agente-mensagem tb-chat-ask-agente-mensagem--assistente tb-chat-ask-agente-mensagem--pensando">
-            pensando…
+            {textoProcessandoTurno}
           </p>
         ) : null}
         {preparandoPreviaDocumento ? (

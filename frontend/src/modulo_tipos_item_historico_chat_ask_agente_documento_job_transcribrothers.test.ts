@@ -10,6 +10,7 @@ import {
   normalizarPropostaFerramentaChatAgenteDocumentoJobTranscribrothers,
   propostaFerramentaChatAgenteDeveMostrarBotaoAplicarNaBolhaTranscribrothers,
   resolverPropostasEdicaoParcialParaAplicarChatAgenteTranscribrothers,
+  modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers,
   turnoAgenteGerandoDevePersistirEstadoFalhouSemPreviaTranscribrothers,
   type ItemHistoricoChatAskAgenteDocumentoJobTranscribrothers,
 } from "./modulo_tipos_item_historico_chat_ask_agente_documento_job_transcribrothers.ts";
@@ -71,6 +72,50 @@ describe("histórico do painel Ask/Agente", () => {
     expect(mensagens).toHaveLength(2);
     expect(mensagens[1]?.estado).toBe("preview_pronta");
     expect(mensagens[1]?.tipo_pipeline).toBe("secao");
+  });
+
+  it("esconde a fala do agente copiada na prévia pronta e mantém o pedido do usuário", () => {
+    const visiveis = itensHistoricoChatAskAgenteOcultandoGerandoSubstituidoPorPreviewProntaTranscribrothers([
+      item({ papel: "usuario", texto: "pode aplicar", criado_em: "t0" }),
+      item({
+        papel: "agente",
+        texto: "Confirmado. Vou aplicar agora.",
+        criado_em: "t1",
+      }),
+      item({
+        papel: "agente",
+        texto: "Confirmado. Vou aplicar agora.",
+        criado_em: "t2",
+        estado: "preview_pronta",
+      }),
+    ]);
+    expect(visiveis.map((entrada) => `${entrada.papel}:${entrada.estado ?? ""}`)).toEqual([
+      "usuario:",
+      "agente:preview_pronta",
+    ]);
+    expect(visiveis[0]?.texto).toBe("pode aplicar");
+  });
+
+  it("não esconde falas iguais de turnos anteriores quando houve outro pedido no meio", () => {
+    const visiveis = itensHistoricoChatAskAgenteOcultandoGerandoSubstituidoPorPreviewProntaTranscribrothers([
+      item({ papel: "usuario", texto: "pode aplicar", criado_em: "t0" }),
+      item({ papel: "agente", texto: "Confirmado. Vou aplicar agora.", criado_em: "t1" }),
+      item({ papel: "usuario", texto: "pode aplicar", criado_em: "t2" }),
+      item({ papel: "agente", texto: "Confirmado. Vou aplicar agora.", criado_em: "t3" }),
+      item({
+        papel: "agente",
+        texto: "Confirmado. Vou aplicar agora.",
+        criado_em: "t4",
+        estado: "preview_pronta",
+      }),
+    ]);
+    expect(visiveis.map((entrada) => entrada.papel)).toEqual([
+      "usuario",
+      "agente",
+      "usuario",
+      "agente",
+    ]);
+    expect(visiveis[3]?.estado).toBe("preview_pronta");
   });
 
   it("esconde o turno gerando quando o mesmo texto já foi marcado como falhou", () => {
@@ -166,6 +211,30 @@ describe("histórico do painel Ask/Agente", () => {
     ]);
     expect(lote).toHaveLength(2);
     expect(lote[1]?.titulo_secao_heading).toBe("Dúvidas em aberto");
+  });
+
+  it("reescreve seção ou documento quando o lote tira timestamp ou pede legenda", () => {
+    const cirurgica = {
+      nome: "edicao_parcial",
+      titulo_secao_heading: "Contexto e problema",
+      instrucoes: "Adicionar ao final da lista: '**Filtros:** etiqueta.'",
+      caminhos_imagens: [] as string[],
+    };
+    const reescrita = {
+      nome: "edicao_parcial",
+      titulo_secao_heading: "1. Visão Geral e Triagem Manual",
+      instrucoes:
+        "Remover os links de tempo '[00:47](?t=47)' do texto corrido. Adicionar uma legenda curta abaixo de cada imagem.",
+      caminhos_imagens: [] as string[],
+    };
+    expect(modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers([cirurgica])).toBe("cirurgico");
+    expect(modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers([reescrita])).toBe("reescrever_secao");
+    expect(
+      modoAplicacaoLoteEdicaoParcialChatAgenteTranscribrothers([
+        reescrita,
+        { ...reescrita, titulo_secao_heading: "2. Triagem Automatizada com IA" },
+      ]),
+    ).toBe("reescrever_documento");
   });
 });
 

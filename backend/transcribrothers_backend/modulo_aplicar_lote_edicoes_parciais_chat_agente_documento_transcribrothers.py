@@ -222,6 +222,42 @@ def aplicar_operacao_edicao_parcial_no_markdown_chat_agente_transcribrothers(
     return substituir_corpo_secao_markdown_nivel2_tutorial_transcribrothers(markdown, secao, novo_corpo)
 
 
+def instrucao_edicao_parcial_pede_reescrever_secao_nao_cirurgico_transcribrothers(
+    proposta: dict[str, Any] | None,
+) -> bool:
+    if not isinstance(proposta, dict):
+        return False
+    if proposta.get("reescrever_secao") is True:
+        return True
+    instrucoes = proposta.get("instrucoes") or ""
+    baixo = instrucoes.casefold()
+    tira_tempo = "?t=" in instrucoes or "timestamp" in baixo or "[mm:ss]" in baixo
+    remove = (
+        "remover" in baixo
+        or "tirar" in baixo
+        or "tire " in baixo
+        or "neutralizar" in baixo
+    )
+    if tira_tempo and remove:
+        return True
+    if "legenda" in baixo and "imagem" in baixo:
+        return True
+    return False
+
+
+def lote_edicoes_parciais_deve_reescrever_secoes_nao_cirurgico_transcribrothers(
+    propostas: list[dict[str, Any]] | None,
+) -> bool:
+    for item in propostas or []:
+        if not isinstance(item, dict):
+            continue
+        if (item.get("nome") or "").strip() != "edicao_parcial":
+            continue
+        if instrucao_edicao_parcial_pede_reescrever_secao_nao_cirurgico_transcribrothers(item):
+            return True
+    return False
+
+
 def aplicar_lote_edicoes_parciais_markdown_chat_agente_transcribrothers(
     *,
     markdown: str,
