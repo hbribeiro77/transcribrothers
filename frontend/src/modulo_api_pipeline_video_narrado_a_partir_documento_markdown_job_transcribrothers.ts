@@ -20,6 +20,10 @@ export async function agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscrib
     temperaturaTts?: number | null;
     ritmoTts?: string | null;
     diretrizConteudoLegendas?: string | null;
+    incluirTransicoesSecao?: boolean | null;
+    efeitoTransicaoSecao?: string | null;
+    duracaoTransicaoSecaoSegundos?: number | null;
+    vinhetaIdTransicaoSecao?: string | null;
   },
 ): Promise<JobStatus> {
   const r = await fetch(`/api/jobs/${jobId}/pipeline-video-narrado-a-partir-documento`, {
@@ -41,6 +45,13 @@ export async function agendarPipelineVideoNarradoAPartirDocumentoJobApiTranscrib
         typeof opcoes?.temperaturaTts === "number" ? opcoes.temperaturaTts : null,
       ritmo_tts: (opcoes?.ritmoTts || "").trim() || null,
       diretriz_conteudo_legendas: (opcoes?.diretrizConteudoLegendas || "").trim() || null,
+      incluir_transicoes_secao: Boolean(opcoes?.incluirTransicoesSecao),
+      efeito_transicao_secao: (opcoes?.efeitoTransicaoSecao || "").trim() || null,
+      duracao_transicao_secao_segundos:
+        typeof opcoes?.duracaoTransicaoSecaoSegundos === "number"
+          ? opcoes.duracaoTransicaoSecaoSegundos
+          : null,
+      vinheta_id_transicao_secao: (opcoes?.vinhetaIdTransicaoSecao || "").trim() || null,
     }),
   });
   if (!r.ok) {

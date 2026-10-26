@@ -66,6 +66,7 @@ const PIPELINE_FASE_PARA_ROTULO_PORTUGUES: Record<string, string> = {
   video_narrado_alinhando_legendas: "Vídeo narrado: alinhando legendas…",
   video_narrado_validando_legendas: "Vídeo narrado: validando legendas…",
   video_narrado_limpando_legendas_ia: "Vídeo narrado: preparando legendas (IA)…",
+  video_narrado_gerando_transicoes_secao: "Vídeo narrado: gerando transições…",
   video_narrado_gerando_tts: "Vídeo narrado: gerando narração…",
   video_narrado_aguardando_resolucao_tts_timeout:
     "Vídeo narrado: reenvie as cues com timeout…",
@@ -219,6 +220,19 @@ export function obterLinhaDetalheSubetapaProgressoJobPipelinePortuguesTranscribr
       return `${n} cue(s) com timeout — edite e reenvie no painel abaixo`;
     }
     return "Aguardando reenvio manual das cues com timeout…";
+  }
+
+  if (fase === "video_narrado_gerando_transicoes_secao") {
+    const i = numeroDeStepsJsonTranscribrothers(steps.video_narrado_transicao_indice);
+    const t = numeroDeStepsJsonTranscribrothers(steps.video_narrado_transicao_total);
+    const titulo =
+      typeof steps.video_narrado_transicao_titulo === "string"
+        ? steps.video_narrado_transicao_titulo.trim()
+        : "";
+    if (i !== null && t !== null) {
+      return titulo ? `Gerando transição ${i} de ${t}: ${titulo}` : `Gerando transição ${i} de ${t}`;
+    }
+    return "Gerando transições entre seções…";
   }
 
   if (fase === "video_narrado_gerando_tts") {

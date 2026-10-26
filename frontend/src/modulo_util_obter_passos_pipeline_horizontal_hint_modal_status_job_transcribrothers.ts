@@ -448,6 +448,7 @@ function inferirIndicePassoFalhaPipelineVideoNarradoTranscribrothers(
   if (fase === "video_narrado_alinhando_legendas") return 1;
   if (fase === "video_narrado_validando_legendas") return 2;
   if (fase === "video_narrado_limpando_legendas_ia") return 3;
+  if (fase === "video_narrado_gerando_transicoes_secao") return 4;
   if (fase === "video_narrado_gerando_tts") return 4;
   if (fase === "video_narrado_aguardando_resolucao_tts_timeout") return 4;
   if (fase === "video_narrado_mux_ffmpeg") return 5;
@@ -543,6 +544,7 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
     !alinhamentoAtivo &&
     (fase === "video_narrado_validando_legendas" ||
       fase === "video_narrado_limpando_legendas_ia" ||
+      fase === "video_narrado_gerando_transicoes_secao" ||
       fase === "video_narrado_gerando_tts" ||
       aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
@@ -554,6 +556,7 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
     !validacaoAtivo &&
     !validacaoFalhou &&
     (fase === "video_narrado_limpando_legendas_ia" ||
+      fase === "video_narrado_gerando_transicoes_secao" ||
       fase === "video_narrado_gerando_tts" ||
       aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
@@ -563,13 +566,15 @@ function montarPassosPipelineVideoNarradoTranscribrothers(
   const limpezaAtivo = !terminal && fase === "video_narrado_limpando_legendas_ia";
   const limpezaConcluida =
     !limpezaAtivo &&
-    (fase === "video_narrado_gerando_tts" ||
+    (fase === "video_narrado_gerando_transicoes_secao" ||
+      fase === "video_narrado_gerando_tts" ||
       aguardandoTimeoutTts ||
       fase === "video_narrado_mux_ffmpeg" ||
       concluidoOk ||
       limpezaRegistrada);
 
   const ttsAtivo =
+    (!terminal && fase === "video_narrado_gerando_transicoes_secao") ||
     (!terminal && fase === "video_narrado_gerando_tts") ||
     (!terminal && fase === "video_narrado_gerando_com_edicoes_modal") ||
     aguardandoTimeoutTts;

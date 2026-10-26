@@ -16,6 +16,8 @@ export type JanelaSalvarProjetoEditorVideoNarradoApiTranscribrothers = {
   inicio_video_segundos: number;
   fim_video_segundos: number;
   id_fonte_video?: string;
+  eh_separador_secao?: boolean;
+  receita_vinheta_separador?: Record<string, unknown> | null;
 };
 
 export type RespostaSalvarProjetoEditorVideoNarradoApiTranscribrothers = {

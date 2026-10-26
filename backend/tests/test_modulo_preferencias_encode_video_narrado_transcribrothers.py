@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from transcribrothers_backend.modulo_preferencias_encode_video_narrado_transcribrothers import (
+    calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers,
     montar_cadeia_vf_scale_e_fps_encode_video_narrado_transcribrothers,
     montar_preferencias_encode_video_narrado_transcribrothers,
     preferencias_encode_video_narrado_padrao_transcribrothers,
@@ -36,3 +37,26 @@ def test_cadeia_vf_original_so_par_e_fps() -> None:
 def test_resolucao_invalida_levanta() -> None:
     with pytest.raises(ValueError, match="Resolução"):
         montar_preferencias_encode_video_narrado_transcribrothers(resolucao="4k", fps=30)
+
+
+def test_dimensoes_do_encode_1080p_baixam_o_nativo_sem_upscale() -> None:
+    p1080 = montar_preferencias_encode_video_narrado_transcribrothers(resolucao="1080p", fps=30)
+    p_orig = montar_preferencias_encode_video_narrado_transcribrothers(resolucao="original", fps=30)
+    p720 = montar_preferencias_encode_video_narrado_transcribrothers(resolucao="720p", fps=30)
+
+    assert calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers(2960, 1848, p1080) == (
+        1728,
+        1080,
+    )
+    assert calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers(2960, 1848, p_orig) == (
+        2960,
+        1848,
+    )
+    assert calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers(1280, 720, p1080) == (
+        1280,
+        720,
+    )
+    assert calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers(2960, 1848, p720) == (
+        1152,
+        720,
+    )

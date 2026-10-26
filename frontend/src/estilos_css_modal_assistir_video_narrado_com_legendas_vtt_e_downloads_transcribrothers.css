@@ -1646,6 +1646,21 @@ body[data-tb-pagina-video-narrado-aberta] {
   color: #94a3b8;
 }
 
+.tb-modal-assistir-video-narrado-painel-debug-pre {
+  margin: 0.45rem 0 0.7rem;
+  padding: 0.45rem 0.5rem;
+  max-height: 14rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #e2e8f0;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
 @media (max-width: 860px) {
   .tb-modal-assistir-video-narrado-painel {
     width: min(98vw, 1280px);

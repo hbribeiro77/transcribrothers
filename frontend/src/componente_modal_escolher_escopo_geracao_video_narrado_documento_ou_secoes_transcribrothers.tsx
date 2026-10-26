@@ -58,6 +58,39 @@ import {
   type PerfilTtsNarracaoTranscribrothers,
   type RitmoTtsNarracaoTranscribrothers,
 } from "./modulo_perfil_motor_sintese_tts_narracao_transcribrothers.ts";
+import { listarVinhetasDisponiveisParaSeparadorApiTranscribrothers } from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
+import { ComponenteQuadroDaCenaVinheta } from "./previa_ao_vivo_cena_vinheta_copiada_do_app_vinhetas/componente_quadro_da_cena_vinheta.tsx";
+import {
+  MODELOS_DE_ABERTURA_DA_VINHETA,
+  tempo_de_reproducao_do_quadro_assentado,
+} from "./previa_ao_vivo_cena_vinheta_copiada_do_app_vinhetas/modulo_amostragem_dos_modelos_de_abertura_da_vinheta.ts";
+import { PALETA_PADRAO_DA_VINHETA } from "./previa_ao_vivo_cena_vinheta_copiada_do_app_vinhetas/modulo_validacao_de_titulo_e_cores_da_vinheta.ts";
+import {
+  carregarPreferenciaTransicoesSecaoGeracaoVideoNarradoDoNavegadorTranscribrothers,
+  salvarPreferenciaTransicoesSecaoGeracaoVideoNarradoNoNavegadorTranscribrothers,
+} from "./modulo_armazenamento_local_transicoes_secao_geracao_video_narrado_preferidas_navegador_transcribrothers.ts";
+import {
+  montarCartoesVinhetaSeparadorDeSecaoTranscribrothers,
+  resolverEscolhaVinhetaAPartirDaChaveDoCartaoTranscribrothers,
+  type CartaoVinhetaSeparadorDeSecaoTranscribrothers,
+} from "./modulo_util_montar_cartoes_e_resolver_escolha_vinheta_separador_de_secao_transcribrothers.ts";
+import {
+  chaveCartaoTransicaoSecaoAPartirDaPreferenciaTranscribrothers,
+  contarSecoesH2DoEscopoGeracaoVideoNarradoTranscribrothers,
+  deveOferecerTransicoesEntreSecoesNaGeracaoVideoNarradoTranscribrothers,
+  EFEITO_PADRAO_TRANSICAO_SECAO_GERACAO_VIDEO_NARRADO,
+  normalizarDuracaoTransicaoSecaoGeracaoVideoNarradoTranscribrothers,
+  normalizarEfeitoTransicaoSecaoGeracaoVideoNarradoTranscribrothers,
+} from "./modulo_util_transicoes_secao_na_geracao_video_narrado_transcribrothers.ts";
+
+const CARTOES_MODELOS_TRANSICAO_ESCOPO_PADRAO_TRANSCRIBROTHERS =
+  montarCartoesVinhetaSeparadorDeSecaoTranscribrothers({
+    modelos: MODELOS_DE_ABERTURA_DA_VINHETA.map((modelo) => ({
+      id: modelo.id,
+      nome: modelo.nome,
+    })),
+    projetos: [],
+  });
 
 export type OpcaoVozTtsNarracaoUiTranscribrothers = {
   id: string;
@@ -80,6 +113,10 @@ export type ResultadoEscopoGeracaoVideoNarradoTranscribrothers = {
   diretrizConteudoLegendas: DiretrizConteudoLegendasTranscribrothers;
   /** Slug LiteLLM TTS escolhido (ex.: gemini/gemini-2.5-flash-preview-tts). */
   modeloTts: string;
+  incluirTransicoesSecao: boolean;
+  efeitoTransicaoSecao: string;
+  duracaoTransicaoSecaoSegundos: number;
+  vinhetaIdTransicaoSecao: string | null;
 };
 
 type Props = {
@@ -205,6 +242,29 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
   const [erroAmostra, setErroAmostra] = useState<string | null>(null);
   const audioAmostraRef = useRef<HTMLAudioElement | null>(null);
   const urlAmostraRef = useRef<string | null>(null);
+  const prefTransicoesInicial =
+    carregarPreferenciaTransicoesSecaoGeracaoVideoNarradoDoNavegadorTranscribrothers();
+  const [incluirTransicoesSecao, setIncluirTransicoesSecao] = useState(
+    prefTransicoesInicial.incluir,
+  );
+  const [cartoesTransicao, setCartoesTransicao] = useState<
+    CartaoVinhetaSeparadorDeSecaoTranscribrothers[]
+  >(CARTOES_MODELOS_TRANSICAO_ESCOPO_PADRAO_TRANSCRIBROTHERS);
+  const [chaveCartaoTransicao, setChaveCartaoTransicao] = useState(
+    chaveCartaoTransicaoSecaoAPartirDaPreferenciaTranscribrothers(prefTransicoesInicial),
+  );
+  const [duracaoTransicaoSecaoSegundos, setDuracaoTransicaoSecaoSegundos] = useState<2 | 5>(
+    prefTransicoesInicial.duracaoSegundos,
+  );
+  const quantidadeSecoesH2NoEscopo = contarSecoesH2DoEscopoGeracaoVideoNarradoTranscribrothers({
+    modo,
+    markdown,
+    idsSelecionados,
+    opcoes,
+  });
+  const oferecerTransicoes = deveOferecerTransicoesEntreSecoesNaGeracaoVideoNarradoTranscribrothers(
+    quantidadeSecoesH2NoEscopo,
+  );
 
   const liberarAudioAmostra = () => {
     if (audioAmostraRef.current) {
@@ -226,6 +286,12 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     }
     setModo("documento_inteiro");
     setIdsSelecionados(new Set(opcoes.map((o) => o.id)));
+    {
+      const pref = carregarPreferenciaTransicoesSecaoGeracaoVideoNarradoDoNavegadorTranscribrothers();
+      setIncluirTransicoesSecao(pref.incluir);
+      setChaveCartaoTransicao(chaveCartaoTransicaoSecaoAPartirDaPreferenciaTranscribrothers(pref));
+      setDuracaoTransicaoSecaoSegundos(pref.duracaoSegundos);
+    }
     {
       const modeloAberto =
         escolherModeloTtsDaListaDisponivelTranscribrothers(
@@ -308,6 +374,34 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
       liberarAudioAmostra();
     };
   }, []);
+
+  useEffect(() => {
+    if (!aberto) return;
+    let ativo = true;
+    listarVinhetasDisponiveisParaSeparadorApiTranscribrothers()
+      .then((lista) => {
+        if (!ativo) return;
+        const montados = montarCartoesVinhetaSeparadorDeSecaoTranscribrothers(lista);
+        const cartoes =
+          montados.length > 0 ? montados : CARTOES_MODELOS_TRANSICAO_ESCOPO_PADRAO_TRANSCRIBROTHERS;
+        setCartoesTransicao(cartoes);
+        const desejada = chaveCartaoTransicaoSecaoAPartirDaPreferenciaTranscribrothers(
+          carregarPreferenciaTransicoesSecaoGeracaoVideoNarradoDoNavegadorTranscribrothers(),
+        );
+        setChaveCartaoTransicao(
+          cartoes.some((cartao) => cartao.chave === desejada)
+            ? desejada
+            : cartoes[0]?.chave || desejada,
+        );
+      })
+      .catch(() => {
+        if (!ativo) return;
+        setCartoesTransicao(CARTOES_MODELOS_TRANSICAO_ESCOPO_PADRAO_TRANSCRIBROTHERS);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [aberto]);
 
   if (!aberto) return null;
 
@@ -395,6 +489,28 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
     salvarTemperaturaTtsNarracaoPreferidaNoNavegadorTranscribrothers(temperaturaEfetiva);
     salvarRitmoTtsNarracaoPreferidoNoNavegadorTranscribrothers(ritmoEfetivo);
     salvarDiretrizConteudoLegendasPreferidaNoNavegadorTranscribrothers(diretrizEfetiva);
+    const escolhaVinheta = resolverEscolhaVinhetaAPartirDaChaveDoCartaoTranscribrothers({
+      chave: chaveCartaoTransicao,
+      titulo: "",
+    });
+    const cartaoEscolhido = cartoesTransicao.find((cartao) => cartao.chave === chaveCartaoTransicao);
+    const efeitoEfetivo = normalizarEfeitoTransicaoSecaoGeracaoVideoNarradoTranscribrothers(
+      escolhaVinheta.efeito ||
+        cartaoEscolhido?.efeitoPrevia ||
+        EFEITO_PADRAO_TRANSICAO_SECAO_GERACAO_VIDEO_NARRADO,
+    );
+    const vinhetaIdEfetivo = escolhaVinheta.vinhetaId;
+    const duracaoEfetiva =
+      normalizarDuracaoTransicaoSecaoGeracaoVideoNarradoTranscribrothers(
+        duracaoTransicaoSecaoSegundos,
+      );
+    const incluirEfetivo = oferecerTransicoes && incluirTransicoesSecao;
+    salvarPreferenciaTransicoesSecaoGeracaoVideoNarradoNoNavegadorTranscribrothers({
+      incluir: incluirTransicoesSecao,
+      efeito: efeitoEfetivo,
+      duracaoSegundos: duracaoEfetiva,
+      vinhetaId: vinhetaIdEfetivo,
+    });
     if (modo === "documento_inteiro") {
       onConfirmar({
         modo: "documento_inteiro",
@@ -407,6 +523,10 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
         ritmoTts: ritmoEfetivo,
         diretrizConteudoLegendas: diretrizEfetiva,
         modeloTts: modeloTtsEfetivo,
+        incluirTransicoesSecao: incluirEfetivo,
+        efeitoTransicaoSecao: efeitoEfetivo,
+        duracaoTransicaoSecaoSegundos: duracaoEfetiva,
+        vinhetaIdTransicaoSecao: vinhetaIdEfetivo,
       });
       return;
     }
@@ -428,6 +548,10 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
       ritmoTts: ritmoEfetivo,
       diretrizConteudoLegendas: diretrizEfetiva,
       modeloTts: modeloTtsEfetivo,
+      incluirTransicoesSecao: incluirEfetivo,
+      efeitoTransicaoSecao: efeitoEfetivo,
+      duracaoTransicaoSecaoSegundos: duracaoEfetiva,
+      vinhetaIdTransicaoSecao: vinhetaIdEfetivo,
     });
   };
 
@@ -539,6 +663,114 @@ export function ComponenteModalEscolherEscopoGeracaoVideoNarradoDocumentoOuSecoe
                 </div>
               ) : null}
             </section>
+
+            {oferecerTransicoes ? (
+              <section
+                className="tb-stepper-iniciar-transcricao-corpo tb-escopo-video-narrado-secao-transicoes"
+                aria-labelledby={`${tituloId}-transicoes`}
+              >
+                <h3
+                  id={`${tituloId}-transicoes`}
+                  className="tb-stepper-iniciar-transcricao-etapa-titulo"
+                >
+                  Transições entre seções
+                </h3>
+                <label className="tb-escopo-video-narrado-check tb-escopo-video-narrado-transicoes-toggle">
+                  <input
+                    type="checkbox"
+                    checked={incluirTransicoesSecao}
+                    disabled={carregando || gerandoAmostra}
+                    onChange={(e) => setIncluirTransicoesSecao(e.target.checked)}
+                  />
+                  <span>Incluir transições entre seções</span>
+                </label>
+                <p className="tb-muted tb-escopo-video-narrado-diretriz-lead">
+                  Usa o título de cada seção. Depois dá para trocar uma a uma na edição.
+                </p>
+                {incluirTransicoesSecao ? (
+                  <>
+                    <ul
+                      className="tb-escopo-video-narrado-transicoes-grade"
+                      role="list"
+                      aria-label="Efeito da transição"
+                    >
+                      {cartoesTransicao.map((cartao) => (
+                        <li key={cartao.chave}>
+                          <button
+                            type="button"
+                            className={
+                              "tb-escopo-video-narrado-transicoes-card" +
+                              (chaveCartaoTransicao === cartao.chave
+                                ? " tb-escopo-video-narrado-transicoes-card--selecionado"
+                                : "")
+                            }
+                            aria-pressed={chaveCartaoTransicao === cartao.chave}
+                            disabled={carregando || gerandoAmostra}
+                            onClick={() => setChaveCartaoTransicao(cartao.chave)}
+                          >
+                            <div className="tb-escopo-video-narrado-transicoes-card-quadro">
+                              <ComponenteQuadroDaCenaVinheta
+                                projeto={{
+                                  titulo: cartao.rotulo,
+                                  cores: PALETA_PADRAO_DA_VINHETA,
+                                  efeito: cartao.efeitoPrevia,
+                                  duracao_segundos: duracaoTransicaoSecaoSegundos,
+                                }}
+                                tempo_segundos={tempo_de_reproducao_do_quadro_assentado(
+                                  duracaoTransicaoSecaoSegundos,
+                                )}
+                                presenca_da_imagem={60}
+                              />
+                              {cartao.grupo === "salva" ? (
+                                <span className="tb-escopo-video-narrado-transicoes-card-selo">
+                                  Salva
+                                </span>
+                              ) : null}
+                            </div>
+                            <span>{cartao.rotulo}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <div
+                      className="tb-escopo-video-narrado-transicoes-duracao"
+                      role="group"
+                      aria-label="Duração da transição"
+                    >
+                      <span className="tb-label">Duração</span>
+                      <button
+                        type="button"
+                        className={
+                          "tb-btn-secundario" +
+                          (duracaoTransicaoSecaoSegundos === 2
+                            ? " tb-escopo-video-narrado-transicoes-duracao-btn--ativa"
+                            : "")
+                        }
+                        aria-pressed={duracaoTransicaoSecaoSegundos === 2}
+                        disabled={carregando || gerandoAmostra}
+                        onClick={() => setDuracaoTransicaoSecaoSegundos(2)}
+                      >
+                        2 s
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          "tb-btn-secundario" +
+                          (duracaoTransicaoSecaoSegundos === 5
+                            ? " tb-escopo-video-narrado-transicoes-duracao-btn--ativa"
+                            : "")
+                        }
+                        aria-pressed={duracaoTransicaoSecaoSegundos === 5}
+                        disabled={carregando || gerandoAmostra}
+                        onClick={() => setDuracaoTransicaoSecaoSegundos(5)}
+                      >
+                        5 s
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+              </section>
+            ) : null}
 
             <section
               className="tb-stepper-iniciar-transcricao-corpo tb-escopo-video-narrado-secao-diretriz"

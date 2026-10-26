@@ -90,7 +90,7 @@ export function remaparRecordPorIndiceAposReordenarUiTranscribrothers<T>(
   return proximo;
 }
 
-function empacotarTemposCuesPreservandoDuracoesTranscribrothers(
+export function empacotarTemposCuesPreservandoDuracoesTranscribrothers(
   cues: CueTimelineComIdClienteUiTranscribrothers[],
 ): CueTimelineComIdClienteUiTranscribrothers[] {
   let t = 0;

@@ -11,6 +11,7 @@ _MAPA_FASE_PARA_ETAPA_TEMPO_TRANSCRIBROTHERS: dict[str, str] = {
     "video_narrado_alinhando_legendas": "alinhamento_legendas",
     "video_narrado_validando_legendas": "validacao_legendas",
     "video_narrado_limpando_legendas_ia": "limpeza_legendas_ia",
+    "video_narrado_gerando_transicoes_secao": "transicoes_secao",
     "video_narrado_gerando_tts": "narracao_tts",
     "video_narrado_mux_ffmpeg": "mux_video",
     "video_narrado_remux_janelas_editadas": "mux_video",

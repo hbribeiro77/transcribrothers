@@ -146,6 +146,22 @@ async def _atualizar_steps_job_transcribrothers(
         await session.commit()
 
 
+def _eh_separador_e_receita_da_janela_bruta_transcribrothers(
+    janela: dict[str, Any] | None,
+    cue: CueNarracaoComJanelaVideoTranscribrothers | None = None,
+) -> tuple[bool, dict[str, Any] | None]:
+    bruto = janela or {}
+    eh = bool(bruto.get("eh_separador_secao") or bruto.get("ehSeparadorSecao"))
+    rec = bruto.get("receita_vinheta_separador") or bruto.get("receitaVinhetaSeparador")
+    if not isinstance(rec, dict):
+        rec = None
+    if cue is not None:
+        eh = eh or bool(getattr(cue, "eh_separador_secao", False))
+        if rec is None:
+            rec = getattr(cue, "receita_vinheta_separador", None)
+    return eh, rec if isinstance(rec, dict) else None
+
+
 def gravar_wav_silencio_para_cue_sem_narracao_com_duracao_da_janela_transcribrothers(
     *,
     caminho_wav_saida: Path,
@@ -397,6 +413,7 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                 raise RuntimeError("Tempos de tela inválidos no payload.") from exc
             if fim + 1e-9 < ini:
                 raise RuntimeError("Tempos de tela: fim anterior ao início.")
+            eh_sep, receita_sep = _eh_separador_e_receita_da_janela_bruta_transcribrothers(janela)
             cues_finais.append(
                 CueNarracaoComJanelaVideoTranscribrothers(
                     texto=normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto),
@@ -408,6 +425,8 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                     voz_tts=voz,
                     texto_tts=texto_tts,
                     id_fonte_video=str(janela.get("id_fonte_video") or "").strip(),
+                    eh_separador_secao=eh_sep,
+                    receita_vinheta_separador=receita_sep,
                 )
             )
     else:
@@ -435,6 +454,9 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                     raise RuntimeError("Tempos de tela inválidos no payload.") from exc
                 if fim + 1e-9 < ini:
                     raise RuntimeError("Tempos de tela: fim anterior ao início.")
+                eh_sep, receita_sep = _eh_separador_e_receita_da_janela_bruta_transcribrothers(
+                    janela, cue
+                )
                 cues_finais.append(
                     CueNarracaoComJanelaVideoTranscribrothers(
                         texto=normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto),
@@ -447,6 +469,9 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                         texto_tts=texto_tts,
                         id_fonte_video=str(janela.get("id_fonte_video") or "").strip()
                         or str(getattr(cue, "id_fonte_video", "") or "").strip(),
+                        eh_separador_secao=eh_sep,
+                        receita_vinheta_separador=receita_sep,
+                        titulo_secao_heading=str(getattr(cue, "titulo_secao_heading", "") or ""),
                     )
                 )
         else:
@@ -461,6 +486,9 @@ def _resolver_cues_janela_a_partir_edicoes_modal_transcribrothers(
                     voz_tts=voz,
                     texto_tts=texto_tts,
                     id_fonte_video=str(getattr(cue, "id_fonte_video", "") or "").strip(),
+                    eh_separador_secao=bool(getattr(cue, "eh_separador_secao", False)),
+                    receita_vinheta_separador=getattr(cue, "receita_vinheta_separador", None),
+                    titulo_secao_heading=str(getattr(cue, "titulo_secao_heading", "") or ""),
                 )
                 for cue, texto, texto_tts, sem_narracao, voz in zip(
                     cues_base,

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from typing import Any
 
 from transcribrothers_backend.modulo_alinhar_frases_markdown_aos_segmentos_transcricao_para_legendas_transcribrothers import (
     CueLegendaAlinhadaTranscribrothers,
@@ -36,6 +37,17 @@ class CueNarracaoComJanelaVideoTranscribrothers:
     texto_tts: str = ""
     # Fonte de tela: ""/"entrada" = video_entrada; senão id da biblioteca_midias_tela.
     id_fonte_video: str = ""
+    # Heading ## dono desta cue; vazio = preâmbulo antes do primeiro H2.
+    titulo_secao_heading: str = ""
+    eh_separador_secao: bool = False
+    receita_vinheta_separador: dict[str, Any] | None = None
+
+
+def substituir_campos_da_cue_narracao_com_janela_transcribrothers(
+    cue: CueNarracaoComJanelaVideoTranscribrothers,
+    **overrides: Any,
+) -> CueNarracaoComJanelaVideoTranscribrothers:
+    return replace(cue, **overrides)
 
 
 @dataclass(frozen=True)

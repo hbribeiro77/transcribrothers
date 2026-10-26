@@ -7,6 +7,7 @@ import {
   obterDebugCacheSegmentosVideoNarradoJobApiTranscribrothers,
   type PayloadDebugCacheSegmentosVideoNarradoApiTranscribrothers,
 } from "./modulo_api_debug_cache_segmentos_video_narrado_job_transcribrothers.ts";
+import { formatarTextoDebugUltimaVinhetaSeparadorTranscribrothers } from "./modulo_formatar_texto_debug_ultima_vinheta_separador_transcribrothers.ts";
 
 function formatarTamanhoBytesDebugCacheSegmentosTranscribrothers(bytes: number): string {
   const n = Math.max(0, Number(bytes) || 0);
@@ -37,6 +38,7 @@ export function ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrot
 }: PropsPainelDebugCacheSegmentosVideoNarradoModalTranscribrothers) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const [dados, setDados] = useState<PayloadDebugCacheSegmentosVideoNarradoApiTranscribrothers | null>(
     null,
   );
@@ -59,6 +61,19 @@ export function ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrot
     if (!aberto) return;
     void carregar();
   }, [aberto, carregar]);
+
+  const vinheta = dados?.ultima_vinheta ?? null;
+  const textoVinheta = formatarTextoDebugUltimaVinhetaSeparadorTranscribrothers(vinheta);
+
+  const copiarRelatorioVinheta = useCallback(() => {
+    void navigator.clipboard.writeText(textoVinheta).then(
+      () => {
+        setCopiado(true);
+        window.setTimeout(() => setCopiado(false), 2000);
+      },
+      () => undefined,
+    );
+  }, [textoVinheta]);
 
   if (!aberto) return null;
 
@@ -88,10 +103,10 @@ export function ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrot
   return (
     <aside
       className="tb-modal-assistir-video-narrado-painel-debug"
-      aria-label="Debug: cache de segmentos"
+      aria-label="Debug: cache de segmentos e vinheta"
     >
       <div className="tb-modal-assistir-video-narrado-painel-debug-cabecalho">
-        <h3 className="tb-modal-assistir-video-narrado-painel-debug-titulo">Debug · cache</h3>
+        <h3 className="tb-modal-assistir-video-narrado-painel-debug-titulo">Debug · cache e vinheta</h3>
         <div className="tb-modal-assistir-video-narrado-painel-debug-acoes">
           <button
             type="button"
@@ -121,6 +136,56 @@ export function ComponentePainelDebugCacheSegmentosVideoNarradoModalTranscribrot
       {carregando && !dados ? (
         <p className="tb-modal-assistir-video-narrado-painel-debug-vazio">Carregando…</p>
       ) : null}
+
+      <h4 className="tb-modal-assistir-video-narrado-painel-debug-subtitulo">Última vinheta</h4>
+      {vinheta ? (
+        <>
+          <dl className="tb-modal-assistir-video-narrado-painel-debug-lista">
+            <div>
+              <dt>Tempo total</dt>
+              <dd>
+                {vinheta.tempos_ms?.total != null ? `${vinheta.tempos_ms.total} ms` : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Render (HTTP)</dt>
+              <dd>
+                {vinheta.tempos_ms?.render_vinhetas != null
+                  ? `${vinheta.tempos_ms.render_vinhetas} ms`
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Canvas</dt>
+              <dd>
+                {vinheta.largura != null && vinheta.altura != null
+                  ? `${vinheta.largura}×${vinheta.altura}`
+                  : "—"}
+                {vinheta.quantidade_quadros != null
+                  ? ` · ${vinheta.quantidade_quadros} quadros`
+                  : ""}
+                {vinheta.fps != null ? ` · ${vinheta.fps} fps` : ""}
+              </dd>
+            </div>
+            <div>
+              <dt>Título</dt>
+              <dd>{textoOuTraco(vinheta.titulo)}</dd>
+            </div>
+          </dl>
+          <button
+            type="button"
+            className="tb-modal-assistir-video-narrado-painel-debug-btn"
+            onClick={copiarRelatorioVinheta}
+          >
+            {copiado ? "Copiado" : "Copiar relatório"}
+          </button>
+          <pre className="tb-modal-assistir-video-narrado-painel-debug-pre">{textoVinheta}</pre>
+        </>
+      ) : (
+        <p className="tb-modal-assistir-video-narrado-painel-debug-vazio">
+          Ainda não há relatório da última vinheta neste job (gere o separador ao menos uma vez).
+        </p>
+      )}
 
       {seg ? (
         <dl className="tb-modal-assistir-video-narrado-painel-debug-lista">

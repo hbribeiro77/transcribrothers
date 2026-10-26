@@ -168,6 +168,73 @@ def test_pipeline_video_narrado_agenda_task_e_grava_fase(tmp_path: Path) -> None
         assert mock_agendar.call_args.kwargs["temperatura_tts"] == 0.4
         assert mock_agendar.call_args.kwargs["ritmo_tts"] == "normal"
         assert mock_agendar.call_args.kwargs["diretriz_conteudo_legendas"] == "conservador"
+        assert body["steps_json"]["pipeline_video_narrado_transicoes_secao"]["incluir"] is False
+
+
+def test_pipeline_video_narrado_grava_receita_de_transicoes_secao(tmp_path: Path) -> None:
+    with TestClient(app) as client:
+        criado = client.post("/api/jobs/projeto-em-branco")
+        assert criado.status_code == 200
+        job_id = criado.json()["id"]
+
+        async def _marcar_ok() -> None:
+            async with app.state.session_factory() as session:
+                row = await session.get(JobPipelineTranscribrothers, job_id)
+                assert row is not None
+                row.status = "completed"
+                row.result_markdown = "# Tutorial\n\n## Alpha\n\nTexto.\n\n## Beta\n\nOutro."
+                await session.commit()
+
+        asyncio.run(_marcar_ok())
+        (tmp_path / "video_entrada_arquivo_local.mp4").write_bytes(b"vid")
+        (tmp_path / NOME_ARQUIVO_SNAPSHOT_TRANSCRICAO_FINALIZADA_JOB_TRANSCRIBROTHERS).write_text(
+            json.dumps(
+                {
+                    "versao": 1,
+                    "texto_completo": "Texto. Outro.",
+                    "idioma_detectado": "pt",
+                    "segmentos": [
+                        {"inicio_segundos": 0.0, "fim_segundos": 2.0, "texto": "Texto."},
+                    ],
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        with (
+            patch(
+                "transcribrothers_backend.main._diretorio_trabalho_job",
+                return_value=tmp_path,
+            ),
+            patch(
+                "transcribrothers_backend.main.resolver_modelo_tts_para_narracao_documento_transcribrothers",
+                return_value="gemini/gemini-2.5-flash-preview-tts",
+            ),
+            patch(
+                "transcribrothers_backend.main.resolver_modelo_chat_para_limpeza_legendas_ia_transcribrothers",
+                return_value="openai/gpt-4o-mini",
+            ),
+            patch(
+                "transcribrothers_backend.main.agendar_pipeline_video_narrado_a_partir_documento_em_task_assincrona",
+            ),
+        ):
+            r = client.post(
+                f"/api/jobs/{job_id}/pipeline-video-narrado-a-partir-documento",
+                json={
+                    "litellm_model": "gemini/gemini-2.5-flash-preview-tts",
+                    "litellm_model_chat": "openai/gpt-4o-mini",
+                    "incluir_transicoes_secao": True,
+                    "efeito_transicao_secao": "barras-que-se-cruzam",
+                    "duracao_transicao_secao_segundos": 2,
+                    "vinheta_id_transicao_secao": "abc-salva",
+                },
+            )
+        assert r.status_code == 200, r.text
+        rec = r.json()["steps_json"]["pipeline_video_narrado_transicoes_secao"]
+        assert rec["incluir"] is True
+        assert rec["efeito"] == "barras-que-se-cruzam"
+        assert rec["duracao_segundos"] == 2.0
+        assert rec["vinheta_id"] == "abc-salva"
 
 
 def test_pipeline_video_narrado_aceita_perfil_tts_experimental(tmp_path: Path) -> None:

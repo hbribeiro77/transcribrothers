@@ -37,6 +37,8 @@ class ResumoJanelaVideoCueApiTranscribrothers:
     voz_tts: str = ""
     texto_tts: str = ""
     id_fonte_video: str = ""
+    eh_separador_secao: bool = False
+    receita_vinheta_separador: dict[str, Any] | None = None
 
 
 def diretorio_wavs_narracao_por_cue_do_work_transcribrothers(work: Path) -> Path:
@@ -68,6 +70,8 @@ def montar_resumo_janelas_video_e_wavs_do_job_transcribrothers(
                 voz_tts=str(getattr(item, "voz_tts", "") or "").strip(),
                 texto_tts=str(getattr(item, "texto_tts", "") or "").strip(),
                 id_fonte_video=str(getattr(item, "id_fonte_video", "") or "").strip(),
+                eh_separador_secao=bool(getattr(item, "eh_separador_secao", False)),
+                receita_vinheta_separador=getattr(item, "receita_vinheta_separador", None),
             )
         )
     return saida
@@ -133,6 +137,9 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             voz_tts=m.voz_tts,
             texto_tts=m.texto_tts,
             id_fonte_video=id_fonte or str(getattr(m, "id_fonte_video", "") or "").strip(),
+            titulo_secao_heading=str(getattr(m, "titulo_secao_heading", "") or "").strip(),
+            eh_separador_secao=bool(getattr(m, "eh_separador_secao", False)),
+            receita_vinheta_separador=getattr(m, "receita_vinheta_separador", None),
         )
         for m, j, id_fonte in zip(manifest, janelas, ids_fonte, strict=True)
     ]
@@ -148,6 +155,9 @@ def salvar_janelas_video_no_manifest_validando_sobreposicao_transcribrothers(
             voz_tts=c.voz_tts,
             texto_tts=c.texto_tts,
             id_fonte_video=c.id_fonte_video,
+            titulo_secao_heading=str(getattr(c, "titulo_secao_heading", "") or "").strip(),
+            eh_separador_secao=bool(getattr(c, "eh_separador_secao", False)),
+            receita_vinheta_separador=getattr(c, "receita_vinheta_separador", None),
         )
         for c in cues_novas
     ]

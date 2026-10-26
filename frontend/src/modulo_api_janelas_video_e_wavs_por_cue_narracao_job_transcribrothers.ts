@@ -13,6 +13,20 @@ export type ResumoJanelaVideoCueApiTranscribrothers = {
   texto_tts?: string;
   /** Fonte de tela; vazio/`entrada` = vídeo de entrada do job. */
   id_fonte_video?: string;
+  eh_separador_secao?: boolean;
+  receita_vinheta_separador?: {
+    titulo?: string;
+    efeito?: string | null;
+    vinheta_id?: string | null;
+    duracao_segundos?: number;
+    presenca_da_imagem?: number;
+    cores?: {
+      fundo: string;
+      plano_principal: string;
+      plano_destaque: string;
+      texto: string;
+    };
+  } | null;
 };
 
 export type RespostaJanelasVideoCuesNarracaoJobTranscribrothers = {
@@ -195,6 +209,20 @@ export type JanelaVideoCueLocalUiTranscribrothers = {
    * Fonte de tela: vazio/`entrada` = vídeo de entrada; senão id da biblioteca.
    */
   idFonteVideo?: string;
+  /** Receita da vinheta para reabrir «Ajustar vinheta» no separador. */
+  receitaVinhetaSeparador?: {
+    titulo: string;
+    efeito: string | null;
+    vinhetaId: string | null;
+    duracaoSegundos: number;
+    presencaDaImagem: number;
+    cores: {
+      fundo: string;
+      plano_principal: string;
+      plano_destaque: string;
+      texto: string;
+    };
+  };
 };
 
 export function cueVozDifereDaNarradaTranscribrothers(vozAtual: string, vozNarrada: string): boolean {

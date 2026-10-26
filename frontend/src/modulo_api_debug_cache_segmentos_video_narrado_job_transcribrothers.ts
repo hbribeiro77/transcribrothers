@@ -1,5 +1,7 @@
 /** API do painel de debug: cache de segmentos do vídeo narrado. */
 
+import type { UltimaVinhetaDebugApiTranscribrothers } from "./modulo_formatar_texto_debug_ultima_vinheta_separador_transcribrothers.ts";
+
 export type SegmentosCacheDiscoDebugApiTranscribrothers = {
   nome_pasta: string;
   pasta_existe: boolean;
@@ -35,6 +37,7 @@ export type PayloadDebugCacheSegmentosVideoNarradoApiTranscribrothers = {
   pastas_cache_regeneravel: string[];
   ultimo_mux: UltimoMuxCacheSegmentosDebugApiTranscribrothers | null;
   edicoes_modal: EdicoesModalDebugApiTranscribrothers | null;
+  ultima_vinheta: UltimaVinhetaDebugApiTranscribrothers | null;
 };
 
 export async function obterDebugCacheSegmentosVideoNarradoJobApiTranscribrothers(

@@ -259,6 +259,13 @@ from transcribrothers_backend.modulo_ffmpeg_gerar_mp4_cartao_secao_titulo_fade_v
     SUBTITULO_PADRAO_CARTAO_SECAO,
     gerar_mp4_cartao_secao_titulo_com_fade_via_ffmpeg_transcribrothers,
 )
+from transcribrothers_backend.modulo_cliente_api_vinhetas_para_separador_de_secao_transcribrothers import (
+    baixar_mp4_renderizado_da_vinheta,
+    listar_vinhetas_para_o_separador,
+)
+from transcribrothers_backend.modulo_gerar_vinheta_de_separador_com_quadro_do_video_transcribrothers import (
+    publicar_vinheta_na_biblioteca_de_midias_do_job_transcribrothers,
+)
 from transcribrothers_backend.modulo_debug_cache_segmentos_video_narrado_job_transcribrothers import (
     montar_payload_debug_cache_segmentos_video_narrado_job_transcribrothers,
 )
@@ -998,6 +1005,10 @@ class CorpoPipelineVideoNarradoAPartirDocumentoTranscribrothers(BaseModel):
     ritmo_tts: str | None = None
     # Diretriz da limpeza IA: conservador | mais_falavel | mais_didatico | mais_descontraido.
     diretriz_conteudo_legendas: str | None = None
+    incluir_transicoes_secao: bool | None = None
+    efeito_transicao_secao: str | None = None
+    duracao_transicao_secao_segundos: float | None = None
+    vinheta_id_transicao_secao: str | None = None
 
 
 class CorpoAtualizarNarracaoAPartirLegendasVttEditadasTranscribrothers(BaseModel):
@@ -1067,6 +1078,8 @@ class JanelaVideoCueEditadaApiTranscribrothers(BaseModel):
     inicio_video_segundos: float
     fim_video_segundos: float
     id_fonte_video: str = ""
+    eh_separador_secao: bool = False
+    receita_vinheta_separador: dict[str, object] | None = None
 
 
 class CorpoSalvarJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
@@ -1085,6 +1098,8 @@ class ResumoJanelaVideoCueApiRespostaTranscribrothers(BaseModel):
     # Pronúncia usada (ou a usar) no TTS; vazio = igual a `texto`.
     texto_tts: str = ""
     id_fonte_video: str = ""
+    eh_separador_secao: bool = False
+    receita_vinheta_separador: dict[str, object] | None = None
 
 
 class RespostaJanelasVideoCuesNarracaoJobTranscribrothers(BaseModel):
@@ -5823,6 +5838,116 @@ async def enviar_video_para_biblioteca_midias_tela_do_job_transcribrothers(
     }
 
 
+class CoresVinhetaSeparadorTranscribrothers(BaseModel):
+    fundo: str
+    plano_principal: str
+    plano_destaque: str
+    texto: str
+
+
+class CorpoGerarVinhetaDeSeparadorTranscribrothers(BaseModel):
+    titulo: str = Field(default="Nova funcionalidade", max_length=200)
+    efeito: str | None = None
+    vinheta_id: str | None = None
+    instante_quadro_seguinte: float | None = None
+    instante_quadro_anterior: float | None = None
+    duracao_segundos: float | None = Field(default=None, ge=0.5, le=8.0)
+    presenca_da_imagem: int | None = Field(default=None, ge=0, le=100)
+    cores: CoresVinhetaSeparadorTranscribrothers | None = None
+
+
+@app.get("/api/integracao/vinhetas")
+async def listar_vinhetas_disponiveis_para_o_separador_transcribrothers() -> dict[str, object]:
+    try:
+        return await listar_vinhetas_para_o_separador()
+    except RuntimeError as erro:
+        raise HTTPException(status_code=503, detail=str(erro)) from erro
+
+
+async def _mp4_de_previa_da_vinheta_transcribrothers(
+    *,
+    titulo: str,
+    efeito: str | None,
+    vinheta_id: str | None,
+) -> StreamingResponse:
+    if not (vinheta_id or "").strip() and not (efeito or "").strip():
+        raise HTTPException(status_code=422, detail="Escolha uma vinheta.")
+    try:
+        conteudo = await baixar_mp4_renderizado_da_vinheta(
+            titulo=(titulo or "").strip() or "Nova funcionalidade",
+            efeito=(efeito or "").strip() or None,
+            vinheta_id=(vinheta_id or "").strip() or None,
+        )
+    except RuntimeError as erro:
+        raise HTTPException(status_code=502, detail=str(erro)) from erro
+    return StreamingResponse(
+        io.BytesIO(conteudo),
+        media_type="video/mp4",
+        headers={"Content-Disposition": "inline", "Cache-Control": "no-store"},
+    )
+
+
+@app.get("/api/integracao/vinhetas/previsualizar")
+async def previsualizar_vinheta_get_para_o_player_do_separador_transcribrothers(
+    titulo: str = Query(default="Nova funcionalidade"),
+    efeito: str | None = Query(default=None),
+    vinheta_id: str | None = Query(default=None),
+) -> StreamingResponse:
+    return await _mp4_de_previa_da_vinheta_transcribrothers(
+        titulo=titulo,
+        efeito=efeito,
+        vinheta_id=vinheta_id,
+    )
+
+
+@app.post("/api/integracao/vinhetas/previsualizar")
+async def previsualizar_vinheta_para_o_separador_transcribrothers(
+    corpo: CorpoGerarVinhetaDeSeparadorTranscribrothers,
+) -> StreamingResponse:
+    return await _mp4_de_previa_da_vinheta_transcribrothers(
+        titulo=corpo.titulo,
+        efeito=corpo.efeito,
+        vinheta_id=corpo.vinheta_id,
+    )
+
+
+@app.post("/api/jobs/{job_id}/biblioteca-midias-tela/gerar-vinheta")
+async def gerar_vinheta_na_biblioteca_midias_tela_do_job_transcribrothers(
+    job_id: str,
+    corpo: CorpoGerarVinhetaDeSeparadorTranscribrothers,
+    session_factory: SessionFactoryDep,
+    data_dir: DataDirDep,
+) -> dict[str, object]:
+    async with session_factory() as session:
+        row = await session.get(JobPipelineTranscribrothers, job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
+        prefs_encode, _ = await resolver_preferencias_encode_video_narrado_efetivas_transcribrothers(
+            session
+        )
+    work = _diretorio_trabalho_job(data_dir, job_id)
+    if not (corpo.vinheta_id or "").strip() and not (corpo.efeito or "").strip():
+        raise HTTPException(status_code=422, detail="Escolha uma vinheta.")
+    try:
+        item = await publicar_vinheta_na_biblioteca_de_midias_do_job_transcribrothers(
+            work=work,
+            job_id=job_id,
+            titulo=(corpo.titulo or "").strip() or "Nova funcionalidade",
+            efeito=(corpo.efeito or "").strip() or None,
+            vinheta_id=(corpo.vinheta_id or "").strip() or None,
+            caminho_video=_localizar_arquivo_video_entrada_no_diretorio_job(work),
+            instante_quadro_seguinte=corpo.instante_quadro_seguinte,
+            instante_quadro_anterior=corpo.instante_quadro_anterior,
+            duracao_segundos=corpo.duracao_segundos,
+            presenca_da_imagem=corpo.presenca_da_imagem,
+            cores=corpo.cores.model_dump() if corpo.cores else None,
+            preferencias_encode=prefs_encode,
+        )
+    except (RuntimeError, ErroFfmpegTranscribrothers) as erro:
+        raise HTTPException(status_code=502, detail=str(erro)) from erro
+    return {"ok": True, "item": item}
+
+
 class CorpoGerarCartaoSecaoBibliotecaMidiasTelaTranscribrothers(BaseModel):
     titulo: str = Field(default="Nova funcionalidade", max_length=200)
     subtitulo: str | None = Field(default=None, max_length=120)
@@ -6292,6 +6417,21 @@ async def pipeline_video_narrado_a_partir_documento_markdown_job_transcribrother
         steps[CHAVE_STEPS_PIPELINE_VIDEO_NARRADO_DIRETRIZ_CONTEUDO_LEGENDAS_TRANSCRIBROTHERS] = (
             diretriz_conteudo_legendas
         )
+        from transcribrothers_backend.modulo_normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers import (
+            CHAVE_STEPS_TRANSICOES_SECAO_VIDEO_NARRADO_TRANSCRIBROTHERS,
+            normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers,
+        )
+
+        steps[CHAVE_STEPS_TRANSICOES_SECAO_VIDEO_NARRADO_TRANSCRIBROTHERS] = (
+            normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers(
+                {
+                    "incluir": bool(body.incluir_transicoes_secao),
+                    "efeito": body.efeito_transicao_secao,
+                    "duracao_segundos": body.duracao_transicao_secao_segundos,
+                    "vinheta_id": body.vinheta_id_transicao_secao,
+                }
+            )
+        )
         if markdown_escopo:
             titulos = [
                 t.strip()
@@ -6529,6 +6669,8 @@ async def listar_janelas_video_cues_narracao_job_transcribrothers(
                 voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
                 texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
                 id_fonte_video=str(getattr(r, "id_fonte_video", "") or "").strip(),
+                eh_separador_secao=bool(getattr(r, "eh_separador_secao", False)),
+                receita_vinheta_separador=getattr(r, "receita_vinheta_separador", None),
             )
             for r in resumos
         ],
@@ -6615,6 +6757,8 @@ async def salvar_janelas_video_cues_narracao_job_transcribrothers(
                 voz_tts=str(getattr(r, "voz_tts", "") or "").strip() or voz_padrao_job,
                 texto_tts=str(getattr(r, "texto_tts", "") or "").strip(),
                 id_fonte_video=str(getattr(r, "id_fonte_video", "") or "").strip(),
+                eh_separador_secao=bool(getattr(r, "eh_separador_secao", False)),
+                receita_vinheta_separador=getattr(r, "receita_vinheta_separador", None),
             )
             for r in resumos
         ],

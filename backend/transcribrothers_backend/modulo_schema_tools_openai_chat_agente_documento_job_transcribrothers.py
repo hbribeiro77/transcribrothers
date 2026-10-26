@@ -15,7 +15,7 @@ def schema_tools_openai_chat_agente_documento_job_transcribrothers() -> list[dic
     propriedades_edicao = {
         "titulo_secao_heading": {
             "type": "string",
-            "description": "Título da seção ## a alterar.",
+            "description": "Título da seção ## a alterar (não use ###; se o trecho está num subtítulo, informe o ## pai).",
         },
         "instrucoes": {
             "type": "string",

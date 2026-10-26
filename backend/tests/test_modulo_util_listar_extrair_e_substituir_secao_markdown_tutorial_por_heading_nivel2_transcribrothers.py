@@ -68,6 +68,52 @@ def test_reconciliar_heading_interpretado_com_secoes():
     assert linha2 == "## Personalização da Lista de Pastas"
 
 
+def test_resolver_heading_de_subsecao_h3_mapeia_para_o_h2_pai():
+    md = """# Tutorial
+
+## 1. Introdução e Objetivo
+
+Intro.
+
+## 3. Geração de Peças e Configurações
+
+Texto da seção.
+
+### Modelos
+
+Gemini e GPT.
+
+## 4. Revisão e Suporte
+
+Fim.
+"""
+    sec = resolver_secao_markdown_nivel2_por_linha_heading_ou_indice_transcribrothers(
+        md, titulo_secao_heading="Modelos"
+    )
+    assert sec.linha_heading == "## 3. Geração de Peças e Configurações"
+
+
+def test_resolver_heading_h3_ambiguo_em_dois_h2_nao_escolhe_no_escuro():
+    md = """# T
+
+## Alpha
+
+### Modelos
+
+A.
+
+## Beta
+
+### Modelos
+
+B.
+"""
+    with pytest.raises(ValueError, match="ambíguo"):
+        resolver_secao_markdown_nivel2_por_linha_heading_ou_indice_transcribrothers(
+            md, titulo_secao_heading="Modelos"
+        )
+
+
 def test_rejeita_heading_errado_na_secao_nova():
     md = "## A\n\nx\n\n## B\n\ny\n"
     sec = resolver_secao_markdown_nivel2_por_linha_heading_ou_indice_transcribrothers(

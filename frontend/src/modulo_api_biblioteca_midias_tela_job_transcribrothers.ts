@@ -84,6 +84,76 @@ export async function gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers
   return j.item;
 }
 
+export async function listarVinhetasDisponiveisParaSeparadorApiTranscribrothers(): Promise<{
+  modelos: { id: string; nome: string; url_preview?: string | null }[];
+  projetos: { id: string; titulo: string; url_preview?: string | null }[];
+}> {
+  const r = await fetch("/api/integracao/vinhetas");
+  if (!r.ok) await _lerErroHttpApiTranscribrothers(r);
+  return (await r.json()) as {
+    modelos: { id: string; nome: string; url_preview?: string | null }[];
+    projetos: { id: string; titulo: string; url_preview?: string | null }[];
+  };
+}
+
+export async function previsualizarVinhetaSeparadorApiTranscribrothers(opts: {
+  titulo: string;
+  efeito?: string | null;
+  vinhetaId?: string | null;
+}): Promise<Blob> {
+  const r = await fetch("/api/integracao/vinhetas/previsualizar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      titulo: opts.titulo,
+      efeito: opts.efeito ?? null,
+      vinheta_id: opts.vinhetaId ?? null,
+    }),
+  });
+  if (!r.ok) await _lerErroHttpApiTranscribrothers(r);
+  return r.blob();
+}
+
+export async function gerarVinhetaBibliotecaMidiasTelaJobApiTranscribrothers(
+  jobId: string,
+  opts: {
+    titulo: string;
+    efeito?: string | null;
+    vinhetaId?: string | null;
+    instanteQuadroSeguinte?: number | null;
+    instanteQuadroAnterior?: number | null;
+    duracaoSegundos?: number | null;
+    presencaDaImagem?: number | null;
+    cores?: {
+      fundo: string;
+      plano_principal: string;
+      plano_destaque: string;
+      texto: string;
+    } | null;
+  },
+): Promise<ItemBibliotecaMidiaTelaApiTranscribrothers> {
+  const r = await fetch(
+    `/api/jobs/${encodeURIComponent(jobId)}/biblioteca-midias-tela/gerar-vinheta`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        titulo: opts.titulo,
+        efeito: opts.efeito ?? null,
+        vinheta_id: opts.vinhetaId ?? null,
+        instante_quadro_seguinte: opts.instanteQuadroSeguinte ?? null,
+        instante_quadro_anterior: opts.instanteQuadroAnterior ?? null,
+        duracao_segundos: opts.duracaoSegundos ?? null,
+        presenca_da_imagem: opts.presencaDaImagem ?? null,
+        cores: opts.cores ?? null,
+      }),
+    },
+  );
+  if (!r.ok) await _lerErroHttpApiTranscribrothers(r);
+  const j = (await r.json()) as { item: ItemBibliotecaMidiaTelaApiTranscribrothers };
+  return j.item;
+}
+
 export async function apagarItemBibliotecaMidiasTelaJobApiTranscribrothers(
   jobId: string,
   idMidia: string,

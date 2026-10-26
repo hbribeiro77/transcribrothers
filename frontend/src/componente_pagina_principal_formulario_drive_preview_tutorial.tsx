@@ -143,11 +143,8 @@ import {
   sincronizarMarkdownComVersaoAnotadaScreenshotJobApiTranscribrothers,
 } from "./modulo_api_anotacao_imagens_tutorial_assets_png_duas_versoes_transcribrothers.ts";
 import { resolverNomeArquivoAssetPngParaExibicaoNoTutorialTranscribrothers } from "./modulo_util_resolver_nome_asset_png_para_exibicao_com_metadados_anotacao_tutorial_transcribrothers.ts";
-import {
-  capturarFrameManualVideoTutorialJobApiTranscribrothers,
-  copiarTextoParaAreaTransferenciaNavegadorTranscribrothers,
-} from "./modulo_api_captura_frame_manual_video_tutorial_inserir_markdown_transcribrothers.ts";
-import { resolverAcaoDepoisDeCopiarSnippetInserirImagemDaModalAnotacaoTranscribrothers } from "./modulo_util_resolver_acao_depois_de_copiar_snippet_inserir_imagem_anotacao_abrir_editor_markdown_transcribrothers.ts";
+import { capturarFrameManualVideoTutorialJobApiTranscribrothers } from "./modulo_api_captura_frame_manual_video_tutorial_inserir_markdown_transcribrothers.ts";
+import { resolverAcaoBotaoInserirImagemDaModalAnotacaoComoCopiaPngParaMarkdownTranscribrothers } from "./modulo_util_resolver_acao_botao_inserir_imagem_modal_anotacao_copia_png_abrir_markdown_transcribrothers.ts";
 import { colarImagemClipboardMarkdownTutorialJobApiTranscribrothers } from "./modulo_api_colar_imagem_clipboard_markdown_tutorial_assets_job_transcribrothers.ts";
 import {
   elementoAtivoEstaEmCampoDigitavelParaColarTextoTranscribrothers,
@@ -160,7 +157,6 @@ import {
   alvoPreviewIgnoraCliqueInsercaoImagemMarkdownTranscribrothers,
   inserirSnippetMarkdownNaLinhaDocumentoTranscribrothers,
   listarSecoesH2MarkdownTutorialParaPreviewTranscribrothers,
-  montarSnippetMarkdownImagemAssetTutorialTranscribrothers,
   obterNumeroLinhaInsercaoPorTopoMarcadorNoPreviewTutorialTranscribrothers,
   obterPontoInsercaoImagemMarkdownSobPonteiroNoPreviewTutorialTranscribrothers,
 } from "./modulo_util_modo_inserir_snippet_imagem_markdown_tutorial_transcribrothers.ts";
@@ -2266,6 +2262,10 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
             temperaturaTts,
             ritmoTts,
             diretrizConteudoLegendas,
+            incluirTransicoesSecao: Boolean(escopo?.incluirTransicoesSecao),
+            efeitoTransicaoSecao: escopo?.efeitoTransicaoSecao || null,
+            duracaoTransicaoSecaoSegundos: escopo?.duracaoTransicaoSecaoSegundos ?? null,
+            vinhetaIdTransicaoSecao: escopo?.vinhetaIdTransicaoSecao || null,
           },
         );
         pedidoPipelineVideoNarradoEmAndamentoRef.current = true;
@@ -2376,7 +2376,13 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         texto_tts?: string;
         forcar_regenerar_tts?: boolean;
       }>;
-      janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
+      janelas: Array<{
+        inicio_video_segundos: number;
+        fim_video_segundos: number;
+        id_fonte_video?: string;
+        eh_separador_secao?: boolean;
+        receita_vinheta_separador?: Record<string, unknown> | null;
+      }> | null;
       temperaturaTts?: number;
       ritmoTts?: string;
       tituloArquivo?: string;
@@ -3126,30 +3132,17 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
   );
 
   const iniciarInserirImagemAssetNoDocumentoMarkdownTranscribrothers = useCallback(
-    async (nomeArquivoParaSnippet: string) => {
-      if (!job?.id) return;
+    async () => {
+      if (!job?.id) return false;
       if (historicoVersaoTutorialSelecionadaId !== null) {
         pushToast("Volte à versão atual do tutorial para inserir imagens.", "info");
-        return;
+        return false;
       }
       if (!jobPermiteEdicaoManualMarkdownTutorial) {
         pushToast("Não é possível editar o tutorial neste momento.", "info");
-        return;
+        return false;
       }
-      const snippet = montarSnippetMarkdownImagemAssetTutorialTranscribrothers(nomeArquivoParaSnippet);
-      const snippetUsaVersaoAnotada = nomeArquivoParaSnippet.toLowerCase().includes(".anotado.png");
-      const acao = resolverAcaoDepoisDeCopiarSnippetInserirImagemDaModalAnotacaoTranscribrothers({
-        snippetUsaVersaoAnotada,
-      });
-      try {
-        await copiarTextoParaAreaTransferenciaNavegadorTranscribrothers(snippet);
-      } catch {
-        pushToast("Não foi possível copiar para a área de transferência.", "error");
-        return;
-      }
-      if (acao.deveFecharModalAnotacao) {
-        setNomeArquivoImagemAnotacaoModalAberto(null);
-      }
+      const acao = resolverAcaoBotaoInserirImagemDaModalAnotacaoComoCopiaPngParaMarkdownTranscribrothers();
       cancelarModoInserirImagemAssetNoTutorialTranscribrothers();
       if (acao.deveAbrirEditorMarkdownFocandoTextareaEsquerdo) {
         if (!modoEdicaoMarkdownTutorialAtivo) {
@@ -3161,6 +3154,7 @@ export function PaginaPrincipalTranscribrothersFormularioDrivePreviewTutorial({
         }, 0);
       }
       pushToast(acao.mensagemToastSucesso, "success");
+      return true;
     },
     [
       cancelarModoInserirImagemAssetNoTutorialTranscribrothers,

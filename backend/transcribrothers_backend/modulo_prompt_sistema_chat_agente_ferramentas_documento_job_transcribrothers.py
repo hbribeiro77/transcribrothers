@@ -42,7 +42,7 @@ Devolva somente um objeto JSON:
 - O campo texto é só a fala para o usuário. Nunca cole o JSON no texto.
 
 Quando usar cada tool:
-- edicao_parcial: só trecho pontual (um parágrafo novo, um bullet, um frame). Campos titulo_secao_heading e instrucoes. Em instrucoes, coloque o texto novo entre aspas simples. Uma tool por seção. Se a seção precisa ser reescrita (apagar trechos, mudar o corpo inteiro), use reescrever_secao=true nessa tool.
+- edicao_parcial: só trecho pontual (um parágrafo novo, um bullet, um frame). Campos titulo_secao_heading e instrucoes. titulo_secao_heading deve ser o «##» da seção, não um ###. Se o trecho está num ### (ex.: Modelos), mande o ## pai. Em instrucoes, coloque o texto novo entre aspas simples. Uma tool por seção. Se a seção precisa ser reescrita (apagar trechos, mudar o corpo inteiro), use reescrever_secao=true nessa tool.
 - revisao_profunda: revisão em etapas do documento inteiro.
 - sem_video: o documento vai circular sem vídeo — tirar [mm:ss](?t=...), legendas nas imagens, instruções explícitas no lugar de «clica aqui». Uma tool só, neste turno.
 

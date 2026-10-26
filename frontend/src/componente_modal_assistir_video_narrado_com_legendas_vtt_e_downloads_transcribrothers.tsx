@@ -70,6 +70,7 @@ import {
   TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS,
   inserirCueDepoisDoIndiceNaTimelineUiTranscribrothers,
   inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers,
+  empacotarTemposCuesPreservandoDuracoesTranscribrothers,
   remaparRecordPorIndiceAposInserirUiTranscribrothers,
   remaparRecordPorIndiceAposReordenarUiTranscribrothers,
   resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers,
@@ -123,9 +124,15 @@ import {
 } from "./componente_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.tsx";
 import { ComponenteModalTrechoCueNoVideoOriginalEntradaJobTranscribrothers } from "./componente_modal_trecho_cue_no_video_original_entrada_job_transcribrothers.tsx";
 import { ComponenteModalEscolherFonteMidiaTelaCueBibliotecaTranscribrothers } from "./componente_modal_escolher_fonte_midia_tela_cue_biblioteca_transcribrothers.tsx";
+import { ComponenteModalEscolherVinhetaParaSeparadorDeSecaoTranscribrothers } from "./componente_modal_escolher_vinheta_para_separador_de_secao_transcribrothers.tsx";
+import {
+  capturarQuadroAtualDoElementoVideoComoDataUrlPngTranscribrothers,
+  type ReceitaVinhetaDoSeparadorTranscribrothers,
+} from "./modulo_util_receita_e_velocidade_da_vinheta_do_separador_de_secao_transcribrothers.ts";
+import { instantes_dos_quadros_da_transicao_do_separador_transcribrothers } from "./modulo_util_instantes_dos_quadros_da_transicao_do_separador_transcribrothers.ts";
 import {
   ID_FONTE_VIDEO_ENTRADA_UI_TRANSCRIBROTHERS,
-  gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers,
+  gerarVinhetaBibliotecaMidiasTelaJobApiTranscribrothers,
   normalizarIdFonteVideoUiTranscribrothers,
 } from "./modulo_api_biblioteca_midias_tela_job_transcribrothers.ts";
 import { calcularJanelaVideoAposTrocaFonteMidiaTelaUiTranscribrothers } from "./modulo_util_calcular_janela_video_apos_troca_fonte_midia_tela_ui_transcribrothers.ts";
@@ -137,7 +144,13 @@ import { usarToastFeedbackAcoesUiTranscribrothers } from "./provedor_contexto_e_
 import { usarDialogoConfirmacaoAcaoUiSubstituindoWindowConfirmTranscribrothers } from "./hook_usar_dialogo_confirmacao_acao_ui_substituindo_window_confirm_transcribrothers.tsx";
 import { audioMp4NarradoDesatualizadoEmRelacaoAoProjetoEditorDosStepsJsonTranscribrothers } from "./modulo_util_audio_mp4_narrado_desatualizado_em_relacao_ao_projeto_editor_steps_json_transcribrothers.ts";
 import { erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers } from "./modulo_util_erro_play_midia_foi_interrompido_por_pause_ou_abort_ui_transcribrothers.ts";
-import { previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers } from "./modulo_util_preview_recorte_aguardar_troca_src_fonte_cue_antes_do_play_ui_transcribrothers.ts";
+import {
+  previewRecorteDeveAvancarCadeiaNoFimDaCueSemNarracaoUiTranscribrothers,
+  previewRecorteDeveEstacionarSeekNoFimDaJanelaAntesDeAvancarUiTranscribrothers,
+  previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers,
+  previewRecorteVideoJaBuscouInstanteAlvoParaPlayUiTranscribrothers,
+  previewRecorteVideoJaCarregouSrcAlvoParaPlayUiTranscribrothers,
+} from "./modulo_util_preview_recorte_aguardar_troca_src_fonte_cue_antes_do_play_ui_transcribrothers.ts";
 import "./estilos_css_player_video_job_controles_customizados_e_modal_ampliar_tela_maior_transcribrothers.css";
 import "./estilos_css_modal_assistir_video_narrado_com_legendas_vtt_e_downloads_transcribrothers.css";
 
@@ -256,7 +269,13 @@ export type PropsComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTran
       texto_tts?: string;
       forcar_regenerar_tts?: boolean;
     }>;
-    janelas: Array<{ inicio_video_segundos: number; fim_video_segundos: number }> | null;
+    janelas: Array<{
+      inicio_video_segundos: number;
+      fim_video_segundos: number;
+      id_fonte_video?: string;
+      eh_separador_secao?: boolean;
+      receita_vinheta_separador?: Record<string, unknown> | null;
+    }> | null;
     temperaturaTts?: number;
     ritmoTts?: RitmoTtsNarracaoTranscribrothers;
     tituloArquivo?: string;
@@ -449,6 +468,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   const indiceCueReproducaoSoloRef = useRef<number | null>(null);
   /** Play contínuo com WAV nas posições atuais das cues (vídeo pausado; sem mutar volume). */
   const reproducaoContinuaPorWavRef = useRef(false);
+  /** Evita timeupdate + ended avançarem a mesma cue duas vezes. */
+  const indiceCueJanelaEncerradaNoPreviewRef = useRef<number | null>(null);
   const cuesRef = useRef<CueTimelineComIdClienteUiTranscribrothers[]>([]);
   const janelasRef = useRef<JanelaVideoCueLocalUiTranscribrothers[]>([]);
   const cuesOriginaisRef = useRef<CueWebVttParaListaUiTranscribrothers[]>([]);
@@ -468,6 +489,13 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
    */
   const previewRecorteTelaAtivoRef = useRef(false);
   const [previewRecorteTelaAtivo, setPreviewRecorteTelaAtivo] = useState(false);
+  const [urlQuadroCongeladoDuranteTrocaSrc, setUrlQuadroCongeladoDuranteTrocaSrc] = useState<
+    string | null
+  >(null);
+  const geracaoEsperaQuadroAlvoPreviewRef = useRef(0);
+  const [painelVinhetaAberto, setPainelVinhetaAberto] = useState(false);
+  const [indiceAjusteVinheta, setIndiceAjusteVinheta] = useState<number | null>(null);
+  const [urlQuadroTutorialVinheta, setUrlQuadroTutorialVinheta] = useState<string | null>(null);
   /** Duração do MP4 narrado (cache) — a barra virtual usa isso no preview de recorte. */
   const [duracaoMp4NarradoSegundos, setDuracaoMp4NarradoSegundos] = useState(0);
   /** Após pausar o vídeo no fim da janela, o WAV ainda pode continuar. */
@@ -688,6 +716,8 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     if (!ativo) {
       narracaoSegueAposJanelaPreviewRef.current = false;
       pedidoPlayAposTrocaSrcPreviewRef.current = null;
+      geracaoEsperaQuadroAlvoPreviewRef.current += 1;
+      setUrlQuadroCongeladoDuranteTrocaSrc(null);
     }
   }, []);
 
@@ -1075,6 +1105,22 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             vozTts: voz,
             vozNarrada: voz,
             idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(c.id_fonte_video),
+            ehSeparadorSecao: Boolean(c.eh_separador_secao),
+            receitaVinhetaSeparador: c.receita_vinheta_separador
+              ? {
+                  titulo: String(c.receita_vinheta_separador.titulo || c.texto || ""),
+                  efeito: c.receita_vinheta_separador.efeito ?? null,
+                  vinhetaId: c.receita_vinheta_separador.vinheta_id ?? null,
+                  duracaoSegundos: Number(c.receita_vinheta_separador.duracao_segundos) || 2,
+                  presencaDaImagem: Number(c.receita_vinheta_separador.presenca_da_imagem) || 60,
+                  cores: c.receita_vinheta_separador.cores || {
+                    fundo: "#0e1c2f",
+                    plano_principal: "#1b4f72",
+                    plano_destaque: "#c4a35a",
+                    texto: "#f7f4ef",
+                  },
+                }
+              : undefined,
           };
         });
         setJanelas((prev) => {
@@ -1170,6 +1216,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
   useEffect(() => {
     if (!aberto) {
       indiceCueReproducaoSoloRef.current = null;
+      indiceCueJanelaEncerradaNoPreviewRef.current = null;
       setIndiceCueSelecionadaSolo(null);
       previewRecorteTelaAtivoRef.current = false;
       setPreviewRecorteTelaAtivo(false);
@@ -1180,6 +1227,108 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     }
     const video = videoRef.current;
     if (!video) return;
+    const encerrarJanelaDaCueSoloEAvancarCadeiaSeContinuo = (opts: { veioDoEndedDoArquivo: boolean }) => {
+      const indiceSolo = indiceCueReproducaoSoloRef.current;
+      if (indiceSolo === null) return;
+      if (indiceCueJanelaEncerradaNoPreviewRef.current === indiceSolo) return;
+      const cueSolo = cuesRef.current[indiceSolo];
+      if (!cueSolo) return;
+      const jSolo = janelasRef.current[indiceSolo];
+      const previewAtivo = previewRecorteTelaAtivoRef.current;
+      const previewJanela = previewAtivo && Boolean(jSolo);
+      const inicioLimite =
+        previewJanela || jSolo?.semNarracao
+          ? (jSolo?.inicioVideoSegundos ?? cueSolo.inicioSegundos)
+          : cueSolo.inicioSegundos;
+      const fimLimite =
+        previewJanela || jSolo?.semNarracao
+          ? (jSolo?.fimVideoSegundos ?? cueSolo.fimSegundos)
+          : cueSolo.fimSegundos;
+      const margemFimSegundos = 0.05;
+      const estacionarEm = Math.max(inicioLimite, fimLimite - margemFimSegundos);
+      indiceCueJanelaEncerradaNoPreviewRef.current = indiceSolo;
+      video.pause();
+      const jProxima = janelasRef.current[indiceSolo + 1];
+      const urlAlvoProxima =
+        previewAtivo && jobId && jProxima
+          ? urlVideoFonteTelaCueParaPreviewUiTranscribrothers(jobId, jProxima.idFonteVideo)
+          : "";
+      const vaiTrocarSrcParaProximaCue =
+        previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers({
+          previewRecorteAtivo: previewAtivo,
+          urlVideoPlayerAtual: urlVideoPlayerEfetivoRef.current,
+          urlVideoFonteAlvo: urlAlvoProxima,
+        });
+      if (vaiTrocarSrcParaProximaCue) {
+        const quadro = capturarQuadroAtualDoElementoVideoComoDataUrlPngTranscribrothers(video);
+        if (quadro) setUrlQuadroCongeladoDuranteTrocaSrc(quadro);
+      }
+      if (
+        previewRecorteDeveEstacionarSeekNoFimDaJanelaAntesDeAvancarUiTranscribrothers({
+          veioDoEndedDoArquivo: opts.veioDoEndedDoArquivo,
+          vaiTrocarSrcParaProximaCue,
+        })
+      ) {
+        try {
+          video.currentTime = estacionarEm;
+        } catch {
+          /* ignore */
+        }
+      }
+      if (previewJanela) {
+        const tVirtual = lerTempoVirtualTimelinePreviewRecorteUi(indiceSolo);
+        setTempoAtualSegundos(
+          tVirtual ?? Math.max(cueSolo.inicioSegundos, cueSolo.fimSegundos - margemFimSegundos),
+        );
+      } else {
+        setTempoAtualSegundos(estacionarEm);
+      }
+      const audio = audioCueRef.current;
+      const audioAindaToca = Boolean(audio && !audio.paused);
+      if (previewJanela && !jSolo?.semNarracao && audioAindaToca) {
+        narracaoSegueAposJanelaPreviewRef.current = true;
+        return;
+      }
+      if (jSolo?.semNarracao && !previewJanela) video.muted = false;
+      if (audio && !audio.paused) audio.pause();
+      setIndiceAudioTocando(null);
+      const continuo = reproducaoContinuaPorWavRef.current;
+      if (
+        previewRecorteDeveAvancarCadeiaNoFimDaCueSemNarracaoUiTranscribrothers({
+          continuo,
+          semNarracao: Boolean(jSolo?.semNarracao),
+          previewJanela,
+          audioAindaToca,
+        })
+      ) {
+        const proximo = indiceSolo + 1;
+        if (proximo < cuesRef.current.length) {
+          tocarNarracaoWavDaCueRef.current(proximo, { continuo: true });
+          return;
+        }
+        reproducaoContinuaPorWavRef.current = false;
+        indiceCueReproducaoSoloRef.current = null;
+        if (previewJanela) {
+          pedidoSeekNarradoAposSairPreviewRef.current = Math.max(0, cueSolo.inicioSegundos);
+          definirPreviewRecorteTelaAtivoUi(false);
+        }
+        return;
+      }
+      if (previewJanela && audioAindaToca) {
+        return;
+      }
+      if (previewJanela) {
+        indiceCueReproducaoSoloRef.current = null;
+        pedidoSeekNarradoAposSairPreviewRef.current = Math.max(0, cueSolo.inicioSegundos);
+        definirPreviewRecorteTelaAtivoUi(false);
+        return;
+      }
+      if (continuo) {
+        reproducaoContinuaPorWavRef.current = false;
+      }
+      indiceCueReproducaoSoloRef.current = null;
+    };
+
     const aoTempo = () => {
       const t = video.currentTime || 0;
       const indiceSolo = indiceCueReproducaoSoloRef.current;
@@ -1195,86 +1344,28 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       if (!cueSolo) return;
       const jSolo = janelasRef.current[indiceSolo];
       const previewJanela = previewAtivo && Boolean(jSolo);
-      // Preview de recorte / cue sem narração: limites na janela de tela (vídeo original ou MP4).
-      const inicioLimite =
-        previewJanela || jSolo?.semNarracao
-          ? (jSolo?.inicioVideoSegundos ?? cueSolo.inicioSegundos)
-          : cueSolo.inicioSegundos;
       const fimLimite =
         previewJanela || jSolo?.semNarracao
           ? (jSolo?.fimVideoSegundos ?? cueSolo.fimSegundos)
           : cueSolo.fimSegundos;
-      // Para um pouco antes do fim: em cues contíguas, t === fim cai no início da próxima.
-      const margemFimSegundos = 0.05;
-      if (t >= fimLimite - margemFimSegundos) {
-        const estacionarEm = Math.max(inicioLimite, fimLimite - margemFimSegundos);
-        video.pause();
-        video.currentTime = estacionarEm;
-        if (previewJanela) {
-          const tVirtual = lerTempoVirtualTimelinePreviewRecorteUi(indiceSolo);
-          setTempoAtualSegundos(
-            tVirtual ??
-              Math.max(cueSolo.inicioSegundos, cueSolo.fimSegundos - margemFimSegundos),
-          );
-        } else {
-          setTempoAtualSegundos(estacionarEm);
-        }
-        const audio = audioCueRef.current;
-        const audioAindaToca = Boolean(audio && !audio.paused);
-        // Preview com narração: vídeo para no fim da janela; WAV pode seguir.
-        if (previewJanela && !jSolo?.semNarracao && audioAindaToca) {
-          narracaoSegueAposJanelaPreviewRef.current = true;
-          return;
-        }
-        if (jSolo?.semNarracao && !previewJanela) video.muted = false;
-        if (audio && !audio.paused) audio.pause();
-        setIndiceAudioTocando(null);
-        const continuo = reproducaoContinuaPorWavRef.current;
-        // Cue sem narração (só vídeo) ou preview mudo: avança a cadeia no fim da janela.
-        if (continuo && (jSolo?.semNarracao || (previewJanela && !audioAindaToca))) {
-          const proximo = indiceSolo + 1;
-          if (proximo < cuesRef.current.length) {
-            tocarNarracaoWavDaCueRef.current(proximo, { continuo: true });
-            return;
-          }
-          reproducaoContinuaPorWavRef.current = false;
-          indiceCueReproducaoSoloRef.current = null;
-          if (previewJanela) {
-            pedidoSeekNarradoAposSairPreviewRef.current = Math.max(
-              0,
-              cueSolo.inicioSegundos,
-            );
-            definirPreviewRecorteTelaAtivoUi(false);
-          }
-          return;
-        }
-        if (previewJanela && audioAindaToca) {
-          /* WAV ainda toca — solo permanece até onEnded do áudio */
-          return;
-        }
-        if (previewJanela) {
-          indiceCueReproducaoSoloRef.current = null;
-          pedidoSeekNarradoAposSairPreviewRef.current = Math.max(0, cueSolo.inicioSegundos);
-          definirPreviewRecorteTelaAtivoUi(false);
-          return;
-        }
-        if (!continuo) {
-          /* solo no MP4 narrado: mantém destaque */
-        } else {
-          /* contínuo com WAV: o onEnded do áudio avança a cadeia */
-          reproducaoContinuaPorWavRef.current = false;
-        }
-        indiceCueReproducaoSoloRef.current = null;
+      if (t >= fimLimite - 0.05) {
+        encerrarJanelaDaCueSoloEAvancarCadeiaSeContinuo({ veioDoEndedDoArquivo: false });
       }
+    };
+    const aoFimDoArquivoVideoPreviewRecorte = () => {
+      encerrarJanelaDaCueSoloEAvancarCadeiaSeContinuo({ veioDoEndedDoArquivo: true });
     };
     video.addEventListener("timeupdate", aoTempo);
     video.addEventListener("seeked", aoTempo);
+    video.addEventListener("ended", aoFimDoArquivoVideoPreviewRecorte);
     return () => {
       video.removeEventListener("timeupdate", aoTempo);
       video.removeEventListener("seeked", aoTempo);
+      video.removeEventListener("ended", aoFimDoArquivoVideoPreviewRecorte);
     };
   }, [
     aberto,
+    jobId,
     urlVideoPlayerEfetivo,
     definirPreviewRecorteTelaAtivoUi,
     lerTempoVirtualTimelinePreviewRecorteUi,
@@ -1376,6 +1467,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     narracaoSegueAposJanelaPreviewRef.current = false;
     reproducaoContinuaPorWavRef.current = continuo;
     indiceCueReproducaoSoloRef.current = indice;
+    indiceCueJanelaEncerradaNoPreviewRef.current = null;
     setIndiceCueSelecionadaSolo(indice);
 
     const j = janelasRef.current[indice];
@@ -1383,11 +1475,6 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     const fimTela = Math.max(iniTela + 0.05, j?.fimVideoSegundos ?? iniTela + 0.05);
     const t0 = Math.min(Math.max(tempoJanelaSegundos, iniTela), fimTela - 0.05);
 
-    try {
-      video.currentTime = t0;
-    } catch {
-      /* seek prematuro */
-    }
     const cuePlay = cuesRef.current[indice];
     const tempoVirtualInicial = cuePlay
       ? Math.min(
@@ -1397,68 +1484,121 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       : t0;
     setTempoAtualSegundos(tempoVirtualInicial);
     video.muted = true;
+    setIndiceAudioTocando(indice);
 
-    if (semNarracao || !urlAudio || !audio) {
-      setIndiceAudioTocando(indice);
-      void video.play().then(
-        () => undefined,
+    const geracao = ++geracaoEsperaQuadroAlvoPreviewRef.current;
+    const quadroAlvoPronto = () => {
+      if (geracao !== geracaoEsperaQuadroAlvoPreviewRef.current) return false;
+      if (indiceCueReproducaoSoloRef.current !== indice) return false;
+      return previewRecorteVideoJaBuscouInstanteAlvoParaPlayUiTranscribrothers({
+        currentTime: video.currentTime || 0,
+        instanteAlvoSegundos: t0,
+        readyState: video.readyState,
+      });
+    };
+
+    const soltarFreezeQuandoPrimeiroQuadroPintar = () => {
+      const videoComRvfc = video as HTMLVideoElement & {
+        requestVideoFrameCallback?: (cb: () => void) => number;
+      };
+      const soltar = () => {
+        if (geracao !== geracaoEsperaQuadroAlvoPreviewRef.current) return;
+        setUrlQuadroCongeladoDuranteTrocaSrc(null);
+      };
+      if (typeof videoComRvfc.requestVideoFrameCallback === "function") {
+        videoComRvfc.requestVideoFrameCallback(soltar);
+        return;
+      }
+      requestAnimationFrame(soltar);
+    };
+
+    const iniciarPlaybackDaCue = () => {
+      if (semNarracao || !urlAudio || !audio) {
+        void video.play().then(
+          () => undefined,
+          (e: unknown) => {
+            if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
+            video.muted = false;
+            setIndiceAudioTocando(null);
+            indiceCueReproducaoSoloRef.current = null;
+            definirPreviewRecorteTelaAtivoUi(false);
+            pushToast(
+              e instanceof Error ? e.message : "Não foi possível tocar o preview do recorte.",
+              "error",
+            );
+          },
+        );
+        soltarFreezeQuandoPrimeiroQuadroPintar();
+        return;
+      }
+
+      try {
+        const absAtual = audio.currentSrc || audio.src || "";
+        const absNova = new URL(urlAudio, window.location.href).href;
+        if (absAtual !== absNova) audio.src = urlAudio;
+      } catch {
+        audio.src = urlAudio;
+      }
+
+      const aplicarOffsetAudio = () => {
+        if (indiceCueReproducaoSoloRef.current !== indice) return;
+        try {
+          if (offsetAudio > 0 && Number.isFinite(audio.duration) && audio.duration > 0) {
+            audio.currentTime = Math.min(offsetAudio, Math.max(0, audio.duration - 0.05));
+          } else {
+            audio.currentTime = 0;
+          }
+        } catch {
+          /* ignore */
+        }
+      };
+      if (audio.readyState >= 1) aplicarOffsetAudio();
+      else audio.addEventListener("loadedmetadata", aplicarOffsetAudio, { once: true });
+
+      void video.play().catch(() => undefined);
+      soltarFreezeQuandoPrimeiroQuadroPintar();
+      void audio.play().then(
+        () => {
+          if (indiceCueReproducaoSoloRef.current !== indice) return;
+          aplicarOffsetAudio();
+        },
         (e: unknown) => {
           if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
-          video.muted = false;
           setIndiceAudioTocando(null);
           indiceCueReproducaoSoloRef.current = null;
+          reproducaoContinuaPorWavRef.current = false;
           definirPreviewRecorteTelaAtivoUi(false);
           pushToast(
-            e instanceof Error ? e.message : "Não foi possível tocar o preview do recorte.",
+            e instanceof Error ? e.message : "Não foi possível tocar a narração da cue.",
             "error",
           );
         },
       );
-      return;
-    }
+    };
+
+    const tentarSoltarPlayNoQuadroAlvo = () => {
+      if (geracao !== geracaoEsperaQuadroAlvoPreviewRef.current) {
+        video.removeEventListener("seeked", tentarSoltarPlayNoQuadroAlvo);
+        video.removeEventListener("canplay", tentarSoltarPlayNoQuadroAlvo);
+        video.removeEventListener("loadeddata", tentarSoltarPlayNoQuadroAlvo);
+        return;
+      }
+      if (!quadroAlvoPronto()) return;
+      video.removeEventListener("seeked", tentarSoltarPlayNoQuadroAlvo);
+      video.removeEventListener("canplay", tentarSoltarPlayNoQuadroAlvo);
+      video.removeEventListener("loadeddata", tentarSoltarPlayNoQuadroAlvo);
+      iniciarPlaybackDaCue();
+    };
 
     try {
-      const absAtual = audio.currentSrc || audio.src || "";
-      const absNova = new URL(urlAudio, window.location.href).href;
-      if (absAtual !== absNova) audio.src = urlAudio;
+      video.currentTime = t0;
     } catch {
-      audio.src = urlAudio;
+      /* seek prematuro */
     }
-
-    const aplicarOffsetAudio = () => {
-      if (indiceCueReproducaoSoloRef.current !== indice) return;
-      try {
-        if (offsetAudio > 0 && Number.isFinite(audio.duration) && audio.duration > 0) {
-          audio.currentTime = Math.min(offsetAudio, Math.max(0, audio.duration - 0.05));
-        } else {
-          audio.currentTime = 0;
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    if (audio.readyState >= 1) aplicarOffsetAudio();
-    else audio.addEventListener("loadedmetadata", aplicarOffsetAudio, { once: true });
-
-    setIndiceAudioTocando(indice);
-    void video.play().catch(() => undefined);
-    void audio.play().then(
-      () => {
-        if (indiceCueReproducaoSoloRef.current !== indice) return;
-        aplicarOffsetAudio();
-      },
-      (e: unknown) => {
-        if (erroPlayMidiaFoiInterrompidoPorPauseOuAbortUiTranscribrothers(e)) return;
-        setIndiceAudioTocando(null);
-        indiceCueReproducaoSoloRef.current = null;
-        reproducaoContinuaPorWavRef.current = false;
-        definirPreviewRecorteTelaAtivoUi(false);
-        pushToast(
-          e instanceof Error ? e.message : "Não foi possível tocar a narração da cue.",
-          "error",
-        );
-      },
-    );
+    video.addEventListener("seeked", tentarSoltarPlayNoQuadroAlvo);
+    video.addEventListener("canplay", tentarSoltarPlayNoQuadroAlvo);
+    video.addEventListener("loadeddata", tentarSoltarPlayNoQuadroAlvo);
+    tentarSoltarPlayNoQuadroAlvo();
   }, [definirPreviewRecorteTelaAtivoUi, pushToast]);
 
   /** Após trocar o src para o vídeo de entrada, dispara o play do preview. */
@@ -1468,17 +1608,25 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     const video = videoRef.current;
     if (!video) return;
 
-    const rodar = () => {
+    const srcAlvoEstaPronto = () =>
+      previewRecorteVideoJaCarregouSrcAlvoParaPlayUiTranscribrothers({
+        urlAlvo: urlVideoPlayerEfetivo,
+        currentSrc: video.currentSrc || "",
+        srcAtributo: video.getAttribute("src") || video.src || "",
+        readyState: video.readyState,
+      });
+    const rodarSeSrcAlvoPronto = () => {
       if (!pedidoPlayAposTrocaSrcPreviewRef.current) return;
+      if (!srcAlvoEstaPronto()) return;
+      video.removeEventListener("loadedmetadata", rodarSeSrcAlvoPronto);
       executarPedidoPlayPreviewRecorteTelaUi();
     };
 
-    if (video.readyState >= 1) {
-      rodar();
-      return;
+    video.addEventListener("loadedmetadata", rodarSeSrcAlvoPronto);
+    if (srcAlvoEstaPronto()) {
+      rodarSeSrcAlvoPronto();
     }
-    video.addEventListener("loadedmetadata", rodar, { once: true });
-    return () => video.removeEventListener("loadedmetadata", rodar);
+    return () => video.removeEventListener("loadedmetadata", rodarSeSrcAlvoPronto);
   }, [aberto, previewRecorteTelaAtivo, urlVideoPlayerEfetivo, executarPedidoPlayPreviewRecorteTelaUi]);
 
   /** Ao sair do preview, reposiciona o MP4 narrado se houver seek pendente. */
@@ -1663,6 +1811,19 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
       audio.pause();
       video.pause();
       setIndiceAudioTocando(null);
+
+      if (previewRecorteTelaAtivoRef.current && jobId && j) {
+        const urlAlvo = urlVideoFonteTelaCueParaPreviewUiTranscribrothers(jobId, j.idFonteVideo);
+        const vaiTrocarSrc = previewRecortePrecisaAguardarTrocaSrcAntesDoPlayUiTranscribrothers({
+          previewRecorteAtivo: true,
+          urlVideoPlayerAtual: urlVideoPlayerEfetivoRef.current,
+          urlVideoFonteAlvo: urlAlvo,
+        });
+        if (vaiTrocarSrc) {
+          const quadro = capturarQuadroAtualDoElementoVideoComoDataUrlPngTranscribrothers(video);
+          if (quadro) setUrlQuadroCongeladoDuranteTrocaSrc(quadro);
+        }
+      }
 
       // Preview do recorte na fonte de tela da cue (entrada ou biblioteca), sem remux.
       if (
@@ -2765,6 +2926,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
               inicio_video_segundos: j.inicioVideoSegundos,
               fim_video_segundos: j.fimVideoSegundos,
               id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
+              eh_separador_secao: Boolean(j.ehSeparadorSecao),
+              receita_vinheta_separador: j.receitaVinhetaSeparador
+                ? {
+                    titulo: j.receitaVinhetaSeparador.titulo,
+                    efeito: j.receitaVinhetaSeparador.efeito,
+                    vinheta_id: j.receitaVinhetaSeparador.vinhetaId,
+                    duracao_segundos: j.receitaVinhetaSeparador.duracaoSegundos,
+                    presenca_da_imagem: j.receitaVinhetaSeparador.presencaDaImagem,
+                    cores: j.receitaVinhetaSeparador.cores,
+                  }
+                : null,
             })),
           },
         );
@@ -2861,6 +3033,17 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
           inicio_video_segundos: j.inicioVideoSegundos,
           fim_video_segundos: j.fimVideoSegundos,
           id_fonte_video: normalizarIdFonteVideoUiTranscribrothers(j.idFonteVideo),
+          eh_separador_secao: Boolean(j.ehSeparadorSecao),
+          receita_vinheta_separador: j.receitaVinhetaSeparador
+            ? {
+                titulo: j.receitaVinhetaSeparador.titulo,
+                efeito: j.receitaVinhetaSeparador.efeito,
+                vinheta_id: j.receitaVinhetaSeparador.vinhetaId,
+                duracao_segundos: j.receitaVinhetaSeparador.duracaoSegundos,
+                presenca_da_imagem: j.receitaVinhetaSeparador.presencaDaImagem,
+                cores: j.receitaVinhetaSeparador.cores,
+              }
+            : null,
         })),
         temperaturaTts: temperaturaTtsEfetiva,
         ritmoTts: ritmoTtsEfetivo,
@@ -3054,14 +3237,64 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
     });
   };
 
-  const adicionarSeparadorSecaoDepoisDoSelecionadoUi = () => {
+  const abrirModalVinhetaDoSeparadorUi = (indiceAjuste: number | null) => {
+    setIndiceAjusteVinheta(indiceAjuste);
+    setUrlQuadroTutorialVinheta(
+      capturarQuadroAtualDoElementoVideoComoDataUrlPngTranscribrothers(videoRef.current),
+    );
+    setPainelVinhetaAberto(true);
+  };
+
+  const aplicarVinhetaGeradaNaCueSeparadorUi = (
+    indice: number,
+    item: { id: string; duracao_segundos?: number | null },
+    escolha: ReceitaVinhetaDoSeparadorTranscribrothers,
+    titulo: string,
+  ) => {
+    const durFonte =
+      typeof item.duracao_segundos === "number" && item.duracao_segundos > 0
+        ? item.duracao_segundos
+        : escolha.duracaoSegundos || DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS;
+    setJanelas((prev) => {
+      if (!prev[indice]) return prev;
+      return prev.map((j, i) =>
+        i === indice
+          ? {
+              ...j,
+              idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(item.id),
+              inicioVideoSegundos: 0,
+              fimVideoSegundos: Math.max(0.05, durFonte),
+              janelaProvisoria: false,
+              ehSeparadorSecao: true,
+              semNarracao: true,
+              receitaVinhetaSeparador: escolha,
+            }
+          : j,
+      );
+    });
+    setCues((prev) => {
+      if (!prev[indice]) return prev;
+      const ajustadas = prev.map((cue, i) =>
+        i === indice
+          ? {
+              ...cue,
+              texto: titulo,
+              fimSegundos: cue.inicioSegundos + Math.max(0.05, durFonte),
+            }
+          : cue,
+      );
+      return empacotarTemposCuesPreservandoDuracoesTranscribrothers(ajustadas);
+    });
+  };
+
+  const adicionarSeparadorSecaoDepoisDoSelecionadoUi = (
+    escolha: ReceitaVinhetaDoSeparadorTranscribrothers,
+  ) => {
     if (ocupado || !jobId) return;
+    const indiceAjuste = indiceAjusteVinheta;
+    setPainelVinhetaAberto(false);
+    setIndiceAjusteVinheta(null);
     void (async () => {
-      const indiceBase = resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers({
-        quantidadeCues: cues.length,
-        indiceSelecionadoSolo: indiceCueSelecionadaSolo,
-        indiceCueAtiva,
-      });
       const videoEl = videoRef.current;
       const durEntrada =
         previewRecorteTelaAtivo &&
@@ -3070,70 +3303,100 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
         videoEl.duration > 0
           ? videoEl.duration
           : null;
-      const titulo = TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS;
-      const r = inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers({
-        cues,
-        janelas,
-        indiceSelecionado: indiceBase,
-        duracaoVideoEntradaSegundos: durEntrada,
-        vozPadrao: vozPadraoJob || "Kore",
-        tituloSecao: titulo,
-      });
-      setCues(r.cues);
-      setJanelas(r.janelas);
-      setDuracoesWavPorIndice((prev) =>
-        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
-      );
-      setPreviewAudioPorIndice((prev) =>
-        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
-      );
-      setIndicesFalaTtsExpandidos((prev) =>
-        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
-      );
-      setSugestoesReescritaLegendaPorIndice((prev) =>
-        remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
-      );
-      setIndicesCuesSelecionadasLote((prev) =>
-        remaparIndicesSelecionadosAposInserirTranscribrothers(prev, r.indiceInserido),
-      );
-      setIndiceCueSelecionadaSolo(r.indiceInserido);
-      const idSeparador = r.cues[r.indiceInserido]?.idCliente;
-      if (idSeparador) {
-        setIdsCuesDetalheAberto((prev) => ({ ...prev, [idSeparador]: true }));
+      const titulo = escolha.titulo.trim() || TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS;
+      const instanteAtual =
+        videoEl && Number.isFinite(videoEl.currentTime) ? videoEl.currentTime : null;
+      let indiceAlvo: number;
+      let quadros: { seguinte: number; anterior: number | null };
+
+      if (indiceAjuste != null && janelas[indiceAjuste]) {
+        indiceAlvo = indiceAjuste;
+        const janelasSemEsta = janelas.filter((_, idx) => idx !== indiceAjuste);
+        quadros = instantes_dos_quadros_da_transicao_do_separador_transcribrothers({
+          janelas: janelasSemEsta,
+          indiceDaCueAnterior: indiceAjuste > 0 ? indiceAjuste - 1 : null,
+          instanteAtualDoVideo: instanteAtual,
+        });
+        setCues((prev) =>
+          prev.map((cue, i) => (i === indiceAlvo ? { ...cue, texto: titulo } : cue)),
+        );
+        setJanelas((prev) =>
+          prev.map((j, i) =>
+            i === indiceAlvo
+              ? { ...j, receitaVinhetaSeparador: escolha, ehSeparadorSecao: true, semNarracao: true }
+              : j,
+          ),
+        );
+      } else {
+        const indiceBase = resolverIndiceBaseParaInserirCueDepoisDoDestaqueUiTranscribrothers({
+          quantidadeCues: cues.length,
+          indiceSelecionadoSolo: indiceCueSelecionadaSolo,
+          indiceCueAtiva,
+        });
+        quadros = instantes_dos_quadros_da_transicao_do_separador_transcribrothers({
+          janelas,
+          indiceDaCueAnterior: indiceBase,
+          instanteAtualDoVideo: instanteAtual,
+        });
+        const r = inserirSeparadorSecaoDepoisDoIndiceNaTimelineUiTranscribrothers({
+          cues,
+          janelas,
+          indiceSelecionado: indiceBase,
+          duracaoVideoEntradaSegundos: durEntrada,
+          vozPadrao: vozPadraoJob || "Kore",
+          tituloSecao: titulo,
+          duracaoSegundos: escolha.duracaoSegundos,
+        });
+        indiceAlvo = r.indiceInserido;
+        setCues(r.cues);
+        setJanelas(
+          r.janelas.map((j, i) =>
+            i === indiceAlvo ? { ...j, receitaVinhetaSeparador: escolha } : j,
+          ),
+        );
+        setDuracoesWavPorIndice((prev) =>
+          remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+        );
+        setPreviewAudioPorIndice((prev) =>
+          remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+        );
+        setIndicesFalaTtsExpandidos((prev) =>
+          remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+        );
+        setSugestoesReescritaLegendaPorIndice((prev) =>
+          remaparRecordPorIndiceAposInserirUiTranscribrothers(prev, r.indiceInserido),
+        );
+        setIndicesCuesSelecionadasLote((prev) =>
+          remaparIndicesSelecionadosAposInserirTranscribrothers(prev, r.indiceInserido),
+        );
+        setIndiceCueSelecionadaSolo(r.indiceInserido);
+        const idSeparador = r.cues[r.indiceInserido]?.idCliente;
+        if (idSeparador) {
+          setIdsCuesDetalheAberto((prev) => ({ ...prev, [idSeparador]: true }));
+        }
       }
 
       const toastId = pushToastProgresso({
-        message: "Gerando cartão de seção (vinheta)…",
+        message: "Gerando vinheta com o quadro do vídeo…",
         indeterminado: true,
       });
       try {
-        const item = await gerarCartaoSecaoBibliotecaMidiasTelaJobApiTranscribrothers(jobId, {
+        const item = await gerarVinhetaBibliotecaMidiasTelaJobApiTranscribrothers(jobId, {
           titulo,
-          duracaoSegundos: DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS,
+          efeito: escolha.efeito,
+          vinhetaId: escolha.vinhetaId,
+          instanteQuadroSeguinte: quadros.seguinte,
+          instanteQuadroAnterior: quadros.anterior,
+          duracaoSegundos: escolha.duracaoSegundos,
+          presencaDaImagem: escolha.presencaDaImagem,
+          cores: escolha.cores,
         });
-        const durFonte =
-          typeof item.duracao_segundos === "number" && item.duracao_segundos > 0
-            ? item.duracao_segundos
-            : DURACAO_SEPARADOR_SECAO_SEGUNDOS_TRANSCRIBROTHERS;
-        setJanelas((prev) => {
-          if (!prev[r.indiceInserido]) return prev;
-          return prev.map((j, i) =>
-            i === r.indiceInserido
-              ? {
-                  ...j,
-                  idFonteVideo: normalizarIdFonteVideoUiTranscribrothers(item.id),
-                  inicioVideoSegundos: 0,
-                  fimVideoSegundos: Math.max(0.05, durFonte),
-                  janelaProvisoria: false,
-                  ehSeparadorSecao: true,
-                  semNarracao: true,
-                }
-              : j,
-          );
-        });
+        aplicarVinhetaGeradaNaCueSeparadorUi(indiceAlvo, item, escolha, titulo);
         removerToast(toastId);
         pushToast(
-          "Separador inserido com vinheta gerada (fade in/out). Edite o título na legenda se quiser — para outro texto no cartão, use «Fonte» ou reinseira.",
+          indiceAjuste != null
+            ? "Vinheta atualizada. O quadro do vídeo ficou no fundo, com dissolução nas pontas."
+            : "Separador inserido com a vinheta. O quadro do vídeo ficou no fundo, com dissolução nas pontas.",
           "success",
         );
       } catch (e: unknown) {
@@ -3144,7 +3407,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
             : "Separador criado, mas a vinheta falhou. Use «Fonte» para escolher uma mídia.",
           "error",
         );
-        setIndiceCueModalEscolherFonte(r.indiceInserido);
+        if (indiceAjuste == null) setIndiceCueModalEscolherFonte(indiceAlvo);
       }
     })();
   };
@@ -3507,10 +3770,11 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                   jobId={jobId}
                   videoRef={videoRef}
                   urlVideoSrc={urlVideoPlayerEfetivo}
-                  keyVideo={urlVideoPlayerEfetivo}
+                  keyVideo={previewRecorteTelaAtivo ? "preview-recorte-tela" : urlVideoPlayerEfetivo}
                   classNameVideo="tb-video tb-modal-assistir-video-narrado-video"
                   classNameEnvoltorio="tb-modal-assistir-video-narrado-player-envoltorio"
-                  preloadVideo="metadata"
+                  preloadVideo={previewRecorteTelaAtivo ? "auto" : "metadata"}
+                  urlQuadroCongeladoDuranteTrocaSrc={urlQuadroCongeladoDuranteTrocaSrc}
                   exibirBotaoTelaMaior={false}
                   exibirBotaoCapturarFrame={false}
                   faixaCuesTimeline={faixaCuesTimeline}
@@ -3575,11 +3839,32 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                 type="button"
                 className="tb-modal-assistir-video-narrado-adicionar-cue tb-modal-assistir-video-narrado-adicionar-separador"
                 disabled={ocupado || !urlLegendasVtt || carregandoCues || Boolean(erroCues)}
-                title="Insere intercalário com cartão de seção gerado (título + fade) e sem narração"
-                onClick={() => adicionarSeparadorSecaoDepoisDoSelecionadoUi()}
+                title="Escolhe uma vinheta e insere o separador com o quadro do vídeo"
+                onClick={() => abrirModalVinhetaDoSeparadorUi(null)}
               >
                 Inserir separador
               </button>
+              <ComponenteModalEscolherVinhetaParaSeparadorDeSecaoTranscribrothers
+                aberto={painelVinhetaAberto}
+                tituloInicial={
+                  indiceAjusteVinheta != null
+                    ? cues[indiceAjusteVinheta]?.texto || TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS
+                    : TEXTO_PADRAO_SEPARADOR_SECAO_TRANSCRIBROTHERS
+                }
+                ocupado={ocupado}
+                urlQuadroDoTutorial={urlQuadroTutorialVinheta}
+                receitaInicial={
+                  indiceAjusteVinheta != null
+                    ? janelas[indiceAjusteVinheta]?.receitaVinhetaSeparador ?? null
+                    : null
+                }
+                rotuloConfirmar={indiceAjusteVinheta != null ? "Aplicar" : "Inserir"}
+                aoCancelar={() => {
+                  setPainelVinhetaAberto(false);
+                  setIndiceAjusteVinheta(null);
+                }}
+                aoConfirmar={(escolha) => adicionarSeparadorSecaoDepoisDoSelecionadoUi(escolha)}
+              />
               <details className="tb-modal-assistir-video-narrado-ajuda-legendas">
                 <summary
                   className="tb-modal-assistir-video-narrado-ajuda-legendas-resumo"
@@ -4032,6 +4317,9 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                           posicaoLista="abaixo"
                           classeTrigger="tb-modal-assistir-video-narrado-cue-menu-acoes-trigger"
                           itens={montarItensMenuAcoesCueVideoNarradoTranscribrothers({
+                            mostrarAjustarVinheta: Boolean(janela?.ehSeparadorSecao),
+                            tituloAjustarVinheta: "Reabre a prévia e gera de novo o cartão",
+                            ajustarVinhetaDesabilitada: ocupado || !jobId,
                             fonteDesabilitada: !jobId || !janela || ocupado,
                             tituloFonte: !janela
                               ? "Janela de tela ainda não disponível para esta cue"
@@ -4068,6 +4356,7 @@ export function ComponenteModalAssistirVideoNarradoComLegendasVttEDownloadsTrans
                               selecionarCueNaListaSemAlterarPlaybackUi(i);
                               if (item.id === "fonte") setIndiceCueModalEscolherFonte(i);
                               else if (item.id === "origem") setIndiceCueModalVideoOriginal(i);
+                              else if (item.id === "ajustar-vinheta") abrirModalVinhetaDoSeparadorUi(i);
                               else if (item.id === "regenerar") {
                                 regenerarNarracaoTtsCueForcandoNovaChamadaUi(i);
                               } else if (item.id === "excluir") {

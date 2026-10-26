@@ -54,7 +54,11 @@ Regras obrigatórias:
 4) Se a cue já estiver boa, devolva o texto ORIGINAL (só com limpeza de lixo, se houver).
 5) Se estiver em dúvida, devolva o texto ORIGINAL da cue.
 6) Mantenha a MESMA quantidade de cues e os MESMOS índices.
-7) Responda SOMENTE JSON válido, sem markdown, no formato:
+7) Se a cue tiver papel «separador_secao», devolva só um título curto de capítulo
+   (no máximo 6 palavras ou ~40 caracteres), sem parênteses, sem subtítulo e sem
+   ponto final. Esse texto vai no cartão da vinheta e é falado na transição —
+   não transforme o separador em frase didática longa.
+8) Responda SOMENTE JSON válido, sem markdown, no formato:
 {"cues":[{"indice":0,"texto":"..."},{"indice":1,"texto":"..."}]}
 """
 
@@ -270,13 +274,19 @@ def mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers(
 def _montar_mensagens_limpeza_cues_transcribrothers(
     textos: list[str],
     diretriz_conteudo: object = None,
+    papeis_cues: list[str] | None = None,
 ) -> list[dict[str, str]]:
-    payload = {
-        "cues": [
-            {"indice": i, "texto": _normalizar_espacos_texto_cue_transcribrothers(t) or (t or "")}
-            for i, t in enumerate(textos)
-        ]
-    }
+    cues_payload: list[dict[str, Any]] = []
+    for i, t in enumerate(textos):
+        item: dict[str, Any] = {
+            "indice": i,
+            "texto": _normalizar_espacos_texto_cue_transcribrothers(t) or (t or ""),
+        }
+        if papeis_cues is not None and i < len(papeis_cues):
+            papel = str(papeis_cues[i] or "").strip() or "narracao"
+            item["papel"] = papel
+        cues_payload.append(item)
+    payload = {"cues": cues_payload}
     if diretriz_conteudo_permite_reescrever_texto_transcribrothers(diretriz_conteudo):
         user = (
             "Prepare estas cues para legenda e narração (mesmo texto). "
@@ -308,6 +318,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
     configuracao: ConfiguracaoAmbienteTranscribrothers,
     modelo_chat: str | None = None,
     diretriz_conteudo: object = None,
+    papeis_cues: list[str] | None = None,
     steps_para_log: dict[str, Any] | None = None,
 ) -> ResultadoLimpezaTextosCuesLegendasIaTranscribrothers:
     """
@@ -362,6 +373,7 @@ async def limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers(
                 mensagens=_montar_mensagens_limpeza_cues_transcribrothers(
                     originais,
                     diretriz_conteudo=diretriz_efetiva,
+                    papeis_cues=papeis_cues,
                 ),
                 temperature=0.1,
                 usar_response_format_json_object=True,
@@ -441,21 +453,15 @@ def aplicar_textos_limpos_nas_cues_janela_transcribrothers(
 ) -> list[Any]:
     """Recria cues (dataclass frozen) com novos textos; exige mesma quantidade."""
     from transcribrothers_backend.modulo_montar_cues_narracao_com_janelas_video_a_partir_markdown_ancoras_temporais_transcribrothers import (
-        CueNarracaoComJanelaVideoTranscribrothers,
+        substituir_campos_da_cue_narracao_com_janela_transcribrothers,
     )
 
     if len(cues) != len(textos_limpos):
         raise ValueError("Quantidade de textos limpos ≠ cues.")
     return [
-        CueNarracaoComJanelaVideoTranscribrothers(
+        substituir_campos_da_cue_narracao_com_janela_transcribrothers(
+            c,
             texto=texto,
-            inicio_video_segundos=c.inicio_video_segundos,
-            fim_video_segundos=c.fim_video_segundos,
-            origem_ancora=c.origem_ancora,
-            casado=c.casado,
-            sem_narracao=bool(getattr(c, "sem_narracao", False)),
-            voz_tts=str(getattr(c, "voz_tts", "") or ""),
-            # Mesmo texto na legenda e na narração após a preparação IA.
             texto_tts="",
         )
         for c, texto in zip(cues, textos_limpos, strict=True)

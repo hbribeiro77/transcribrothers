@@ -112,6 +112,7 @@ CHAVE_STEPS_JSON_PIPELINE_VIDEO_NARRADO_DOCUMENTO_TRANSCRIBROTHERS = "pipeline_v
 FASE_VIDEO_NARRADO_AGENDADO = "video_narrado_agendado"
 FASE_VIDEO_NARRADO_ALINHANDO_LEGENDAS = "video_narrado_alinhando_legendas"
 FASE_VIDEO_NARRADO_VALIDANDO_LEGENDAS = "video_narrado_validando_legendas"
+FASE_VIDEO_NARRADO_GERANDO_TRANSICOES_SECAO = "video_narrado_gerando_transicoes_secao"
 FASE_VIDEO_NARRADO_GERANDO_TTS = "video_narrado_gerando_tts"
 FASE_VIDEO_NARRADO_MUX_FFMPEG = "video_narrado_mux_ffmpeg"
 FASE_VIDEO_NARRADO_CONCLUIDO = "video_narrado_concluido"
@@ -332,6 +333,44 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
         resultado_cues, trechos_descartados = (
             _filtrar_cues_narraveis_mantendo_janelas_video_transcribrothers(resultado_cues)
         )
+        from transcribrothers_backend.modulo_inserir_separadores_de_secao_h2_nas_cues_narracao_transcribrothers import (
+            aplicar_titulo_curto_nas_cues_separador_apos_limpeza_legendas_transcribrothers,
+            carimbar_titulo_secao_h2_nas_cues_narracao_transcribrothers,
+            inserir_separadores_de_secao_h2_nas_cues_narracao_transcribrothers,
+        )
+        from transcribrothers_backend.modulo_normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers import (
+            CHAVE_STEPS_TRANSICOES_SECAO_VIDEO_NARRADO_TRANSCRIBROTHERS,
+            normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers,
+        )
+
+        resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
+            cues=carimbar_titulo_secao_h2_nas_cues_narracao_transcribrothers(
+                list(resultado_cues.cues),
+                markdown,
+            ),
+            modo=resultado_cues.modo,
+            quantidade_ancoras_markdown=resultado_cues.quantidade_ancoras_markdown,
+            quantidade_casadas=resultado_cues.quantidade_casadas,
+            quantidade_interpoladas=resultado_cues.quantidade_interpoladas,
+        )
+        receita_transicoes = normalizar_receita_transicoes_secao_pipeline_video_narrado_transcribrothers(
+            steps.get(CHAVE_STEPS_TRANSICOES_SECAO_VIDEO_NARRADO_TRANSCRIBROTHERS)
+        )
+        steps[CHAVE_STEPS_TRANSICOES_SECAO_VIDEO_NARRADO_TRANSCRIBROTHERS] = receita_transicoes
+        if receita_transicoes["incluir"]:
+            cues_com_sep = inserir_separadores_de_secao_h2_nas_cues_narracao_transcribrothers(
+                list(resultado_cues.cues),
+                efeito=str(receita_transicoes["efeito"]),
+                duracao_segundos=float(receita_transicoes["duracao_segundos"]),
+                vinheta_id=str(receita_transicoes.get("vinheta_id") or "").strip() or None,
+            )
+            resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
+                cues=cues_com_sep,
+                modo=resultado_cues.modo,
+                quantidade_ancoras_markdown=resultado_cues.quantidade_ancoras_markdown,
+                quantidade_casadas=sum(1 for c in cues_com_sep if c.casado),
+                quantidade_interpoladas=sum(1 for c in cues_com_sep if not c.casado),
+            )
         assets.mkdir(parents=True, exist_ok=True)
         # Regeneração completa (FAB / «Gerar nova narração») parte do Markdown.
         # Edições manuais do VTT ficam no fluxo «Atualizar narração» do modal.
@@ -413,6 +452,12 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 configuracao=configuracao,
                 modelo_chat=modelo_chat_efetivo,
                 diretriz_conteudo=diretriz_conteudo_efetiva,
+                papeis_cues=[
+                    "separador_secao"
+                    if bool(getattr(c, "eh_separador_secao", False))
+                    else "narracao"
+                    for c in resultado_cues.cues
+                ],
                 steps_para_log=steps,
             )
             alteracoes_json = [
@@ -464,6 +509,15 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 resultado_cues, descartados_pos_limpeza = (
                     _filtrar_cues_narraveis_mantendo_janelas_video_transcribrothers(resultado_cues)
                 )
+                resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
+                    cues=aplicar_titulo_curto_nas_cues_separador_apos_limpeza_legendas_transcribrothers(
+                        list(resultado_cues.cues)
+                    ),
+                    modo=resultado_cues.modo,
+                    quantidade_ancoras_markdown=resultado_cues.quantidade_ancoras_markdown,
+                    quantidade_casadas=resultado_cues.quantidade_casadas,
+                    quantidade_interpoladas=resultado_cues.quantidade_interpoladas,
+                )
                 trechos_descartados.extend(descartados_pos_limpeza)
                 steps[CHAVE_STEPS_JSON_LEGENDAS_DOCUMENTO_ALINHADAS_TRANSCRIBROTHERS] = {
                     **steps[CHAVE_STEPS_JSON_LEGENDAS_DOCUMENTO_ALINHADAS_TRANSCRIBROTHERS],
@@ -480,6 +534,16 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 "omitida": True,
                 "motivo": "sem_cues",
             }
+
+        resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
+            cues=aplicar_titulo_curto_nas_cues_separador_apos_limpeza_legendas_transcribrothers(
+                list(resultado_cues.cues)
+            ),
+            modo=resultado_cues.modo,
+            quantidade_ancoras_markdown=resultado_cues.quantidade_ancoras_markdown,
+            quantidade_casadas=resultado_cues.quantidade_casadas,
+            quantidade_interpoladas=resultado_cues.quantidade_interpoladas,
+        )
 
         if not resultado_cues.cues:
             raise RuntimeError(
@@ -513,7 +577,10 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
 
         caminho_wav = assets / NOME_ARQUIVO_NARRACAO_TTS_DOCUMENTO_WAV_TRANSCRIBROTHERS
         dir_wavs_cue = work / _NOME_SUBPASTA_WAVS_POR_CUE
-        trechos_cues = [c.texto for c in resultado_cues.cues]
+        trechos_cues = [
+            "" if bool(getattr(c, "sem_narracao", False)) else c.texto
+            for c in resultado_cues.cues
+        ]
         from transcribrothers_backend.modulo_persistencia_runtime_config_voz_tts_narracao_sqlite_transcribrothers import (
             carregar_voz_tts_narracao_do_session_factory_transcribrothers,
         )
@@ -585,9 +652,124 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
             cues=cues_com_voz,
         )
 
+        from transcribrothers_backend.modulo_util_montar_segmentos_retarget_respeitando_timeline_vtt_cues_editadas_transcribrothers import (
+            ajustar_wav_pcm16_mono_para_duracao_alvo_segundos_transcribrothers,
+            gravar_wav_silencio_pcm16_mono_segundos_transcribrothers,
+        )
+
+        duracoes_audio_por_cue = list(resultado_tts.duracoes_por_cue_segundos)
+        caminhos_wav_por_cue = list(resultado_tts.caminhos_wav_por_cue)
+        for indice, cue in enumerate(resultado_cues.cues):
+            if not bool(getattr(cue, "sem_narracao", False)):
+                continue
+            dur_silencio = max(
+                0.05,
+                float(cue.fim_video_segundos) - float(cue.inicio_video_segundos),
+            )
+            gravar_wav_silencio_pcm16_mono_segundos_transcribrothers(
+                caminhos_wav_por_cue[indice],
+                dur_silencio,
+            )
+            duracoes_audio_por_cue[indice] = dur_silencio
+
+        if receita_transicoes["incluir"] and any(
+            getattr(c, "eh_separador_secao", False) for c in resultado_cues.cues
+        ):
+            from transcribrothers_backend.modulo_gerar_vinhetas_dos_separadores_no_pipeline_video_narrado_transcribrothers import (
+                aplicar_vinhetas_nos_separadores_de_secao_das_cues_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_inserir_separadores_de_secao_h2_nas_cues_narracao_transcribrothers import (
+                duracao_alvo_do_separador_secao_com_fala_tts_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_montar_cues_narracao_com_janelas_video_a_partir_markdown_ancoras_temporais_transcribrothers import (
+                substituir_campos_da_cue_narracao_com_janela_transcribrothers,
+            )
+            from transcribrothers_backend.modulo_persistencia_runtime_config_encode_video_narrado_sqlite_transcribrothers import (
+                carregar_preferencias_encode_video_narrado_do_session_factory_transcribrothers,
+            )
+
+            cues_alinhadas = list(resultado_cues.cues)
+            for indice, cue in enumerate(cues_alinhadas):
+                if not bool(getattr(cue, "eh_separador_secao", False)):
+                    continue
+                receita_sep = dict(getattr(cue, "receita_vinheta_separador", None) or {})
+                pedida = float(
+                    receita_sep.get("duracao_segundos")
+                    or receita_transicoes["duracao_segundos"]
+                    or 2.0
+                )
+                alvo = duracao_alvo_do_separador_secao_com_fala_tts_transcribrothers(
+                    duracao_pedida_segundos=pedida,
+                    duracao_fala_segundos=float(duracoes_audio_por_cue[indice]),
+                )
+                if alvo > float(duracoes_audio_por_cue[indice]) + 0.02:
+                    ajustar_wav_pcm16_mono_para_duracao_alvo_segundos_transcribrothers(
+                        caminho_wav_entrada=caminhos_wav_por_cue[indice],
+                        duracao_alvo_segundos=alvo,
+                        caminho_wav_saida=caminhos_wav_por_cue[indice],
+                    )
+                duracoes_audio_por_cue[indice] = alvo
+                receita_sep["duracao_segundos"] = alvo
+                cues_alinhadas[indice] = substituir_campos_da_cue_narracao_com_janela_transcribrothers(
+                    cue,
+                    inicio_video_segundos=0.0,
+                    fim_video_segundos=alvo,
+                    receita_vinheta_separador=receita_sep,
+                )
+
+            _definir_fase_pipeline_video_narrado_com_tempo_transcribrothers(
+                steps,
+                FASE_VIDEO_NARRADO_GERANDO_TRANSICOES_SECAO,
+            )
+            steps["video_narrado_transicao_indice"] = 0
+            steps["video_narrado_transicao_total"] = sum(
+                1 for c in cues_alinhadas if getattr(c, "eh_separador_secao", False)
+            )
+            await _atualizar_steps_e_status_job_pipeline_video_narrado_transcribrothers(
+                session_factory,
+                job_id,
+                steps=steps,
+            )
+
+            async def _progresso_transicoes(sub: dict[str, Any]) -> None:
+                steps.update(sub)
+                await _atualizar_steps_e_status_job_pipeline_video_narrado_transcribrothers(
+                    session_factory,
+                    job_id,
+                    steps=steps,
+                )
+
+            prefs_encode_vinheta = (
+                await carregar_preferencias_encode_video_narrado_do_session_factory_transcribrothers(
+                    session_factory
+                )
+            )
+            cues_alinhadas = await aplicar_vinhetas_nos_separadores_de_secao_das_cues_transcribrothers(
+                cues_alinhadas,
+                work=work,
+                job_id=job_id,
+                caminho_video=video,
+                preferencias_encode=prefs_encode_vinheta,
+                atualizar_progresso=_progresso_transicoes,
+            )
+            resultado_cues = ResultadoCuesNarracaoComJanelasVideoTranscribrothers(
+                cues=cues_alinhadas,
+                modo=resultado_cues.modo,
+                quantidade_ancoras_markdown=resultado_cues.quantidade_ancoras_markdown,
+                quantidade_casadas=sum(1 for c in cues_alinhadas if c.casado),
+                quantidade_interpoladas=sum(1 for c in cues_alinhadas if not c.casado),
+            )
+            gravar_manifest_cues_narracao_janelas_video_no_work_transcribrothers(
+                work=work,
+                cues=carimbar_voz_tts_em_todas_as_cues_janela_transcribrothers(
+                    list(resultado_cues.cues),
+                    voz_tts,
+                ),
+            )
+
         cues_vtt_narracao = converter_cues_janela_video_em_cues_legenda_vtt_timeline_narracao_transcribrothers(
             list(resultado_cues.cues),
-            list(resultado_tts.duracoes_por_cue_segundos),
+            duracoes_audio_por_cue,
         )
         caminho_vtt = gravar_arquivo_vtt_a_partir_cues_legendas_transcribrothers(
             diretorio_assets=assets,
@@ -669,15 +851,24 @@ async def executar_pipeline_video_narrado_a_partir_documento_markdown_em_backgro
                 steps=steps,
             )
 
+        from transcribrothers_backend.modulo_persistencia_biblioteca_midias_tela_job_transcribrothers import (
+            resolver_caminho_video_fonte_por_id_no_work_transcribrothers,
+        )
+
         segmentos = [
             SegmentoVideoNarradoRetargetTranscribrothers(
                 caminho_wav=caminho_wav_cue,
                 inicio_video_segundos=cue.inicio_video_segundos,
                 fim_video_segundos=cue.fim_video_segundos,
+                caminho_video_fonte=resolver_caminho_video_fonte_por_id_no_work_transcribrothers(
+                    work=work,
+                    id_fonte_video=str(getattr(cue, "id_fonte_video", "") or ""),
+                    caminho_video_entrada=video,
+                ),
             )
             for cue, caminho_wav_cue in zip(
                 resultado_cues.cues,
-                resultado_tts.caminhos_wav_por_cue,
+                caminhos_wav_por_cue,
                 strict=True,
             )
         ]

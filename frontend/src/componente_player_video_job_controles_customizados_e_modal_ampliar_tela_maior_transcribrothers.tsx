@@ -58,6 +58,8 @@ type PropsComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMaiorTra
   } | null;
   /** Conteúdo sobreposto à área do vídeo (ex.: legenda por overlay no preview de recorte). */
   overlaySobreVideo?: React.ReactNode;
+  /** Quadro congelado cobrindo o vídeo enquanto a próxima fonte busca o instante alvo. */
+  urlQuadroCongeladoDuranteTrocaSrc?: string | null;
   /**
    * Conteúdo opcional na mesma linha do play/tempo/volume
    * (ex.: recorte início/fim na modal do vídeo original).
@@ -752,6 +754,7 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
   aoAlternarPlayPauseCustomizado,
   timelineVirtualUi = null,
   overlaySobreVideo = null,
+  urlQuadroCongeladoDuranteTrocaSrc = null,
   conteudoExtraNaLinhaAcoesControles = null,
   exibirBotaoCapturarFrame = false,
   capturandoFrame = false,
@@ -1068,6 +1071,14 @@ export function ComponentePlayerVideoJobControlesCustomizadosEModalAmpliarTelaMa
           >
             {faixaLegendas}
           </video>
+          {urlQuadroCongeladoDuranteTrocaSrc ? (
+            <img
+              className="tb-video-player-quadro-congelado-durante-troca-src"
+              src={urlQuadroCongeladoDuranteTrocaSrc}
+              alt=""
+              aria-hidden
+            />
+          ) : null}
           {overlaySobreVideo ? (
             <div
               className="tb-video-player-overlay-sobre-video"

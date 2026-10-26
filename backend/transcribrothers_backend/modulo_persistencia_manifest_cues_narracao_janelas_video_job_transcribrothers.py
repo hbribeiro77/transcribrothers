@@ -29,6 +29,9 @@ class ItemManifestCueNarracaoJanelaVideoTranscribrothers:
     texto_tts: str = ""
     # Fonte de tela; vazio = vídeo de entrada do job.
     id_fonte_video: str = ""
+    titulo_secao_heading: str = ""
+    eh_separador_secao: bool = False
+    receita_vinheta_separador: dict[str, Any] | None = None
 
 
 def normalizar_texto_cue_para_comparacao_narracao_transcribrothers(texto: str) -> str:
@@ -65,6 +68,13 @@ def _item_de_dict_transcribrothers(raw: dict[str, Any]) -> ItemManifestCueNarrac
         voz_tts=str(raw.get("voz_tts") or "").strip(),
         texto_tts=str(raw.get("texto_tts") or "").strip(),
         id_fonte_video=str(raw.get("id_fonte_video") or "").strip(),
+        titulo_secao_heading=str(raw.get("titulo_secao_heading") or "").strip(),
+        eh_separador_secao=bool(raw.get("eh_separador_secao", False)),
+        receita_vinheta_separador=(
+            raw.get("receita_vinheta_separador")
+            if isinstance(raw.get("receita_vinheta_separador"), dict)
+            else None
+        ),
     )
 
 
@@ -88,6 +98,9 @@ def gravar_manifest_cues_narracao_janelas_video_no_work_transcribrothers(
                 "voz_tts": str(getattr(c, "voz_tts", "") or "").strip(),
                 "texto_tts": str(getattr(c, "texto_tts", "") or "").strip(),
                 "id_fonte_video": str(getattr(c, "id_fonte_video", "") or "").strip(),
+                "titulo_secao_heading": str(getattr(c, "titulo_secao_heading", "") or "").strip(),
+                "eh_separador_secao": bool(getattr(c, "eh_separador_secao", False)),
+                "receita_vinheta_separador": getattr(c, "receita_vinheta_separador", None),
             }
             for c in cues
         ],
@@ -137,6 +150,9 @@ def cues_janela_a_partir_manifest_transcribrothers(
             voz_tts=it.voz_tts,
             texto_tts=it.texto_tts,
             id_fonte_video=str(getattr(it, "id_fonte_video", "") or "").strip(),
+            titulo_secao_heading=str(getattr(it, "titulo_secao_heading", "") or "").strip(),
+            eh_separador_secao=bool(getattr(it, "eh_separador_secao", False)),
+            receita_vinheta_separador=getattr(it, "receita_vinheta_separador", None),
         )
         for it in items
     ]
@@ -162,6 +178,9 @@ def aplicar_textos_vtt_sobre_cues_janela_preservando_tempos_video_transcribrothe
             voz_tts=cue.voz_tts,
             texto_tts=cue.texto_tts,
             id_fonte_video=str(getattr(cue, "id_fonte_video", "") or "").strip(),
+            titulo_secao_heading=str(getattr(cue, "titulo_secao_heading", "") or "").strip(),
+            eh_separador_secao=bool(getattr(cue, "eh_separador_secao", False)),
+            receita_vinheta_separador=getattr(cue, "receita_vinheta_separador", None),
         )
         for cue, texto in zip(cues, textos, strict=True)
     ]
@@ -183,6 +202,9 @@ def carimbar_voz_tts_em_todas_as_cues_janela_transcribrothers(
             voz_tts=voz,
             texto_tts=c.texto_tts,
             id_fonte_video=str(getattr(c, "id_fonte_video", "") or "").strip(),
+            titulo_secao_heading=str(getattr(c, "titulo_secao_heading", "") or "").strip(),
+            eh_separador_secao=bool(getattr(c, "eh_separador_secao", False)),
+            receita_vinheta_separador=getattr(c, "receita_vinheta_separador", None),
         )
         for c in cues
     ]

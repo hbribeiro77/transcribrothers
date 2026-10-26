@@ -13,10 +13,10 @@ const fonteModalAnotacao = readFileSync(
   "utf8",
 );
 
-describe("botão inserir da modal de anotação abre o editor Markdown", () => {
-  it("a página usa a decisão de abrir o editor e focar o textarea, sem modo linha tracejada", () => {
+describe("botão inserir da modal de anotação copia PNG e abre o editor Markdown", () => {
+  it("a página abre o editor e foca o textarea, sem snippet nem linha tracejada", () => {
     expect(fontePagina).toContain(
-      "resolverAcaoDepoisDeCopiarSnippetInserirImagemDaModalAnotacaoTranscribrothers",
+      "resolverAcaoBotaoInserirImagemDaModalAnotacaoComoCopiaPngParaMarkdownTranscribrothers",
     );
     const inicio = fontePagina.indexOf(
       "const iniciarInserirImagemAssetNoDocumentoMarkdownTranscribrothers",
@@ -29,12 +29,33 @@ describe("botão inserir da modal de anotação abre o editor Markdown", () => {
     const handler = fontePagina.slice(inicio, fim);
     expect(handler).toContain("setModoEdicaoMarkdownTutorialAtivo(true)");
     expect(handler).toContain("textareaMarkdownEdicaoTutorialRef.current?.focus()");
+    expect(handler).not.toContain("montarSnippetMarkdownImagemAssetTutorialTranscribrothers");
+    expect(handler).not.toContain("copiarTextoParaAreaTransferenciaNavegadorTranscribrothers");
     expect(handler).not.toContain("setInsercaoMarkdownImagemAssetPendente");
     expect(handler).not.toContain("inserirTextoNaPosicaoCursorTextareaMarkdownTranscribrothers");
     expect(handler).not.toContain("linha tracejada");
   });
 
-  it("o botão da modal explica que a referência vai para o Markdown para colar", () => {
-    expect(fonteModalAnotacao).toMatch(/abre o Markdown para você colar/i);
+  it("o botão da modal copia o PNG da tela e não grava no asset do documento", () => {
+    const inicio = fonteModalAnotacao.indexOf(
+      "const inserirImagemCanvasNoDocumentoMarkdownTranscribrothers",
+    );
+    const fim = fonteModalAnotacao.indexOf(
+      "const copiarImagemEditadaParaAreaTransferenciaTranscribrothers",
+    );
+    expect(inicio).toBeGreaterThan(0);
+    expect(fim).toBeGreaterThan(inicio);
+    const handler = fonteModalAnotacao.slice(inicio, fim);
+    expect(handler).toContain("copiarBlobImagemPngParaAreaTransferenciaNavegadorTranscribrothers");
+    expect(handler).toContain("exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers");
+    expect(handler).not.toContain("persistirCanvasComoPngAnotadoTranscribrothers");
+    expect(handler).not.toContain(
+      "resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers",
+    );
+    expect(fonteModalAnotacao).toContain(
+      "inserirImagemDaModalAnotacaoDeveFicarDesabilitadoTranscribrothers",
+    );
+    expect(fonteModalAnotacao).toMatch(/Ctrl\+V/i);
+    expect(fonteModalAnotacao).toMatch(/Não substitui a imagem do documento/i);
   });
 });

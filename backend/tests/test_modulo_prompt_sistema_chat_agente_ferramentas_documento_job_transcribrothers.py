@@ -36,6 +36,13 @@ def test_prompt_agente_exige_estado_e_tools_neste_turno() -> None:
     assert "seção por seção" in prompt.lower()
 
 
+def test_prompt_agente_titulo_secao_heading_e_so_h2_nao_h3() -> None:
+    prompt = montar_prompt_sistema_chat_agente_ferramentas_documento_job_transcribrothers()
+    assert "titulo_secao_heading" in prompt
+    assert "###" in prompt
+    assert "##" in prompt
+
+
 def test_prompt_agente_manda_sem_video_para_documento_sem_depender_do_video() -> None:
     prompt = montar_prompt_sistema_chat_agente_ferramentas_documento_job_transcribrothers()
     assert "sem_video" in prompt

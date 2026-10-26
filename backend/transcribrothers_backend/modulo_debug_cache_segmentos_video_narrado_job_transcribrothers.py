@@ -12,6 +12,9 @@ from transcribrothers_backend.modulo_inventario_midia_fonte_e_cache_job_transcri
     NOMES_PASTAS_CACHE_REGENERAVEL_JOB_TRANSCRIBROTHERS,
     calcular_cache_bytes_regeneravel_job_transcribrothers,
 )
+from transcribrothers_backend.modulo_persistir_debug_ultima_geracao_vinheta_separador_transcribrothers import (
+    ler_debug_ultima_geracao_vinheta_separador_transcribrothers,
+)
 
 NOME_PASTA_SEGMENTOS_VIDEO_NARRADO_RETARGET_TRANSCRIBROTHERS = "segmentos_video_narrado_retarget"
 
@@ -138,4 +141,5 @@ def montar_payload_debug_cache_segmentos_video_narrado_job_transcribrothers(
             steps
         ),
         "edicoes_modal": extrair_resumo_edicoes_modal_dos_steps_json_transcribrothers(steps),
+        "ultima_vinheta": ler_debug_ultima_geracao_vinheta_separador_transcribrothers(work),
     }

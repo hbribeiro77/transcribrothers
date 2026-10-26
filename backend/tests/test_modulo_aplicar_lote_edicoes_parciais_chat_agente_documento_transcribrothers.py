@@ -215,3 +215,36 @@ def test_lote_que_remove_timestamp_e_pede_legenda_deve_reescrever_secao() -> Non
             }
         ]
     )
+
+
+def test_lote_aceita_heading_de_subsecao_h3_e_aplica_no_h2_pai() -> None:
+    md = """# Tutorial
+
+## 3. Geração de Peças e Configurações
+
+Texto da seção.
+
+### Modelos
+
+- **Gemini:** atual.
+
+## 4. Revisão e Suporte
+
+Fim.
+"""
+    resultado = aplicar_lote_edicoes_parciais_markdown_chat_agente_transcribrothers(
+        markdown=md,
+        propostas=[
+            {
+                "nome": "edicao_parcial",
+                "titulo_secao_heading": "Modelos",
+                "instrucoes": (
+                    "Adicionar novo item à lista: "
+                    "'**Claude:** também disponível.'"
+                ),
+            }
+        ],
+    )
+    assert resultado["quantidade_aplicada"] == 1
+    assert "**Claude:** também disponível." in resultado["markdown"]
+    assert "## 4. Revisão e Suporte" in resultado["markdown"]

@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 
 from transcribrothers_backend.modulo_limpar_textos_cues_legendas_com_ia_litellm_antes_tts_transcribrothers import (
+    _SYSTEM_LIMPEZA_CUES_LEGENDAS,
+    _montar_mensagens_limpeza_cues_transcribrothers,
     mesclar_textos_limpos_ia_com_originais_e_guardas_transcribrothers,
     texto_limpo_ia_e_aceitavel_contra_original_transcribrothers,
 )
@@ -105,6 +107,18 @@ def test_mesclar_exige_mesma_quantidade() -> None:
             ["a", "b"],
             {"cues": [{"indice": 0, "texto": "a"}]},
         )
+
+
+def test_prompt_limpeza_pede_titulo_curto_no_separador_de_secao() -> None:
+    assert "separador_secao" in _SYSTEM_LIMPEZA_CUES_LEGENDAS
+    assert "título curto" in _SYSTEM_LIMPEZA_CUES_LEGENDAS.casefold()
+    msgs = _montar_mensagens_limpeza_cues_transcribrothers(
+        ["Nova funcionalidade", "Neste tutorial você cria um job."],
+        papeis_cues=["separador_secao", "narracao"],
+    )
+    user = msgs[1]["content"]
+    assert '"papel": "separador_secao"' in user
+    assert '"papel": "narracao"' in user
 
 
 def test_mesclar_aceita_json_em_fence() -> None:

@@ -3,6 +3,7 @@
 export type IdItemMenuAcoesCueVideoNarradoTranscribrothers =
   | "fonte"
   | "origem"
+  | "ajustar-vinheta"
   | "regenerar"
   | "excluir";
 
@@ -23,8 +24,11 @@ export function montarItensMenuAcoesCueVideoNarradoTranscribrothers(p: {
   tituloRegenerar: string;
   excluirDesabilitada: boolean;
   tituloExcluir: string;
+  mostrarAjustarVinheta?: boolean;
+  tituloAjustarVinheta?: string;
+  ajustarVinhetaDesabilitada?: boolean;
 }): ItemMenuAcoesCueVideoNarradoTranscribrothers[] {
-  return [
+  const itens: ItemMenuAcoesCueVideoNarradoTranscribrothers[] = [
     {
       id: "fonte",
       rotulo: "Fonte",
@@ -39,6 +43,17 @@ export function montarItensMenuAcoesCueVideoNarradoTranscribrothers(p: {
       titulo: p.tituloOrigem,
       perigoso: false,
     },
+  ];
+  if (p.mostrarAjustarVinheta) {
+    itens.push({
+      id: "ajustar-vinheta",
+      rotulo: "Ajustar vinheta",
+      desabilitado: Boolean(p.ajustarVinhetaDesabilitada),
+      titulo: p.tituloAjustarVinheta || "Reabre a prévia e gera de novo o cartão",
+      perigoso: false,
+    });
+  }
+  itens.push(
     {
       id: "regenerar",
       rotulo: "Regenerar",
@@ -53,5 +68,6 @@ export function montarItensMenuAcoesCueVideoNarradoTranscribrothers(p: {
       titulo: p.tituloExcluir,
       perigoso: true,
     },
-  ];
+  );
+  return itens;
 }

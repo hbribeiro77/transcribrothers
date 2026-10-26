@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 
 _RE_HEADING_NIVEL2_MARKDOWN_TRANSCRIBROTHERS = re.compile(r"^## [^#].*$", re.MULTILINE)
+_RE_HEADING_NIVEL3_MARKDOWN_TRANSCRIBROTHERS = re.compile(r"^### [^#].*$", re.MULTILINE)
 
 _STOPWORDS_TITULO_SECAO_MARKDOWN_PT_BR_TRANSCRIBROTHERS = frozenset(
     {"de", "da", "do", "das", "dos", "e", "em", "na", "no", "nas", "nos", "a", "o", "as", "os", "um", "uma"}
@@ -24,8 +25,7 @@ class SecaoMarkdownNivel2TutorialTranscribrothers:
 
 def normalizar_titulo_heading_secao_markdown_nivel2_transcribrothers(linha_heading: str) -> str:
     s = (linha_heading or "").strip()
-    if s.startswith("##"):
-        s = s[2:].strip()
+    s = re.sub(r"^#+\s*", "", s)
     return " ".join(s.lower().split())
 
 
@@ -87,6 +87,48 @@ def pontuar_similaridade_titulo_secao_markdown_nivel2_transcribrothers(
         cobertura_alvo = len(tok_a & tok_s) / len(tok_a)
         ratio = max(ratio, cobertura_alvo * 0.95)
     return ratio
+
+
+def listar_headings_nivel3_no_intervalo_da_secao_markdown_transcribrothers(
+    markdown: str,
+    secao: SecaoMarkdownNivel2TutorialTranscribrothers,
+) -> list[str]:
+    corpo = (markdown or "")[secao.inicio_caractere : secao.fim_caractere]
+    return [m.group(0).strip() for m in _RE_HEADING_NIVEL3_MARKDOWN_TRANSCRIBROTHERS.finditer(corpo)]
+
+
+def listar_secoes_h2_que_contem_heading_nivel3_aproximado_transcribrothers(
+    markdown: str,
+    secoes: list[SecaoMarkdownNivel2TutorialTranscribrothers],
+    titulo_secao_heading: str,
+    *,
+    limiar_similaridade: float = 0.62,
+) -> list[tuple[SecaoMarkdownNivel2TutorialTranscribrothers, float]]:
+    alvo = (titulo_secao_heading or "").strip()
+    if not alvo or not secoes:
+        return []
+    por_indice: dict[int, tuple[SecaoMarkdownNivel2TutorialTranscribrothers, float]] = {}
+    for secao in secoes:
+        melhor = 0.0
+        for linha_h3 in listar_headings_nivel3_no_intervalo_da_secao_markdown_transcribrothers(
+            markdown, secao
+        ):
+            sombra = SecaoMarkdownNivel2TutorialTranscribrothers(
+                indice=secao.indice,
+                linha_heading=linha_h3,
+                titulo_normalizado=normalizar_titulo_heading_secao_markdown_nivel2_transcribrothers(
+                    linha_h3
+                ),
+                inicio_caractere=secao.inicio_caractere,
+                fim_caractere=secao.fim_caractere,
+            )
+            melhor = max(
+                melhor,
+                pontuar_similaridade_titulo_secao_markdown_nivel2_transcribrothers(alvo, sombra),
+            )
+        if melhor >= limiar_similaridade:
+            por_indice[secao.indice] = (secao, melhor)
+    return sorted(por_indice.values(), key=lambda item: item[1], reverse=True)
 
 
 def listar_secoes_candidatas_por_titulo_heading_aproximado_markdown_nivel2_transcribrothers(
@@ -163,6 +205,18 @@ def resolver_secao_markdown_nivel2_por_linha_heading_ou_indice_transcribrothers(
             ):
                 return melhor
             ambiguos = ", ".join(s.linha_heading for s, _ in candidatas[:4])
+            raise ValueError(
+                f"O heading {alvo!r} é ambíguo (várias seções parecidas): {ambiguos}. "
+                "Cite o título «##» exato ou cole um trecho do corpo da seção."
+            )
+        pais_h3 = listar_secoes_h2_que_contem_heading_nivel3_aproximado_transcribrothers(
+            markdown, secoes, alvo
+        )
+        if pais_h3:
+            melhor_h3, p_h3 = pais_h3[0]
+            if len(pais_h3) == 1 or (len(pais_h3) > 1 and p_h3 - pais_h3[1][1] >= 0.08):
+                return melhor_h3
+            ambiguos = ", ".join(s.linha_heading for s, _ in pais_h3[:4])
             raise ValueError(
                 f"O heading {alvo!r} é ambíguo (várias seções parecidas): {ambiguos}. "
                 "Cite o título «##» exato ou cole um trecho do corpo da seção."

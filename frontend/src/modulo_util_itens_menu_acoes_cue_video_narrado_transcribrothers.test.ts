@@ -39,4 +39,32 @@ describe("itens do menu de ações da cue", () => {
       titulo: "É preciso manter ao menos uma cue.",
     });
   });
+
+  it("no separador inclui Ajustar vinheta antes de Excluir", () => {
+    const itens = montarItensMenuAcoesCueVideoNarradoTranscribrothers({
+      fonteDesabilitada: false,
+      tituloFonte: "Trocar a origem (vídeo de tela) desta cue",
+      origemDesabilitada: false,
+      tituloOrigem: "Recortar trecho na origem desta cue",
+      regenerarDesabilitada: true,
+      tituloRegenerar: "Cue sem narração",
+      excluirDesabilitada: false,
+      tituloExcluir: "Remove esta cue da lista",
+      mostrarAjustarVinheta: true,
+      tituloAjustarVinheta: "Reabre a prévia e gera de novo o cartão",
+    });
+
+    expect(itens.map((item) => item.id)).toEqual([
+      "fonte",
+      "origem",
+      "ajustar-vinheta",
+      "regenerar",
+      "excluir",
+    ]);
+    expect(itens.find((item) => item.id === "ajustar-vinheta")).toMatchObject({
+      rotulo: "Ajustar vinheta",
+      desabilitado: false,
+      titulo: "Reabre a prévia e gera de novo o cartão",
+    });
+  });
 });

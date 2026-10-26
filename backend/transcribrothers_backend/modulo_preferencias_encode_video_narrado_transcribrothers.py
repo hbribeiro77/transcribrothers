@@ -98,3 +98,23 @@ def montar_cadeia_vf_scale_e_fps_encode_video_narrado_transcribrothers(
         )
     fps = max(1, int(p.fps))
     return f"{scale},fps={fps},format=yuv420p"
+
+
+def calcular_dimensoes_pares_do_encode_video_narrado_transcribrothers(
+    largura: int,
+    altura: int,
+    prefs: PreferenciasEncodeVideoNarradoTranscribrothers | None = None,
+) -> tuple[int, int]:
+    """Mesma regra do scale do mux: altura máxima do preset, sem upscale, lados pares."""
+    p = prefs or preferencias_encode_video_narrado_padrao_transcribrothers()
+    origem_largura = max(1, int(largura))
+    origem_altura = max(1, int(altura))
+    alvo = _ALTURA_MAXIMA_POR_RESOLUCAO.get(p.resolucao)
+    if alvo is None:
+        par_largura = (origem_largura // 2) * 2
+        par_altura = (origem_altura // 2) * 2
+    else:
+        escala = min(1.0, float(alvo) / float(origem_altura))
+        par_largura = int(origem_largura * escala / 2.0) * 2
+        par_altura = int(min(origem_altura, alvo) / 2.0) * 2
+    return max(2, par_largura), max(2, par_altura)

@@ -41,7 +41,7 @@ import type {
   FerramentaAnotacaoImagemTutorialTranscribrothers,
   ModoZoomVisualizacaoCanvasAnotacaoImagemTutorialTranscribrothers,
 } from "./tipos_ferramenta_anotacao_imagem_tutorial_transcribrothers.ts";
-import { resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers } from "./modulo_util_resolver_nome_arquivo_e_persistencia_anotacao_para_inserir_no_documento_tutorial_transcribrothers.ts";
+import { inserirImagemDaModalAnotacaoDeveFicarDesabilitadoTranscribrothers } from "./modulo_util_resolver_acao_botao_inserir_imagem_modal_anotacao_copia_png_abrir_markdown_transcribrothers.ts";
 import {
   ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_MODAL_ANOTACAO_TRANSCRIBROTHERS,
   ROTULO_BOTAO_COMMIT_USAR_NO_TUTORIAL_PROCESSANDO_MODAL_ANOTACAO_TRANSCRIBROTHERS,
@@ -112,7 +112,7 @@ type PropsModalEditorAnotacaoImagemTutorialTranscribrothers = {
     opcoes?: { silencioso?: boolean },
   ) => void | Promise<void>;
   processandoGestaoVersoes?: boolean;
-  aoSolicitarInserirImagemNoDocumentoMarkdown?: (nomeArquivoParaSnippet: string) => void | Promise<void>;
+  aoSolicitarInserirImagemNoDocumentoMarkdown?: () => void | Promise<void | boolean>;
   temVideoEntrada?: boolean;
   instanteSegundosInicial?: number | null;
   duracaoVideoSegundos?: number;
@@ -1348,34 +1348,23 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
     if (!aoSolicitarInserirImagemNoDocumentoMarkdown) return;
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const decisao = resolverNomeArquivoESePrecisaPersistirAnotacaoParaInserirNoDocumentoTranscribrothers({
-      nomeArquivoOriginal,
-      recorteFoiAplicado: recorteAplicadoNestaSessaoCanvasRef.current,
-      totalObjetosCanvas: canvas.getObjects().length,
-      jaExisteArquivoAnotado: Boolean(registroAnotacao?.tem_arquivo_anotado),
-      exibindoVersaoAnotadaNoCanvas: versaoImagemExibidaNoModal === "anotado",
-    });
     setErro(null);
     setInserindoNoDocumento(true);
     try {
-      if (decisao.precisaPersistirAnotacao) {
-        const job = await persistirCanvasComoPngAnotadoTranscribrothers();
-        aoSalvarComSucesso(job, "inserir_documento");
-        recorteAplicadoNestaSessaoCanvasRef.current = false;
-      }
-      await aoSolicitarInserirImagemNoDocumentoMarkdown(decisao.nomeArquivoParaSnippet);
+      const dataUrl = exportarCanvasFabricAnotacaoComoPngDataUrlTranscribrothers(canvas);
+      const blob = await converterDataUrlPngParaBlobTranscribrothers(dataUrl);
+      await copiarBlobImagemPngParaAreaTransferenciaNavegadorTranscribrothers(blob);
+      const abriuEditor = await aoSolicitarInserirImagemNoDocumentoMarkdown();
+      if (abriuEditor === false) return;
+      fecharModalDescartandoPreviewsNavegacaoTranscribrothers();
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
     } finally {
       setInserindoNoDocumento(false);
     }
   }, [
-    aoSalvarComSucesso,
     aoSolicitarInserirImagemNoDocumentoMarkdown,
-    nomeArquivoOriginal,
-    persistirCanvasComoPngAnotadoTranscribrothers,
-    registroAnotacao?.tem_arquivo_anotado,
-    versaoImagemExibidaNoModal,
+    fecharModalDescartandoPreviewsNavegacaoTranscribrothers,
   ]);
 
   const copiarImagemEditadaParaAreaTransferenciaTranscribrothers = useCallback(async () => {
@@ -1533,9 +1522,14 @@ export function ComponenteModalEditorAnotacaoImagemTutorialFabricJsDuasVersoesTr
               <button
                 type="button"
                 className="tb-anotacao-ferramenta-icone tb-anotacao-modal-btn-inserir-documento"
-                disabled={acoesDocumentoDesabilitadasEnquantoCandidato}
-                title="Grava a edição (se houver), copia a referência e abre o Markdown para você colar no ponto certo"
-                aria-label={inserindoNoDocumento ? "Inserindo no documento" : "Inserir no documento"}
+                disabled={inserirImagemDaModalAnotacaoDeveFicarDesabilitadoTranscribrothers({
+                  processando: processandoAlgumaAcao,
+                  carregando,
+                  aguardandoPreviewAtual,
+                  candidatoFramePendente,
+                })}
+                title="Copia o frame da tela (com edição, se houver) e abre o Markdown para colar (Ctrl+V). Não substitui a imagem do documento."
+                aria-label={inserindoNoDocumento ? "Copiando frame para o Markdown" : "Copiar frame e abrir Markdown"}
                 onClick={() => void inserirImagemCanvasNoDocumentoMarkdownTranscribrothers()}
               >
                 <IconeInserirImagemNoDocumentoAnotacaoTutorialTranscribrothers />
